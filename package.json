@@ -1,12 +1,22 @@
 {
-  "name": "crystal-radio",
+  "name": "crystal-radio-sdr",
   "version": "1.0.0",
-  "description": "SDR direct-conversion receiver (zero-IF) with PCB generation and 3D viewer",
-  "main": "hardware/tscircuit/build_pcb.mjs",
+  "description": "Zero-IF SDR direct-conversion receiver with STM32 Blue Pill",
+  "main": "tools/tscircuit/build_pcb.mjs",
   "scripts": {
-    "build": "node hardware/tscircuit/build_pcb.mjs",
-    "clean": "rm -rf hardware/tscircuit/out/*"
+    "build": "node tools/tscircuit/build_pcb.mjs",
+    "generate-pcb": "node tools/tscircuit/build_pcb.mjs"
   },
-  "author": "",
-  "license": "MIT"
+  "keywords": [
+    "sdr",
+    "direct-conversion",
+    "zero-if",
+    "crystal-radio",
+    "stm32-blue-pill"
+  ],
+  "author": "Maximalin",
+  "license": "MIT",
+  "dependencies": {
+    "kicad": "^4.0.0"
+  }
 }

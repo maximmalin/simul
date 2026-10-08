@@ -1,0 +1,12 @@
+{
+  "name": "crystal-radio",
+  "version": "1.0.0",
+  "description": "SDR direct-conversion receiver (zero-IF) with PCB generation and 3D viewer",
+  "main": "hardware/tscircuit/build_pcb.mjs",
+  "scripts": {
+    "build": "node hardware/tscircuit/build_pcb.mjs",
+    "clean": "rm -rf hardware/tscircuit/out/*"
+  },
+  "author": "",
+  "license": "MIT"
+}

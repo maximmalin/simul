@@ -1,0 +1,9 @@
+Ref,Name,Model,Role
+L_LNA1,Low Noise Amplifier 1,2N7002,LNA
+Q_LNA1,Quarter-Wave Coupler,LPJ-1,QWC
+R_LNA1,Low Noise Amplifier 2,2N7002,LNA
+C_LNA1,LC Bandstop Filter,C1+L1,Filter
+R_LPO1,Low-Power Power Supply,AMS1117-3.3,LPO
+U_MIX1,Mixer,LT5560,Mixer
+U1,MCU,STM32F103C8T6,MCU
+U2,Amplifier,OPA2134,Amplifier

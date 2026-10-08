@@ -1,0 +1,11 @@
+{
+  "name": "grid_router",
+  "version": "0.15.0",
+  "files": [
+    "grid_router_bg.wasm",
+    "grid_router.js",
+    "grid_router.d.ts"
+  ],
+  "main": "grid_router.js",
+  "types": "grid_router.d.ts"
+}

@@ -1,0 +1,9 @@
+modules = ["bash", "bun-1.2"]
+run = "bun run start"
+
+[nix]
+channel = "stable-24_05"
+packages = []
+
+[deployment]
+run = ["sh", "-c", "bun run start"]

@@ -1,0 +1,12 @@
+{
+  "package": "manifold-3d",
+  "version": "3.5.1",
+  "tarballIntegrity": "sha512-/+m6kxYMMhnPutcQ5oSmFJiJ+gyP/0fmuUCb9Qeaunvecm/bfqogKYDDJarsnWiFioSMtKheF+lGmSlnYCik9g==",
+  "files": {
+    "manifold-encapsulated-types.d.ts": "96dcc839fd87b95b1d2b5b2cc2dc9f78c4de2811bf3e0df40bd7e957ecc6869a",
+    "manifold-global-types.d.ts": "8e123edd26ecb1638c3620049ef61137e861430842dda62d7fd4532b98647179",
+    "manifold.d.ts": "bdbe14957171913daf8cf11856090e935d6c4a096ae21f16ef1850dcbfc03ffd",
+    "manifold.js": "860b5c9702a807d1f93b9eb5b4fce15dd1de1af35c508301791986bc4e70c552",
+    "manifold.wasm": "73e3b419ad31294f6b1cc478173944e50efc4a34bfdeeff0107bdfc12975f11c"
+  }
+}

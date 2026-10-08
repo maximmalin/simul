@@ -1,0 +1,23 @@
+# Generated files
+build/
+*.log
+*.tmp
+*.swp
+.DS_Store
+node_modules/
+package-lock.json
+
+# KiCad generated files
+*.kicad_*
+*.glb
+*.step
+*.pdf
+*.jpg
+*.png
+
+# Python cache
+__pycache__/
+*.pyc
+
+# OS files
+Thumbs.db

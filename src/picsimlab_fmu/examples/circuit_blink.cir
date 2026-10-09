@@ -1,0 +1,13 @@
+* circuit_blink.cir — LED driven by STM32 GPIO through B-element
+* Pin PE0 from PicSimLab → B_MCU_PE0 behavioral source
+* Usage: load in ngspice co-simulation with basic_blink.py
+
+Vcc VCC 0 DC 3.3
+R1 VCC LED_ANODE 330
+D1 LED_ANODE LED_CATHODE D_1N4148
+* B-element driven by PicSimLabFMU wrapper (PE0 pin)
+B_MCU_PE0 LED_CATHODE 0 V=0
+.model D_1N4148 D(IS=2.52e-9 RS=0.568 N=1.752 CJO=4p M=0.4 TT=20n)
+.tran 1u 10m
+.print tran V(LED_ANODE) V(LED_CATHODE)
+.end

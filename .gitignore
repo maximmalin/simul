@@ -21,3 +21,19 @@ __pycache__/
 
 # OS files
 Thumbs.db
+
+# Fake/placeholder outputs from text-template generators — NOT real artifacts
+out/gerbers.zip
+out/board.glb
+out/board.step
+crystal_radio.kicadproject
+
+# FMU build artifacts
+sim/fmu/
+*.fmu
+
+# SPICE raw files / scratch
+*.raw
+sim/work/
+sim/sim/
+*.erc

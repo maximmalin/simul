@@ -1,0 +1,43 @@
+* SDR Direct-Conversion Receiver - Simplified for Co-simulation
+* STM32F103C8T6 Zero-IF Architecture
+.title SDR Direct-Conversion Receiver (Co-sim)
+
+* Supplies
+VDD VDD 0 DC 3.3
+
+* RF Input (from antenna)
+VANT RF_IN 0 AC 1mV SIN(0 1mV 7.15e6 0 0)
+RIN RF_IN GND 50
+
+* LNA1 (behavioral)
+BLNA1 LNA1_OUT GND V = V(RF_IN) * 20
+
+* LNA2
+BLNA2 LNA2_OUT GND V = V(LNA1_OUT) * 15
+
+* Mixer (Zero-IF) - I and Q
+* LO signals
+VLO_I LO_I 0 SIN(0 1.0 7.15e6 0 0)
+VLO_Q LO_Q 0 SIN(0 1.0 7.15e6 0 0 90)
+
+* Mixer
+BMIX_I MIX_I GND V = V(LNA2_OUT) * V(LO_I)
+BMIX_Q MIX_Q GND V = V(LNA2_OUT) * V(LO_Q)
+
+* Anti-aliasing filters + ADC
+RFI MIX_I ADC_I 10k
+CFI ADC_I GND 100pF
+RFQ MIX_Q ADC_Q 10k
+CFQ ADC_Q GND 100pF
+
+* MCU-controlled pins (PA6, PA7) driven via B-elements from PicSimLab
+B_MCU_PA6 PA6 0 V = 0
+B_MCU_PA7 PA7 0 V = 0
+
+.tran 1u 10u
+
+.control
+run
+print v(ADC_I) v(ADC_Q) v(RF_IN)
+.endc
+.end

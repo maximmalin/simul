@@ -1,0 +1,410 @@
+#!/usr/bin/env python3
+"""Export antenna_fdtd.py results as ngspice S-parameter networks.
+
+Reads every sim/outputs/<name>.json produced by antenna_fdtd.py and writes, per
+antenna, under sim/outputs/ngspice/:
+
+    ant_<name>.s1p      1-port Touchstone: feed reflection (exact, from Zin)
+    ant_<name>.s2p      2-port Touchstone: port 1 = feed, port 2 = radiated wave
+    ant_sparams.lib     ngspice subcircuits (XSPICE ``xfer``) wrapping the files
+    antenna_model.net   demo netlist: source at the space port -> feed -> SDR LNA
+    README.md           port conventions, provenance and usage
+
+Two-port convention
+-------------------
+
+::
+
+        port 1 (feed)  ---[ ANT_<name> ]---  port 2 (radiated wave)
+         to RF front-end                     test signal / free space
+
+* **Port 1** is the antenna feed, referenced to z0. Its reflection comes
+  straight from the simulated input impedance::
+
+      S11(f) = (Zin(f) - Z0) / (Zin(f) + Z0)
+
+* **Port 2** is the radiated-wave ("space") port, a matched sink (S22 = 0). It
+  carries the power the antenna actually radiates::
+
+      S21 = S12 = sqrt(eta) * sqrt(1 - |S11|^2) * exp(j * arg(S11))
+
+  where ``eta`` is the radiation efficiency.
+
+Power balance: driving port 1 gives ``|S11|^2 + |S21|^2 = eta``. On receive,
+driving port 2 delivers ``eta*(1 - |S11|^2)`` of the incident power to the feed.
+
+Run:
+    python3 sim/scripts/export_antenna_ngspice.py            # export all
+    python3 sim/scripts/export_antenna_ngspice.py --validate # + ngspice check
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import shutil
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+import numpy as np
+
+HERE = Path(__file__).resolve().parent
+PROJECT = HERE.parent.parent
+OUTPUTS = HERE.parent / "outputs"
+OUTDIR = OUTPUTS / "ngspice"
+WORK = HERE.parent / "work"
+
+
+def load_results() -> list[dict]:
+    """Load every antenna result JSON, sorted by name."""
+    if not OUTPUTS.is_dir():
+        return []
+    out = []
+    for p in sorted(OUTPUTS.glob("*.json")):
+        try:
+            d = json.loads(p.read_text())
+        except json.JSONDecodeError:
+            continue
+        if "freq_hz" in d and "S11_dB" in d:
+            out.append(d)
+    return out
+
+
+def s11_from_db(s11_db: np.ndarray) -> np.ndarray:
+    """Magnitude-only S11 from dB. Phase is unavailable in the result JSON."""
+    return 10 ** (s11_db / 20.0)
+
+
+def build_network(res: dict):
+    """Return (name, label, freqs, rho, s12, s21, s22, f_res, s11_min, eta)."""
+    f = np.asarray(res["freq_hz"], dtype=float)
+    order = np.argsort(f)
+    f = f[order]
+    z0 = float(res.get("z0", 50.0))
+    zr = np.asarray(res["Z_real"], dtype=float)[order]
+    zi = np.asarray(res["Z_imag"], dtype=float)[order]
+    zin = zr + 1j * zi
+
+    rho = (zin - z0) / (zin + z0)
+
+    # Enforce passivity. Far out of band a swept Zin can give |S11| marginally
+    # > 1 (numerical); sqrt(1-|S11|^2) would then be exactly 0, which makes
+    # ngspice's db() of the received voltage fail. Clip magnitude only, so
+    # phase is preserved, with a tiny margin to keep S21 finite.
+    mag_raw = np.abs(rho)
+    over = int(np.count_nonzero(mag_raw > 1.0))
+    if over:
+        print(f"    clipped {over} point(s) with |S11|>1 down to "
+              f"1-1e-9 (passivity)")
+    mag = np.clip(mag_raw, 0.0, 1.0 - 1e-9)
+    rho = mag * np.exp(1j * np.angle(rho))
+
+    eta = float(np.clip(res.get("eta_rad", 1.0), 0.0, 1.0))
+    tau = np.sqrt(np.clip(1.0 - mag ** 2, 0.0, None)) * np.exp(1j * np.angle(rho))
+    tau = tau * math_sqrt(eta)
+    s22 = np.zeros_like(rho)
+
+    f_res = float(res.get("f_res", f[np.argmin(mag)]))
+    ires = int(np.argmin(np.abs(f - f_res)))
+    s11_min = float(res.get("S11_min", 20 * np.log10(max(mag[ires], 1e-9))))
+
+    name = res["name"]
+    label = f"{name} ({res.get('type', '?')}, {res.get('model', '?')}): " \
+            f"{res.get('description', '')}"
+    return name, label, f, rho, tau, tau, s22, f_res, s11_min, eta
+
+
+def math_sqrt(x: float) -> float:
+    return float(np.sqrt(x))
+
+
+def _g(v: float) -> str:
+    return f"{v:.10g}"
+
+
+def write_s1p(path: Path, freqs, s11, comment: str) -> None:
+    lines = [f"! {comment}", "# Hz S RI R 50"]
+    for fr, s in zip(freqs, s11):
+        lines.append(f"{_g(fr)} {_g(s.real)} {_g(s.imag)}")
+    path.write_text("\n".join(lines) + "\n")
+
+
+def write_s2p(path: Path, freqs, s11, s12, s21, s22, comment: str) -> None:
+    lines = [f"! {comment}", "# Hz S RI R 50"]
+    for fr, a, b, c, d in zip(freqs, s11, s12, s21, s22):
+        lines.append(" ".join([
+            _g(fr),
+            _g(a.real), _g(a.imag),
+            _g(b.real), _g(b.imag),
+            _g(c.real), _g(c.imag),
+            _g(d.real), _g(d.imag),
+        ]))
+    path.write_text("\n".join(lines) + "\n")
+
+
+def write_lib(networks, lib: Path) -> None:
+    blocks = [
+        "* SDR receiver antenna S-parameter subcircuits (ngspice 44+)",
+        "* Generated by sim/scripts/export_antenna_ngspice.py -- do not edit.",
+        "* 2-port: pin 1 = feed (to RF front-end), pin 2 = radiated-wave port,",
+        "*         pin 3 = reference (GND).  Pass the Touchstone file:",
+        "*             Xant feed space 0 ANT_<NAME> touchstone=\"ant_<name>.s2p\"",
+        "",
+    ]
+    for name, label, *_ in networks:
+        blocks += [
+            f"* --- {label} ---",
+            f".SUBCKT ANT_{name.upper()} 1 2 3 touchstone={{touchstone}}",
+            "* pin 3 is the reference plane (connect to GND)",
+            "* Z1 = Z2 = 50 ohm; six controlled sources synthesise the 2-port",
+            "R1N 1 100 -5.000000e+01",
+            "R1P 100 101 100.000000",
+            "R2N 2 200 -5.000000e+01",
+            "R2P 200 201 100.000000",
+            "",
+            "* S11",
+            "A0101 %vd 100 3 %vd 101 102 m_a0101",
+            ".model m_a0101 xfer file=touchstone span=9",
+            "",
+            "* S12",
+            "A0102 %vd 200 3 %vd 102 3 m_a0102",
+            ".model m_a0102 xfer file=touchstone span=9 offset=3",
+            "",
+            "* S21",
+            "A0201 %vd 100 3 %vd 201 202 m_a0201",
+            ".model m_a0201 xfer file=touchstone span=9 offset=5",
+            "",
+            "* S22",
+            "A0202 %vd 200 3 %vd 202 3 m_a0202",
+            ".model m_a0202 xfer file=touchstone span=9 offset=7",
+            ".ENDS",
+            "",
+        ]
+    lib.write_text("\n".join(blocks) + "\n")
+
+
+def write_demo(networks, net: Path) -> None:
+    """Demo netlist: drive the space port, read the feed into an LNA-ish load."""
+    name, _, f, *_ = networks[0]
+    fmin, fmax = float(f.min()), float(f.max())
+    net.write_text(f"""* Demo: SP analysis of antenna '{name}' feeding the SDR front-end.
+* Drive port 2 (space) with a test source, read port 1 (feed) into 50 ohm.
+*
+* Run from the repository root:
+*     ngspice -b sim/outputs/ngspice/antenna_model.net
+*
+Vtest  space 0  dc 0 ac 1 portnum 2 z0 50
+Vfeed  feed  0  dc 0 ac 0 portnum 1 z0 50
+Rload  feed  0 50
+
+Xant   feed space 0 ANT_{name.upper()} touchstone="sim/outputs/ngspice/ant_{name}.s2p"
+
+.include sim/outputs/ngspice/ant_sparams.lib
+
+.control
+sp lin 101 {fmin:.6g} {fmax:.6g}
+print S_1_1 S_2_1
+.endc
+.END
+""")
+
+
+def _sp_run(netlist: str, workdir: Path, tag: str) -> tuple[bool, str]:
+    cir = workdir / f"chk_{tag}.cir"
+    cir.write_text(netlist)
+    proc = subprocess.run(["ngspice", "-b", str(cir)], cwd=workdir,
+                          capture_output=True, text=True, timeout=300)
+    return proc.returncode == 0, proc.stdout + proc.stderr
+
+
+def validate(networks, workdir: Path) -> int:
+    """Re-read each .s2p with ngspice and compare S11 against the model."""
+    shutil.copy(OUTDIR / "ant_sparams.lib", workdir / "ant_sparams.lib")
+    print("\nngspice validation (xfer model vs source data):")
+    failures = 0
+
+    for name, label, f, rho, *_ in networks:
+        tag = name.lower()
+        shutil.copy(OUTDIR / f"ant_{tag}.s2p", workdir / f"ant_{tag}.s2p")
+        fmin, fmax = float(f.min()), float(f.max())
+
+        netlist = f"""* validation {name}
+Vfeed feed 0 dc 0 ac 1 portnum 1 z0 50
+Xant feed space 0 ANT_{name.upper()} touchstone="ant_{tag}.s2p"
+Vspace space 0 dc 0 ac 0 portnum 2 z0 50
+.include ant_sparams.lib
+.control
+sp lin 61 {fmin:.6g} {fmax:.6g}
+wrdata chk_{tag}.dat S_1_1
+.endc
+.END
+"""
+        ok, out = _sp_run(netlist, workdir, tag)
+        dat = workdir / f"chk_{tag}.dat"
+        if not ok or not dat.exists():
+            print(f"  {name}: ngspice failed")
+            print("    " + out.strip().splitlines()[-1][:120])
+            failures += 1
+            continue
+
+        arr = np.loadtxt(dat)
+        if arr.ndim == 1:
+            arr = arr[None, :]
+        fsim = arr[:, 0]
+        s11_ng = arr[:, 1] + 1j * arr[:, 2]
+        s11_ref = np.interp(fsim, f, np.abs(rho), left=abs(rho[0]),
+                            right=abs(rho[-1]))
+        err = float(np.max(np.abs(np.abs(s11_ng) - s11_ref)))
+        status = "OK" if err < 1e-6 else "MISMATCH"
+        print(f"  {name}: max|d|S11|| = {err:.3e}   {status}")
+        if err >= 1e-6:
+            failures += 1
+        dat.unlink(missing_ok=True)
+
+    return failures
+
+
+def write_readme(networks, results, path: Path) -> None:
+    by_name = {r["name"]: r for r in results}
+
+    rows = "\n".join(
+        f"| `{n}` | `ant_{n}.s1p` | `ant_{n}.s2p` | "
+        f"{f_res / 1e6:.3f} | {smin:.1f} | {eta * 100:.0f}% |"
+        for n, _label, _f, _rho, _s12, _s21, _s22, f_res, smin, eta in networks
+    )
+    models = "\n".join(
+        f"| `{n}` | {by_name.get(n, {}).get('model', '?')} | "
+        f"{by_name.get(n, {}).get('type', '?')} | "
+        f"{by_name.get(n, {}).get('description', '')} |"
+        for n, *_ in networks
+    )
+
+    path.write_text(f"""# SDR antenna -> ngspice S-parameter networks
+
+Generated by `sim/scripts/export_antenna_ngspice.py` from the JSON results in
+`sim/outputs/`, which are produced by `sim/scripts/antenna_fdtd.py` driven by
+the YAML files in `sim/inputs/`. Reference impedance 50 ohm everywhere.
+
+## Provenance — read this before trusting a number
+
+| antenna | model | type | description |
+|---------|-------|------|-------------|
+{models}
+
+An antenna whose `model` is **analytic** is *not* an electromagnetic result.
+It is a closed-form transmission-line / RLC estimate, used where a 3D FDTD box
+does not fit available memory. Its magnitude and phase are plausible, not
+measured. An antenna whose `model` is **fdtd** has an exact simulated feed
+impedance; only the absolute far-field phase is uncalibrated.
+
+Radiation efficiency comes from `Prad/P_acc` at resonance where an NF2FF box is
+present, otherwise it is the value stated in the YAML.
+
+## Files
+
+| antenna | 1-port | 2-port | f_res (MHz) | S11 (dB) | eta_rad |
+|---------|--------|--------|-------------|----------|---------|
+{rows}
+
+* `ant_<name>.s1p` - antenna feed reflection only (from simulated Zin).
+* `ant_<name>.s2p` - 2-port: port 1 = feed, port 2 = radiated-wave port.
+* `ant_sparams.lib` - ngspice subcircuits, one `ANT_<NAME>` per antenna.
+* `antenna_model.net` - demo netlist (test source at the space port).
+
+## Two-port definition
+
+```
+ port 1 (feed)  ---[ ANT_<name> ]---  port 2 (radiated wave)
+  to RF front-end                    test signal / free space
+```
+
+* `S11(f) = (Zin(f) - Z0) / (Zin(f) + Z0)`
+* `S22 = 0` - matched radiation sink
+* `S21 = S12 = sqrt(eta) * sqrt(1 - |S11|^2) * exp(j*arg(S11))`
+
+To emulate a received wave, drive port 2 and read port 1; to load a transmitter,
+drive port 1 into the receiver front-end.
+
+## Usage in ngspice
+
+```spice
+.include sim/outputs/ngspice/ant_sparams.lib
+Vtest  space 0 dc 0 ac 1
+Xant   feed space 0 ANT_DIPOLE_7MHZ touchstone="sim/outputs/ngspice/ant_dipole_7mhz.s2p"
+Rload  feed 0 50
+.control
+sp lin 101 6e6 8e6
+print S_1_1 S_2_1
+.endc
+```
+
+Run the demo from the repository root:
+
+    ngspice -b sim/outputs/ngspice/antenna_model.net
+
+## Why no FMU
+
+ngspice 44 reads Touchstone natively through the XSPICE `xfer` code model. An
+FMU wrapper would only add a co-simulation boundary, so these networks need
+none. An FMU *is* used elsewhere in this project (`sim/scripts/`) to drive
+ngspice from a master simulator.
+
+## Limitations
+
+* `|S11|` is clipped to `< 1` at points where the swept impedance is marginally
+  non-passive (numerical, far out of band).
+* Transmission phase is taken as `arg(S11)` (lossless reciprocal 2-port
+  convention). Magnitudes are exact for FDTD models; absolute far-field phase is
+  not calibrated — that needs a two-antenna reference measurement.
+""")
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description=__doc__,
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--validate", action="store_true",
+                    help="re-read each .s2p with ngspice and compare S11")
+    args = ap.parse_args()
+
+    results = load_results()
+    if not results:
+        print(f"no antenna results in {OUTPUTS}; run antenna_fdtd.py first",
+              file=sys.stderr)
+        return 1
+
+    OUTDIR.mkdir(parents=True, exist_ok=True)
+    networks = []
+    for res in results:
+        net = build_network(res)
+        networks.append(net)
+        name = net[0]
+        f, rho, s12, s21, s22 = net[2], net[3], net[4], net[5], net[6]
+        print(f"  {name}: {len(f)} pts "
+              f"({f.min() / 1e6:.3f}-{f.max() / 1e6:.3f} MHz) "
+              f"f_res={net[7] / 1e6:.3f} MHz eta={net[9] * 100:.0f}% "
+              f"[{res.get('model', '?')}]")
+        write_s1p(OUTDIR / f"ant_{name}.s1p", f, rho,
+                  f"{net[1]} 1-port (feed reflection)")
+        write_s2p(OUTDIR / f"ant_{name}.s2p", f, rho, s12, s21, s22,
+                  f"{net[1]} 2-port: p1=feed p2=space")
+
+    write_lib(networks, OUTDIR / "ant_sparams.lib")
+    write_demo(networks, OUTDIR / "antenna_model.net")
+    write_readme(networks, results, OUTDIR / "README.md")
+    print(f"  -> {OUTDIR}/  ({len(networks)} antenna(s))")
+
+    if args.validate:
+        with tempfile.TemporaryDirectory(dir=str(WORK.parent)
+                                         if WORK.parent.exists() else None) as td:
+            fails = validate(networks, Path(td))
+        if fails:
+            print(f"\n{fails} antenna(s) FAILED ngspice validation")
+            return 1
+        print("\nall antennas validated against ngspice")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

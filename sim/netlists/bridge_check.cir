@@ -1,0 +1,31 @@
+* Bridge check: STM32-style digital pin -> dac_bridge -> RC -> adc_bridge
+* Bracket syntax on both port vectors is required (ngspice bug #146).
+.param vcc = 3.3
+
+* Digital node driven by the (PicSimLab) MCU pin state, altered each step.
+V_STIM STIM_IN 0 PULSE(0 {vcc} 1u 20n 20n 5u 10u)
+R_STIM STIM_IN 0 1Meg
+
+* digital -> analog. Real slew (t_rise/t_fall) and real input load.
+A_DAC [STIM_IN] [DRV] dacs
+.model dacs dac_bridge(out_low=0 out_high={vcc} out_undef=1.65
++                      input_load=5e-12 t_rise=20n t_fall=20n)
+
+* The analog net: 3.3 V rail, 10 k into a 100 nF low-pass (tau = 1 ms).
+VCC_A VCC_A 0 {vcc}
+R_IN  DRV FILT 10k
+C_F   FILT 0 100n
+
+* analog -> digital, thresholding at vcc/2.
+A_ADC [FILT] [ADC_OUT] adcs
+.model adcs adc_bridge(in_low=1.0 in_high=2.3)
+
+* Digital nodes need a DC reference for the event engine.
+R_ADC ADC_OUT 0 1Meg
+
+.tran 10u 20u
+.control
+run
+print v(stim_in) v(drv) v(filt)
+.endc
+.end

@@ -37,3 +37,10 @@ sim/fmu/
 sim/work/
 sim/sim/
 *.erc
+
+# SKiDL / openEMS scratch output
+sdr_skidl_circuit*.net
+sdr_skidl_circuit_sklib.py
+sim/outputs/*.json
+sim/outputs/*.png
+sim/work/

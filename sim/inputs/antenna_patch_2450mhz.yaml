@@ -1,0 +1,76 @@
+# =============================================================================
+# Antenna definition for the SDR direct-conversion receiver.
+#
+# Adding a new antenna = copy this file, change the numbers.  No code edits.
+#   sim/scripts/antenna_fdtd.py sim/inputs/<yourfile>.yaml
+#
+# Geometry is millimetres; SI constants are used for frequency.
+# =============================================================================
+
+name: patch_2450mhz
+description: FR-4 microstrip patch element, 2.45 GHz
+type: patch
+
+# --- Operating point ---------------------------------------------------------
+f0: 2.45e9 # Hz
+band: 0.15e9 # Hz, half-width of sweep
+
+# --- Substrate ---------------------------------------------------------------
+substrate:
+  eps_r: 4.5
+  tan_d: 0.02
+  thickness_mm: 0.8 # mm, FR-4
+
+# --- Element geometry --------------------------------------------------------
+geometry:
+  wire_radius_mm: 0.0 # unused for patch
+  height_mm: 0.0 # element sits on substrate top surface
+  # Probe feed position as a fraction of -L (0.0 = element edge, 0.5 = centre).
+  # Tuned by FDTD to hit ~50 ohm at f0; 0.19 is the tutorial-proven value.
+  feed_offset_frac: 0.19
+
+  # null = compute W and L from Balanis for f0 on this substrate.
+  width_mm: null
+  # Set to trim L onto the *simulated* resonance when the Balanis formula is off
+  # (common once feed probing shifts resonance). null = keep Balanis L.
+  length_override_mm: null
+
+length_solve: auto # auto | manual
+length_mm: null
+
+# --- Ground plane ------------------------------------------------------------
+ground:
+  enabled: true
+  margin_mm: 15.0 # plane extends this far beyond element each side
+
+# --- Excitation / mesh -------------------------------------------------------
+# cell = lambda/cells_per_wavelength. The 0.8 mm substrate is a material region
+# and the patch a PEC sheet snapped by AddEdges2Grid; neither sets the cell size.
+simulation:
+  # A patch is electrically small with fine features, so it needs far more
+  # cells across the box than a dipole. 160 -> ~4 M cells, ~0.5 GB.
+  cells_across_box: 160
+  max_cells_per_lambda: 100
+  mesh_grading: 1.4
+  air_mm: 60.0
+  air_lambda_min: 0.1
+  max_gb: 3.0
+  # Cells through the substrate thickness (geometry, not the air mesh).
+  substrate_cells: 4
+  nr_ts: 40000
+  end_criteria: 1.0e-4
+
+# --- Post-processing ---------------------------------------------------------
+results:
+  points: 401
+  search_frac: 0.1
+  z0: 50.0
+  # FDTD computes this from the NF2FF box (Prad/P_acc). Override with null only
+  # if you want to impose a measured/estimated value.
+  eta_rad: null
+  link:
+    g_tx_dbi: 2.0
+    g_rx_dbi: 2.0
+    p_tx_dbm: 30.0
+    nf_db: 3.5
+    snr_db: 10.0

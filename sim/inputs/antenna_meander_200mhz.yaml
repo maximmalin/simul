@@ -1,0 +1,70 @@
+# =============================================================================
+# Antenna definition for the SDR direct-conversion receiver.
+#
+# Adding a new antenna = copy this file, change the numbers.  No code edits.
+#   sim/scripts/antenna_fdtd.py sim/inputs/<yourfile>.yaml
+#
+# Geometry is millimetres; SI constants are used for frequency.
+# =============================================================================
+
+name: meander_200mhz
+description: PCB meander antenna, 200 MHz wideband channel
+type: meander
+
+# --- Operating point ---------------------------------------------------------
+f0: 200e6 # Hz
+band: 550e6 # Hz, half-width of sweep (f0 +/- band => -350..750 MHz clamped
+            # to the 50-800 MHz band of interest; see results.f_min_hz)
+
+# --- Substrate ---------------------------------------------------------------
+substrate:
+  eps_r: 4.5
+  tan_d: 0.02
+  thickness_mm: 1.6 # mm, 2-layer FR-4
+
+# --- Element geometry --------------------------------------------------------
+geometry:
+  trace_width_mm: 1.2
+  # Gap between successive arms, measured perpendicular to the trace.
+  arm_gap_mm: 15.0
+  # Meander slows the guided wave; 1.7 is typical for PCB meander on FR-4.
+  meander_factor: 1.7
+
+length_solve: auto # auto | manual
+
+# --- Ground plane ------------------------------------------------------------
+ground:
+  enabled: true
+  margin_mm: 10.0
+
+# --- Excitation / mesh -------------------------------------------------------
+# Unused for this antenna: type=meander runs the analytic model, not FDTD.
+# Kept here so the file becomes an FDTD config if you ever switch type.
+simulation:
+  cells_across_box: 64
+  max_cells_per_lambda: 100
+  mesh_grading: 1.4
+  air_mm: 200.0
+  air_lambda_min: 0.1
+  max_gb: 3.0
+  nr_ts: 40000
+  end_criteria: 1.0e-4
+
+# --- Post-processing ---------------------------------------------------------
+results:
+  points: 301
+  # Explicit sweep limits. When set these override f0 +/- band, which is what
+  # a genuinely wideband channel needs (band > f0 would sweep negative).
+  f_min_hz: 50e6
+  f_max_hz: 800e6
+  search_frac: null # report the global minimum
+  z0: 50.0
+  # A meander has narrowband, lossy FR-4 and no NF2FF here; 0.55 is a
+  # conservative estimate. Replace with a measured value if you have one.
+  eta_rad: 0.55
+  link:
+    g_tx_dbi: 2.0
+    g_rx_dbi: 1.0
+    p_tx_dbm: 30.0
+    nf_db: 3.5
+    snr_db: 10.0

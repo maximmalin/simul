@@ -1,0 +1,103 @@
+# =============================================================================
+# Antenna definition for the SDR direct-conversion receiver.
+#
+# Adding a new antenna = copy this file, change the numbers.  No code edits.
+#   sim/scripts/antenna_fdtd.py sim/inputs/<yourfile>.yaml
+#
+# Geometry is millimetres; SI constants are used for frequency.
+# =============================================================================
+
+name: dipole_7mhz
+description: Half-wave wire dipole for the 7.15 MHz SDR centre frequency
+type: dipole
+
+# Model selection.
+#   false (default) -> analytic thin-wire model. A lambda/2 element needs an
+#     excitation pulse ~1/(sweep bandwidth) long; at +/-0.5 MHz that is ~880 us,
+#     i.e. >10^6 timesteps. Not affordable, and results would still be FDTD.
+#   true           -> real openEMS solver. Worth it only with a wide sweep.
+fdtd: false
+
+# --- Operating point ---------------------------------------------------------
+f0: 7.15e6 # Hz, design centre frequency
+band: 0.5e6  # Hz, half-width of the swept range for S11/Zin
+
+# --- Substrate (0 = free space; set eps_r > 1 for a PCB-mounted element) -----
+substrate:
+  eps_r: 1.0
+  tan_d: 0.0
+  thickness_mm: 0.0 # mm; must be > 0 when eps_r > 1
+
+# --- Element geometry --------------------------------------------------------
+geometry:
+  # Dipole: total length is auto-solved for f0 (see length_solve below).
+  # Wire radius in mm; sets the mesh refinement around the conductor.
+  wire_radius_mm: 0.5
+  # Vertical placement. For free-space dipole: height above ground plane, mm.
+  # For a patch, the element sits at substrate top surface (height_mm: 0.0).
+  height_mm: 5.0
+  # Feed offset as a fraction of half-length (0.0 = centre).
+  # Dipole normally centre-fed (0.0). Patch probe-feed is tuned by FDTD.
+  feed_offset_frac: 0.0
+
+  # Patch-specific (ignored for dipole). Leave null to auto-compute from Balanis.
+  width_mm: null
+  length_override_mm: null
+
+length_solve: auto # auto | manual
+# Only used when length_solve: manual
+length_mm: null
+
+# --- Ground plane ------------------------------------------------------------
+ground:
+  enabled: false
+  # Plane extends this far beyond the element, each side (mm).
+  margin_mm: 15.0
+
+# --- Excitation / mesh -------------------------------------------------------
+# Mesh is derived from the wavelength: cell = lambda/cells_per_wavelength.
+# The wire is a PEC cylinder snapped to the grid, so its radius does NOT set the
+# cell size. Cell count scales as lambda^3, so max_gb is a real constraint.
+simulation:
+  # Cells spanning the full air box on each axis -- the primary quality knob.
+  # A dipole is electrically large, so a modest count suffices; cell count
+  # scales as the cube of this.
+  cells_across_box: 48
+  # Coarse-mesh safety net only (cell never coarser than lambda/this). Rarely
+  # binds; leave it alone unless you know you need it.
+  max_cells_per_lambda: 100
+  # SmoothMeshLines grading ratio.
+  mesh_grading: 1.4
+  # Excitation bandwidth as a fraction of f0. Each doubling roughly doubles the
+  # required timesteps; 0.3 is ample for a narrowband element.
+  excite_bandwidth_frac: 0.3
+  # Air box half-extent, mm. Raised to lambda*air_lambda_min if smaller,
+  # because a sub-wavelength box cannot radiate.
+  air_mm: 60.0
+  air_lambda_min: 0.1   # air box is at least lambda/10
+  # Hard memory ceiling. Refused before allocation if exceeded.
+  max_gb: 3.0
+  # Time steps, and the -60 dB energy decay stop criterion.
+  nr_ts: 20000
+  end_criteria: 1.0e-4
+
+# --- Post-processing ---------------------------------------------------------
+results:
+  # Number of frequency points across the sweep.
+  points: 401
+  # Restrict the reported resonance search to +/- this fraction around f0.
+  search_frac: 0.2
+  # Reference impedance for S11.
+  z0: 50.0
+  # Assumed radiation efficiency. The analytic model has no NF2FF box, so this
+  # is imposed. A resonant half-wave wire dipole measures 0.75-0.85.
+  eta_rad: 0.80
+  # Q of the thin-wire model, as fractional -10 dB bandwidth.
+  bandwidth_frac: 0.01
+  # Friis link budget inputs.
+  link:
+    g_tx_dbi: 2.0
+    g_rx_dbi: 0.0
+    p_tx_dbm: 30.0
+    nf_db: 3.5
+    snr_db: 10.0

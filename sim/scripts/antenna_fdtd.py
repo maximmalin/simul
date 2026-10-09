@@ -436,7 +436,7 @@ def _mesh_diag(mesh, plan) -> str:
             f"Courant dt ~ {dt * 1e12:.2f} ps")
 
 
-def build_dipole(cfg: Config, sim_dir: Path) -> dict:
+def build_dipole(cfg: Config, sim_dir: Path, clean: bool = True) -> dict:
     """openEMS FDTD for a wire dipole.  Returns geometry + handles."""
     import numpy as np
 
@@ -522,7 +522,9 @@ def build_dipole(cfg: Config, sim_dir: Path) -> dict:
 
     mesh.SmoothMeshLines("all", mesh_base, grading)
 
-    if sim_dir.exists():
+    # `clean=False` for --repost: the cached field files are the whole point,
+    # and wiping them here destroyed 700 MB of FDTD output.
+    if clean and sim_dir.exists():
         shutil.rmtree(sim_dir)
     sim_dir.mkdir(parents=True, exist_ok=True)
 
@@ -535,7 +537,7 @@ def build_dipole(cfg: Config, sim_dir: Path) -> dict:
             "lambda_mm": cfg.lambda_mm}
 
 
-def build_patch(cfg: Config, sim_dir: Path) -> dict:
+def build_patch(cfg: Config, sim_dir: Path, clean: bool = True) -> dict:
     """openEMS FDTD for a microstrip patch (tutorial-proven geometry)."""
     import numpy as np
 
@@ -623,7 +625,9 @@ def build_patch(cfg: Config, sim_dir: Path) -> dict:
     if cfg.results.get("eta_rad") is None:
         nf2ff = FDTD.CreateNF2FFBox()
 
-    if sim_dir.exists():
+    # `clean=False` for --repost: the cached field files are the whole point,
+    # and wiping them here destroyed 700 MB of FDTD output.
+    if clean and sim_dir.exists():
         shutil.rmtree(sim_dir)
     sim_dir.mkdir(parents=True, exist_ok=True)
 
@@ -657,7 +661,34 @@ def friis_range(cfg: Config, f0: float, bw_hz: float) -> tuple[float, float]:
     return r, p_rx_min_dbm
 
 
-def post_s11(cfg: Config, port, sim_dir: Path, geometry: dict) -> dict:
+def radiated_power(port, nf2ff, sim_dir: Path, f_hz: float) -> float | None:
+    """Radiated power from the NF2FF surface, in the port's normalisation.
+
+    Returns None when no NF2FF box was set up, so the caller can fall back to
+    a configured efficiency instead of silently inventing a number.
+    """
+    if nf2ff is None:
+        return None
+    try:
+        import numpy as np
+        # Coarse angular grid: this is a power integral, not a pattern, and
+        # the result does not depend on resolution.
+        theta = np.arange(0, 181, 5)
+        phi = np.arange(0, 361, 5)
+        res = nf2ff.CalcNF2FF(str(sim_dir), f_hz, theta, phi,
+                              center=[0, 0, 0], verbose=0)
+        prad = float(np.real(res.Prad[0]))
+        if prad <= 0.0:
+            return None
+        return prad
+    except Exception as exc:
+        print(f"  NF2FF power failed ({exc}); falling back to configured eta",
+              file=sys.stderr)
+        return None
+
+
+def post_s11(cfg: Config, port, sim_dir: Path, geometry: dict,
+             nf2ff=None) -> dict:
     """S11/Zin sweep + radiation efficiency + Friis range."""
     import numpy as np
 
@@ -665,11 +696,14 @@ def post_s11(cfg: Config, port, sim_dir: Path, geometry: dict) -> dict:
     npts = int(res.get("points", 401))
     freqs = np.linspace(cfg.f0 - cfg.band, cfg.f0 + cfg.band, npts)
 
-    port.CalcPort(str(sim_dir), freqs)
+    port.CalcPort(str(sim_dir), freqs, ref_impedance=cfg.z0)
     s11 = port.uf_ref / port.uf_inc
     s11_db = 20 * np.log10(np.abs(s11) + 1e-30)
     zin = port.uf_tot / port.if_tot
-    p_acc = 0.5 * np.real(port.uf_tot * np.conj(port.if_tot))
+    # port.P_acc is openEMS's own accepted power, consistent with the NF2FF
+    # normalisation. Deriving it by hand from uf_tot/if_tot is what made the
+    # efficiency come out as exactly 1.
+    p_acc = np.real(np.asarray(port.P_acc, dtype=float))
 
     search_frac = res.get("search_frac")
     if search_frac is not None:
@@ -695,8 +729,16 @@ def post_s11(cfg: Config, port, sim_dir: Path, geometry: dict) -> dict:
     eta = res.get("eta_rad")
     eta_source = "config"
     if eta is None:
-        eta = float(np.max(p_acc[ires]) / np.max(p_acc)) if np.max(p_acc) > 0 else 1.0
-        eta_source = "fdtd_prad_over_pacc"
+        # Radiation efficiency is Prad / P_acc, both taken from openEMS so they
+        # share a normalisation. Dividing p_acc by itself (as an earlier
+        # revision did) returns exactly 1.0 and is meaningless.
+        prad = radiated_power(port, nf2ff, sim_dir, float(freqs[ires]))
+        if prad is not None and p_acc[ires] > 0:
+            eta = float(np.clip(prad / p_acc[ires], 0.0, 1.0))
+            eta_source = "fdtd_prad_over_pacc"
+        else:
+            eta = 1.0
+            eta_source = "unavailable_fell_back_to_1.0"
     eta = float(min(max(eta, 0.0), 1.0))
 
     f_res = float(freqs[ires])
@@ -775,7 +817,23 @@ def plot_s11(result: dict, out_png: Path) -> bool:
 # Driver
 # ---------------------------------------------------------------------------
 
-def simulate(cfg: Config, skip_fdtd: bool = False) -> dict:
+def _has_fdtd_data(sim_dir: Path) -> bool:
+    """True if a previous FDTD run left its port/field output behind."""
+    if not sim_dir.is_dir():
+        return False
+    return any(sim_dir.glob("nf2ff_*.h5")) or any(sim_dir.glob("*.xml"))
+
+
+def simulate(cfg: Config, skip_fdtd: bool = False,
+             repost: bool = False) -> dict:
+    """Run or re-post-process one antenna.
+
+    repost=True rebuilds the geometry and runs *only* CalcPort/CalcNF2FF
+    against the existing sim/work directory. That is how a corrected
+    post-processing fix is applied without paying for the FDTD again (this
+    patch takes ~45 min); `cleanup=True` leaves the field files behind, so
+    the cached run stays usable.
+    """
     sim_dir = WORK / cfg.name
     OUTPUTS.mkdir(parents=True, exist_ok=True)
 
@@ -795,24 +853,36 @@ def simulate(cfg: Config, skip_fdtd: bool = False) -> dict:
         raise ConfigError(f"--skip-fdtd but no cached result at {cached}")
     elif cfg.type == "dipole":
         print(f"[{cfg.name}] building dipole FDTD (L={dipole_length(cfg):.1f} mm)")
-        b = build_dipole(cfg, sim_dir)
+        b = build_dipole(cfg, sim_dir, clean=not repost)
         print(f"[{cfg.name}]   {_mesh_diag(b['mesh_obj'], b['plan'])}")
-        print(f"[{cfg.name}] running FDTD ...")
-        b["FDTD"].Run(str(b["dir"]), cleanup=True, verbose=False)
+        if repost:
+            if not _has_fdtd_data(b["dir"]):
+                raise ConfigError(
+                    f"--repost but {b['dir']} has no FDTD output; run without it")
+            print(f"[{cfg.name}] re-post-processing cached FDTD ...")
+        else:
+            print(f"[{cfg.name}] running FDTD ...")
+            b["FDTD"].Run(str(b["dir"]), cleanup=True, verbose=False)
         geom = {"length_mm": b["length_mm"], "radius_mm": b["radius_mm"],
                 "height_mm": b["height_mm"], "mesh": b["plan"].summary()}
-        result = post_s11(cfg, b["port"], b["dir"], geom)
+        result = post_s11(cfg, b["port"], b["dir"], geom, nf2ff=b["nf2ff"])
     elif cfg.type == "patch":
         W, L, eps_eff = balanis_patch(cfg)
         print(f"[{cfg.name}] building patch FDTD (W={W:.2f} L={L:.2f} mm)")
-        b = build_patch(cfg, sim_dir)
+        b = build_patch(cfg, sim_dir, clean=not repost)
         print(f"[{cfg.name}]   {_mesh_diag(b['mesh_obj'], b['plan'])}")
-        print(f"[{cfg.name}] running FDTD ...")
-        b["FDTD"].Run(str(b["dir"]), cleanup=True, verbose=False)
+        if repost:
+            if not _has_fdtd_data(b["dir"]):
+                raise ConfigError(
+                    f"--repost but {b['dir']} has no FDTD output; run without it")
+            print(f"[{cfg.name}] re-post-processing cached FDTD ...")
+        else:
+            print(f"[{cfg.name}] running FDTD ...")
+            b["FDTD"].Run(str(b["dir"]), cleanup=True, verbose=False)
         geom = {"W_mm": b["W_mm"], "L_mm": b["L_mm"], "eps_eff": b["eps_eff"],
                 "feed_pos_mm": b["feed_pos_mm"], "sub_box_mm": b["sub_box_mm"],
                 "mesh": b["plan"].summary()}
-        result = post_s11(cfg, b["port"], b["dir"], geom)
+        result = post_s11(cfg, b["port"], b["dir"], geom, nf2ff=b["nf2ff"])
     else:  # guarded by validate()
         raise ConfigError(f"unhandled type {cfg.type}")
 
@@ -837,6 +907,9 @@ def main() -> int:
     ap.add_argument("config", nargs="?", help="YAML file in sim/inputs/")
     ap.add_argument("--skip-fdtd", action="store_true",
                     help="reuse the cached results JSON if present")
+    ap.add_argument("--repost", action="store_true",
+                    help="re-run CalcPort/CalcNF2FF on the existing "
+                         "sim/work data without repeating the FDTD")
     ap.add_argument("--list", action="store_true",
                     help="list available YAML configs and exit")
     args = ap.parse_args()
@@ -865,7 +938,7 @@ def main() -> int:
         return 2
 
     try:
-        simulate(cfg, skip_fdtd=args.skip_fdtd)
+        simulate(cfg, skip_fdtd=args.skip_fdtd, repost=args.repost)
     except ConfigError as exc:
         print(f"config error: {exc}", file=sys.stderr)
         return 2

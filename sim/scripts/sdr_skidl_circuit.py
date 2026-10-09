@@ -255,13 +255,14 @@ def build_circuit() -> Circuit:
     one_pin("TESTPOINT", "TP_LNA1_D", lna1_d)
 
     # ---- quarter-wave coupler -------------------------------------------
+    # J2 is wired directly to the LNA2 gate below. It must not get its own net
+    # as well: a pin on two nets is a netlist error, and it silently stopped
+    # the ngspice exporter from modelling the coupler at all.
     qwc_in = net("QWC_IN")
-    qwc_j2 = net("QWC_J2")
     qwc_cp = net("QWC_CP")
 
     x_qwc = inst("LPJ-1", "X_QWC1", "LPJ-1")
     x_qwc.J1 += qwc_in
-    x_qwc.J2 += qwc_j2
     x_qwc.CP += qwc_cp
     x_qwc.GND += gnd
     two_pin("C", "C_QWC", "100p", lna1_d, qwc_in)
@@ -412,19 +413,27 @@ def main() -> int:
     net_dir = PROJECT / "sim" / "netlists"
     net_dir.mkdir(parents=True, exist_ok=True)
     spice = net_dir / "sdr_skidl_ngspice.net"
+    # SKiDL's own SPICE backend builds a PySpice circuit, and it reports success
+    # while writing an 8-byte stub when PySpice is absent. The real ngspice
+    # netlist comes from export_ngspice.py, which walks this same netlist and
+    # can express the behavioural macromodels that PySpice cannot.
     try:
         generate_netlist(file=str(spice), tool="spice")
-        print(f"SPICE netlist:    {spice}")
-    except Exception as exc:
-        print(f"SPICE netlist FAILED: {exc}")
-
-    # The generated files are the deliverable, so verify they landed rather
-    # than trusting the "0 errors" line.
-    for path, what in ((sch, "schematic"), (spice, "SPICE netlist")):
-        if not path.exists():
-            print(f"  WARNING: {what} not written to {path}", file=sys.stderr)
+        if spice.exists() and spice.stat().st_size > 64:
+            print(f"SPICE netlist (SKiDL backend): {spice} "
+                  f"({spice.stat().st_size} bytes)")
         else:
-            print(f"  {what}: {path.stat().st_size} bytes")
+            print("SKiDL SPICE backend produced a stub "
+                  f"({spice.stat().st_size if spice.exists() else 0} bytes) -- "
+                  "PySpice is not installed.")
+            print("Use export_ngspice.py for the ngspice deck.")
+    except Exception as exc:
+        print(f"SKiDL SPICE backend unavailable: {exc}")
+
+    if not sch.exists():
+        print(f"  WARNING: schematic not written to {sch}", file=sys.stderr)
+    else:
+        print(f"  schematic: {sch.stat().st_size} bytes")
 
     print(f"\nparts: {len(c.parts)}")
     print(f"nets:  {len(c.nets)}")

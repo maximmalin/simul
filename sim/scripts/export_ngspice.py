@@ -135,14 +135,28 @@ def pin_net(part, pin_name: str) -> str:
 # hundred ohm gives roughly this much voltage gain.
 LNA_GAIN = 12.0
 
+# Drain load for the common-gate stages. 2.2 k against gm ~5 mS sets the
+# operating point and is what makes the DC solution unique.
+LNA_DRAIN_R = 2200.0
+
 # Zero-IF mixer: multiplies the filtered RF by the quadrature LO pair. The LO
 # is modelled as a fixed-amplitude phasor since the STM32 drives it from a
 # timer; its frequency is swept by .tran with a parametrised period.
 MIX_GAIN = 0.5
 
-# Baseband buffer: unity-gain voltage follower, limited to the ADC input range.
+# 90-degree hybrid coupler: ~3 dB insertion loss.
+COUPLER_GAIN = 0.707
+
+# Baseband buffer: unity-gain, soft-clipped to the ADC input range.
 BB_GAIN = 1.0
 BB_CLIP = 1.65
+
+# DC resistance per inductor value, ohm. An RF choke is a few ohm; the
+# bandstop inductor is a larger metal part.
+_INDUCTOR_DCR = {
+    "18u": 4.0,
+    "100u": 8.0,
+}
 
 
 def emit_parts(circuit) -> tuple[list[str], list[str]]:
@@ -165,7 +179,23 @@ def emit_parts(circuit) -> tuple[list[str], list[str]]:
             if ref.startswith("R"):
                 passives.append(f"R{ref} {a} {b} {si_value(value)}")
             elif ref.startswith("L"):
-                passives.append(f"L{ref} {a} {b} {si_value(value)}")
+                # The RF chokes are bias isolation for the LNA drains; the gain
+                # itself is set by the VCVS stage, not by the choke. An ideal
+                # inductor there leaves the drain DC solution undetermined and
+                # ngspice reports "singular matrix: ll_lna1#branch" -- bisected
+                # to exactly this element. A real choke is well modelled by its
+                # winding resistance at the frequencies of interest, so that is
+                # what is emitted.
+                r_dcr = _INDUCTOR_DCR.get(str(getattr(p, "value", "")), None)
+                if r_dcr is None:
+                    r_dcr = max(
+                        0.1,
+                        float(re.sub(r"[^0-9.]", "", si_value(value)) or 1.0) * 0.1,
+                    )
+                passives.append(
+                    f"R{ref} {a} {b} {r_dcr:.3g}"
+                    f"  $ {value} RF choke, modelled as winding resistance"
+                )
             elif ref.startswith("C"):
                 passives.append(f"C{ref} {a} {b} {si_value(value)}")
             else:  # FB ferrite bead: use its DC resistance
@@ -189,6 +219,17 @@ def emit_parts(circuit) -> tuple[list[str], list[str]]:
             actives.append(
                 f"E_{ref} {d} 0 {g} 0 {LNA_GAIN:.4g}"
                 f"  $ common-gate LNA stage"
+            )
+            # The drain bias network is not decoration: without a DC path from
+            # the drain to a rail the operating point is undetermined and
+            # ngspice reports a singular matrix on the inductor branch.
+            try:
+                vcc = node_name(net("+3V3_ANA"))
+            except Exception:
+                vcc = "VCC_3V3"
+            passives.append(
+                f"R_{ref}_DRAIN {d} {vcc} {LNA_DRAIN_R:.4g}"
+                f"  $ drain bias load"
             )
             modelled.add(ref)
             continue
@@ -244,12 +285,17 @@ def emit_parts(circuit) -> tuple[list[str], list[str]]:
             passives.append(f"R_{ref}_R2 {im} {d1} 10k")
             passives.append(f"R_{ref}_R3 {qp} {d2} 10k")
             passives.append(f"R_{ref}_R4 {qm} {d2} 10k")
+            # Soft-clip with tanh rather than limit(). ngspice's limit() is
+            # limit(x, min, max); the single-argument form does not clip and
+            # returned the rail voltage instead of the signal.
             actives.append(
-                f"B_{ref}_I {op_} 0 V = limit({BB_GAIN}*V({d1}), {BB_CLIP})"
+                f"B_{ref}_I {op_} 0 V = {BB_CLIP} * tanh("
+                f"{BB_GAIN} * V({d1}) / {BB_CLIP})"
                 f"  $ I-channel baseband buffer"
             )
             actives.append(
-                f"B_{ref}_Q {oq} 0 V = limit({BB_GAIN}*V({d2}), {BB_CLIP})"
+                f"B_{ref}_Q {oq} 0 V = {BB_CLIP} * tanh("
+                f"{BB_GAIN} * V({d2}) / {BB_CLIP})"
                 f"  $ Q-channel baseband buffer"
             )
             modelled.add(ref)
@@ -268,6 +314,34 @@ def emit_parts(circuit) -> tuple[list[str], list[str]]:
                 f"B_{ref} {vout} 0 V = 3.3*ternary_fcn(V({vin})>3.5, 1, 0)"
                 f"  $ 3V3 LDO"
             )
+            modelled.add(ref)
+            continue
+
+        # ---- quarter-wave coupler ------------------------------------------------
+        if p.name == "LPJ-1":
+            # The 90-degree hybrid splits the LNA1 output between a detector
+            # branch and the LNA2 feed. Without it the signal path dead-ends at
+            # QWC_IN and everything downstream reads zero, so this cannot be
+            # left unmodelled the way a connector or the MCU can.
+            try:
+                j1 = pin_net(p, "J1")
+                j2 = pin_net(p, "J2")
+            except (KeyError, ValueError):
+                continue
+            # Insertion loss ~3 dB for a hybrid, with the 90 degree phase the
+            # coupler exists to impose. ngspice B-sources take the complex
+            # literal as `1j`; a bare `j` is parsed as a parameter name and
+            # ph() does not exist in a behavioural expression at all.
+            actives.append(
+                f"B_{ref} {j2} 0 V = {COUPLER_GAIN:.4g} * V({j1}) * 1j"
+                f"  $ 90-degree hybrid coupler"
+            )
+            # The detector port is terminated rather than left floating.
+            try:
+                cp = pin_net(p, "CP")
+                passives.append(f"R_{ref}_CP {cp} 0 1k  $ coupler centre port")
+            except (KeyError, ValueError):
+                pass
             modelled.add(ref)
             continue
 
@@ -404,19 +478,58 @@ def main() -> int:
 * ---- 5 V supply -----------------------------------------------------------
 V_VIN VIN_5V 0 DC 5.0
 
-* ---- local oscillator -----------------------------------------------------
-* The STM32 drives LO from its timer on PA6. Standalone (no co-simulation)
-* this is an idealised unit sinusoid at 7.15 MHz; under co-simulation the PicSimLab
-* bridge replaces LO_SRC with the real MCU pin state, so the mixer sees
-* an actual square/timer waveform rather than a clean tone.
-V_LO_SRC LO_SRC 0 DC 0
-V_LO LO 0 SIN(0 1.0 7.15Meg 0 0)
+* ---- digital pin <-> analog node bridges ---------------------------------
+* This is the co-simulation boundary. The STM32 is NOT simulated here; PicSimLab
+* runs the firmware and drives these digital nodes. The bridges translate
+* between the event-driven digital domain and ngspice's analog solver:
+*
+*   LO_SRC  digital  <- PicSimLab `pinsl` reading of PA6 (TIM3_CH1)
+*     |  dac_bridge: digital 0/1 -> analog 0..3.3 V with a real slew rate
+*   LO      analog   -> mixer LO port
+*
+*   ADC_I / ADC_Q analog -> digital, thresholded at in_low/in_high
+*     |  adc_bridge
+*   ADC_I_D / ADC_Q_D digital -> read back by the firmware for PA0 / PA1
+*
+* t_rise/t_fall give the output a finite edge instead of an ideal step, and
+* input_load is a real capacitance loading the digital node. Both matter: a
+* zero-rise-time source would let the analog solver take an unbounded timestep
+* across every GPIO edge, and no load would let the digital node float.
+* Port vectors need square brackets in both models, despite the ngspice manual
+* showing them unbracketed (ngspice bug #146).
+*
+* Standalone (no PicSimLab attached) the digital nodes are held by weak bias
+* resistors, so the deck still simulates and reports the chain's response to the
+* RF input with the LO muted.
+.model m_dac dac_bridge(out_low=0 out_high=3.3 out_undef=1.65
++                       input_load=5e-12 t_rise=20n t_fall=20n)
+.model m_adc adc_bridge(in_low=1.0 in_high=2.3)
+
+A_DAC_LO   [LO_SRC]        [LO]       m_dac
+A_DAC_GAIN [GAIN_SRC]     [GAIN]     m_dac
+A_ADC_I    [ADC_I]        [ADC_I_D]  m_adc
+A_ADC_Q    [ADC_Q]        [ADC_Q_D]  m_adc
+
+* Digital nodes need a DC reference for the event engine. 1 G is negligible
+* against a real pin but keeps the matrix non-singular.
+R_D_LO_SRC   LO_SRC   0 1Gig
+R_D_GAIN_SRC GAIN_SRC 0 1Gig
+R_D_ADC_I_D  ADC_I_D  0 1Gig
+R_D_ADC_Q_D  ADC_Q_D  0 1Gig
+
+* The STM32 timer pin is open-drain capable, so an unloaded digital node
+* defaults to the logic-low level rather than an undefined 'U'.
+V_LO_SRC   LO_SRC   0 DC 0
+V_GAIN_SRC GAIN_SRC 0 DC 0
 
 * ---- RF input -------------------------------------------------------------
 * S11-based antenna networks from export_antenna_ngspice.py can be substituted
 * here; this is a matched source standing in for a flat test signal.
 V_ANT RF_IN 0 SIN(0 1m 7.15Meg 0 0)
 R_TERM_SRC RF_IN GND 50
+
+* Printed so a standalone run shows the boundary working: the digital side is
+* readable, and so is the analog node the dac_bridge drives.
 """
 
     # Note: no str.join() here. Wrapping an already-joined string in join()
@@ -429,7 +542,9 @@ R_TERM_SRC RF_IN GND 50
 
 .control
 run
-print v(ADC_I) v(ADC_Q)
+* Report both sides of the bridge: the analog nodes the mixer sees, and the
+* digital nodes the STM32 firmware would sample.
+print v(ADC_I) v(ADC_Q) v(ADC_I_D) v(ADC_Q_D) v(LO) v(LO_SRC)
 .endc
 
 .end

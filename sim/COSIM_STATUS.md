@@ -14,13 +14,130 @@ What works today, what does not, and what to do about it.
 | Regression tests | `sim/scripts/test_sdr_netlist.py`, 22/22 |
 | Analog + pin contract | `sim/scripts/verify_pin_contract.py`, 31/31 |
 | Firmware | `pio run` clean, `firmware.bin` 23 KB, `firmware.hex` via `pio run -t hex` |
-| Antenna models | dipole + meander analytic; patch FDTD |
-| **STM32 execution** | **qemu-stm32 inside PicSimLab runs the firmware** -- registers, `PC=0x08004068`, reset vector all live |
+| Antennas | dipole -14.6 dB, meander -12.0 dB, patch FDTD 2442.5 MHz / eta_rad 30.8% |
+| **PicSimLab NOGUI rcontrol** | **responds**: `version`, `pinsl`, `sim`, `loadhex` all return `Ok` |
+| **STM32 backend** | **runs**: `qemu-stm32 -M stm32-f103c8-picsimlab-new`, `48 pins [stm32f103c8t6]` |
+
+## The remaining blocker
+
+**rcontrol goes silent exactly while the qemu backend runs.** Both halves of
+the co-simulation now work separately, but not at the same time:
+
+| Build | rcontrol | STM32 backend | Together |
+|---|---|---|---|
+| GUI 0.9.2 (system) | resets the connection | yes | no |
+| GUI 0.9.3 (AppImage) | never responds | library missing | no |
+| NOGUI 0.9.3 | **works** | **library missing** | no |
+| NOGUI 0.9.2 | works on Arduino Uno | **yes** | no |
+
+On NOGUI 0.9.2 the Blue Pill loads and qemu-stm32 starts (`reset is called!`),
+but from that moment every rcontrol command returns zero bytes — retried five
+times on one connection, no response. On the same build with Arduino Uno,
+which uses the gpsim backend rather than qemu, rcontrol answers normally
+(`28 pins [atmega328p]`, `sim start` → `Ok`). Same on 0.9.3.
+
+So it is not the board, the protocol, or the client: **rcontrol and the qemu
+backends do not coexist in 0.9.2 or 0.9.3.**
+
+## What was wrong before, and what fixed it
+
+Earlier notes here blamed a "worker thread that never drains its queue" and
+recommended the GUI menu action. Both were wrong, and the diagnosis has
+changed completely.
+
+**The GUI builds are the problem, and NOGUI is the fix.** The GUI listens on
+port 5000 but its responder never services commands, while NOGUI answers
+immediately:
+
+```
+version -> 'Developed by L.C. Gamboa\r\n ... Version: 0.9.3 ... NOGUI Appimage\r\nOk\r\n>'
+```
+
+The `Ok` and the `>` prompt are the proof — that is the responder completing a
+command, not a socket that merely accepted. NOGUI also listens with an empty
+accept backlog where the GUI's fills to 6–9 and sits there.
+
+Two things were also misread on our side:
+
+- Sending `quit` (a documented rcontrol command) **permanently exits the
+  responder**. The raw-socket probing used to diagnose this was destroying the
+  thing it was measuring.
+- There is **no `board` command**. `board Blue_Pill` returns `ERROR`, and the
+  board silently stays whatever the config file says. `sdr_picsimlab_cosim.py`
+  expected one and reported `no digital node 'GAIN_SRC'` for unrelated reasons.
+
+## Where the NOGUI builds come from
+
+The copies on this machine (`/mnt/ext4data/PICSimLab_NOGUI.AppImage` and
+`.deb`) are **0 bytes**. Real ones are on GitHub:
+
+| Version | File | Size |
+|---|---|---|
+| 0.9.3 | `PICSimLab_NOGUI-0.9.3_260920_Ubuntu_22.04.5_LTS_x86_64.AppImage` | 16.6 MB |
+| 0.9.2 | `PICSimLab_NOGUI-0.9.2_241005_Ubuntu_20.04.6_LTS_x86_64.AppImage` | 21.8 MB |
+
+`https://github.com/lcgamboa/picsimlab/releases` — NOGUI is described upstream
+as "must be used on a terminal and with the remote control interface".
+
+Downloaded to `/mnt/ext4data/downloads/`.
+
+## The STM32 backend is missing from every 0.9.3 release
+
+`libqemu-stm32.so` ships in the **0.9.2** package but in **none** of the 0.9.3
+artifacts — AppImage, `.deb`, or `latestbuild`. All three ship only
+`libqemu-riscv32.so` and `libqemu-xtensa.so`. The symptom is:
+
+```
+Message: Error loading libqemu-stm32
+Incomplete: DBGGetRAMSize -> lib/board.h :522
+```
+
+Copying the 0.9.2 library into the 0.9.3 tree does not work — it is ABI
+incompatible:
+
+```
+libqemu-stm32.so: error: symbol lookup error: undefined symbol: bql_lock_impl (fatal)
+```
+
+`bql_lock_impl` is a QEMU block-layer symbol the 0.9.3 binary does not export.
+A 0.9.3-built library would have to be compiled from source; none is published.
+
+## Layout
+
+```
+firmware/picsimlab_sdr.ini          board + port config for PicSimLab
+sim/scripts/start_picsimlab.py      launch NOGUI, poll until the port answers
+sim/scripts/sdr_picsimlab_cosim.py  co-simulation driver
+sim/scripts/export_ngspice.py       SKiDL netlist -> ngspice deck
+sim/scripts/test_sdr_netlist.py     22 regression checks
+sim/scripts/verify_pin_contract.py  31 analog + pin-contract checks
+src/picsimlab_fmu/                  rcontrol + ngspice bridge (from brig-receiver)
+```
+
+## To unblock
+
+1. **A PicSimLab build whose rcontrol serves commands while qemu runs.** This
+   is an upstream defect, not a configuration problem. Worth reporting with
+   the evidence above — it is a clean reproducer (NOGUI + Blue Pill, one
+   connection, `version` returns nothing; swap to Arduino Uno and it answers).
+2. **A 0.9.3-built `libqemu-stm32.so`**, for the combination above.
+3. **Upstream fix in the packaging** so NOGUI ships the STM32 backend at all —
+   it is currently unusable for every STM32 board.
+
+## Pin boundary
+
+Only the analog→digital direction uses an ngspice XSPICE bridge
+(`adc_bridge`, which thresholds properly). The digital→analog direction cannot:
+a `dac_bridge` input is an event-driven digital node and an external host
+cannot write it — `alter LO_SRC = 3.3` fails with *"no such device or model
+name"*. That direction is modelled explicitly instead: a host-alterable
+`V_MCU_*` source behind the pin's datasheet output resistance and load
+capacitance.
 
 ## The analog chain, and what was wrong with it
 
 The receiver previously simulated without converting anything. Five defects,
-each of which had to be fixed before any of the numbers meant anything:
+each concealed by a check that passed anyway:
 
 1. **The Q channel was wired to zero.** `B_U_MIX1_Q` ended in `* 0`, so the
    quadrature output was identically 0 V while still converging and still
@@ -73,74 +190,3 @@ Note PA0 and PA1 are analog inputs, so strictly no digital threshold applies to
 them. ngspice cannot hand an analog level into an event-driven domain, so the
 `adc_bridge` is a 1-bit view of the sampled value -- not a claim about the ADC.
 The analog nodes ADC_I / ADC_Q carry the full amplitude.
-
-## The blocker: PicSimLab rcontrol does not respond
-
-PicSimLab 0.9.2 is installed (`/usr/bin/picsimlab`) and was verified running
-with the Blue Pill:
-
-```
-PICSimLab: Using board "Blue Pill"
-PICSimLab: Remote Control Port 5000
-```
-
-The socket accepts connections but commands are never serviced. The decisive
-evidence is the socket state, not the absence of a reply:
-
-```
-CLOSE-WAIT 120   127.0.0.1:5000  127.0.0.1:36032
-```
-
-`Recv-Q 120` means the server **received 120 bytes and never processed them**.
-Combined with a listen backlog that fills to 6 within 40 s of a fresh start and
-then sits there, the rcontrol worker thread is not draining its queue. Since
-v0.8.8 upstream runs "remote control in one separated thread", that thread
-appears not to be running in this build.
-
-Earlier confusion: one test *did* return `Ok` for `version`. That was before
-repeated probing filled the backlog; every test since has been starved by it.
-Sending `quit` (a documented rcontrol command) also permanently exits the
-rcontrol interface, so a raw socket that tries several commands can kill the
-responder for good. Use `PicSimLabFMU` rather than a raw socket.
-
-Not a protocol error on our side — `\n`, `\r\n` and a bare command were all
-tried, over both `nc` and raw sockets, with a 12 s read timeout and zero bytes
-returned. `PICSimLab_NOGUI`, the build intended for headless use, is
-**not available here** — `/mnt/ext4data/PICSimLab_NOGUI.AppImage` and `.deb`
-are both **0 bytes**.
-
-### To unblock
-
-1. **GUI route (works now, needs a human):** launch `picsimlab`, load the Blue
-   Pill, then System → Remote Control. `ss -ltn | grep 5000` confirms the
-   socket; the menu action starts the responder.
-2. **NOGUI route:** obtain a real `PICSimLab_NOGUI` build. It exists upstream
-   and is the supported way to run rcontrol from a terminal.
-3. **Automated GUI route:** install `xdotool` (or `python-xlib`) and script the
-   menu activation. Neither is currently installed.
-
-## Board config
-
-The board is named **`Blue_Pill`** in PicSimLab, not `generic_STM32F103C8`.
-`firmware/picsimlab_sdr.ini` has the correct values. Note `picsimlab_lser`
-defaults to `/dev/tnt2`, which does not exist on this machine; set it to
-`/dev/null` to silence the error.
-
-## Layout
-
-```
-firmware/picsimlab_sdr.ini        board + port config for PicSimLab
-sim/scripts/sdr_picsimlab_cosim.py co-simulation driver
-sim/scripts/export_ngspice.py      SKiDL netlist -> ngspice deck
-sim/scripts/test_sdr_netlist.py    21 regression checks
-src/picsimlab_fmu/                 rcontrol + ngspice bridge (from brig-receiver)
-```
-
-## Pin boundary
-
-Only the analog→digital direction uses an ngspice XSPICE bridge
-(`adc_bridge`, which thresholds properly). The digital→analog direction cannot:
-a `dac_bridge` input is an event-driven digital node and an external host
-cannot write it — `alter LO_SRC = 3.3` fails with *"no such device or model
-name"*. That direction is modelled explicitly instead: a host-alterable
-`V_MCU_*` source behind the pin's output resistance and load capacitance.

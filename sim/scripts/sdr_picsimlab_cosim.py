@@ -31,6 +31,7 @@ Run:
 from __future__ import annotations
 
 import argparse
+import re
 import sys
 from pathlib import Path
 
@@ -39,22 +40,23 @@ sys.path.insert(0, str(PROJECT / "src"))
 
 from picsimlab_fmu import PicSimLabFMU, PinType  # noqa: E402
 
-# Digital node <-> firmware pin. These names must match the bridge instances in
-# sim/netlists/sdr_skidl_ngspice.cir; if you rename one there, rename it here.
-LO_DIGITAL = "LO_SRC"        # PA6, TIM3_CH1 -> mixer LO
-GAIN_DIGITAL = "GAIN_SRC"    # PA7, RF front-end A/B select
-ADC_I_DIGITAL = "ADC_I_D"    # PA0, ADC1_IN0
-ADC_Q_DIGITAL = "ADC_Q_D"    # PA1, ADC1_IN1
+# Firmware pin -> the ngspice source that models it.
+#
+# Digital -> analog does NOT use a dac_bridge. Its input is an event-driven
+# digital node and an external host cannot drive it: `alter LO_SRC = 3.3` fails
+# with "no such device or model name". Each pin is instead an alterable source
+# sitting behind the pin's real output impedance (R_PIN_LO / C_PIN_LO in the
+# deck), which is what makes the boundary impedance matched rather than ideal.
+LO_PIN, LO_SOURCE = "PA6", "V_MCU_LO"
+GAIN_PIN, GAIN_SOURCE = "PA7", "V_MCU_GAIN"
 
-# Analog nodes read back for reporting.
+# Analog -> digital does use adc_bridge, which thresholds properly.
+ADC_I_DIGITAL = "ADC_I_D"      # PA0, ADC1_IN0
+ADC_Q_DIGITAL = "ADC_Q_D"      # PA1, ADC1_IN1
 ADC_I_ANALOG = "ADC_I"
 ADC_Q_ANALOG = "ADC_Q"
 
-# Firmware pin -> digital node. Only the pins the bridge consumes are driven.
-PIN_NODES = {
-    "PA6": LO_DIGITAL,
-    "PA7": GAIN_DIGITAL,
-}
+PIN_SOURCES = {LO_PIN: LO_SOURCE, GAIN_PIN: GAIN_SOURCE}
 
 
 def main() -> int:
@@ -79,15 +81,27 @@ def main() -> int:
         return 1
 
     text = netlist.read_text()
-    for node in (LO_DIGITAL, GAIN_DIGITAL, ADC_I_DIGITAL, ADC_Q_DIGITAL):
-        if node not in text:
-            print(f"netlist has no digital node '{node}'; the bridge "
-                  f"instances do not match this script", file=sys.stderr)
-            return 1
+    # Check what the deck actually has. The driven pins are host-alterable
+    # sources, so they start a line; the adc_bridge outputs only ever appear as
+    # bracketed port vectors (ngspice bug #146 requires the brackets despite
+    # the manual showing them unbracketed). Checking for digital names on the
+    # driven side is what made this report "no digital node 'GAIN_SRC'" -- a
+    # node a correctly built deck never has, because a dac_bridge input cannot
+    # be driven from a host.
+    missing = [s for s in PIN_SOURCES.values()
+               if not re.search(rf"^\s*{re.escape(s)}\b", text, re.M)]
+    missing += [d for d in (ADC_I_DIGITAL, ADC_Q_DIGITAL)
+                if f"[{d}]" not in text]
+    if missing:
+        print(f"netlist is missing {', '.join(missing)}; the deck and this "
+              f"script disagree -- regenerate with export_ngspice.py",
+              file=sys.stderr)
+        return 1
 
     print("=== SDR receiver co-simulation ===")
     print(f"netlist : {netlist}")
-    print(f"bridges : {LO_DIGITAL} -> LO, {ADC_I_ANALOG}/{ADC_Q_ANALOG} "
+    print(f"pins    : " + ", ".join(f"{p} -> {s}" for p, s in PIN_SOURCES.items()))
+    print(f"bridge  : {ADC_I_ANALOG}/{ADC_Q_ANALOG} "
           f"-> {ADC_I_DIGITAL}/{ADC_Q_DIGITAL}")
     print(f"steps   : {args.steps} x {args.tstep:g}s\n")
 

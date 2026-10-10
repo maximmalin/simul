@@ -16,28 +16,38 @@ What works today, what does not, and what to do about it.
 
 ## The blocker: PicSimLab rcontrol does not respond
 
-PicSimLab 0.9.2 is installed (`/usr/bin/picsimlab`) and was verified running:
+PicSimLab 0.9.2 is installed (`/usr/bin/picsimlab`) and was verified running
+with the Blue Pill:
 
 ```
 PICSimLab: Using board "Blue Pill"
 PICSimLab: Remote Control Port 5000
 ```
 
-The TCP socket **accepts connections** but the server **never sends or receives
-anything**. Confirmed with three line terminators (`\n`, `\r\n`, bare command)
-and with both `nc` and raw sockets:
+The socket accepts connections but commands are never serviced. The decisive
+evidence is the socket state, not the absence of a reply:
 
 ```
-connected
-TIMEOUT after 12s
-total bytes: 0
+CLOSE-WAIT 120   127.0.0.1:5000  127.0.0.1:36032
 ```
 
-This is not a protocol mistake on our side. Per the upstream docs the port
-always listens and the *responder* is started from the GUI menu
-(System → Remote Control). `PICSimLab_NOGUI`, the build intended for headless
-use, is **not available here** — `/mnt/ext4data/PICSimLab_NOGUI.AppImage` and
-`.deb` are both **0 bytes**.
+`Recv-Q 120` means the server **received 120 bytes and never processed them**.
+Combined with a listen backlog that fills to 6 within 40 s of a fresh start and
+then sits there, the rcontrol worker thread is not draining its queue. Since
+v0.8.8 upstream runs "remote control in one separated thread", that thread
+appears not to be running in this build.
+
+Earlier confusion: one test *did* return `Ok` for `version`. That was before
+repeated probing filled the backlog; every test since has been starved by it.
+Sending `quit` (a documented rcontrol command) also permanently exits the
+rcontrol interface, so a raw socket that tries several commands can kill the
+responder for good. Use `PicSimLabFMU` rather than a raw socket.
+
+Not a protocol error on our side — `\n`, `\r\n` and a bare command were all
+tried, over both `nc` and raw sockets, with a 12 s read timeout and zero bytes
+returned. `PICSimLab_NOGUI`, the build intended for headless use, is
+**not available here** — `/mnt/ext4data/PICSimLab_NOGUI.AppImage` and `.deb`
+are both **0 bytes**.
 
 ### To unblock
 

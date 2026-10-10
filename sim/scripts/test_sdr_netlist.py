@@ -50,6 +50,36 @@ def widest_row(out: str) -> list[float] | None:
     return best or None
 
 
+def column(out: str, idx: int) -> list[float]:
+    """Every value of one column of ngspice's transient print table."""
+    vals: list[float] = []
+    for line in out.splitlines():
+        nums: list[float] = []
+        for tok in line.split():
+            try:
+                nums.append(float(tok))
+            except ValueError:
+                nums = []
+                break
+        if len(nums) > idx:
+            vals.append(nums[idx])
+    return vals
+
+
+def excursion(out: str, idx: int) -> float:
+    """Peak-to-peak of a column over the settled part of the run.
+
+    Peak-to-peak rather than peak, because the baseband buffer is biased to
+    mid-rail: with the chain quiet the node still sits at 1.65 V, so an absolute
+    peak says nothing about whether signal is passing.
+    """
+    vals = column(out, idx)
+    if len(vals) < 10:
+        return 0.0
+    tail = vals[len(vals) // 2:]
+    return max(tail) - min(tail)
+
+
 class Checks:
     def __init__(self) -> None:
         self.failed: list[str] = []
@@ -111,10 +141,17 @@ def main() -> int:
     c.check("pin output impedance modelled",
             re.search(r"^R_PIN_\w+\s+\S+\s+\S+\s+\d+", text, re.M) is not None)
     c.check("pin load capacitance modelled",
-            re.search(r"^C_PIN_\w+\s+\S+\s+\S+\s+\d+p", text, re.M) is not None)
+            re.search(r"^C_PIN_\w+\s+\S+\s+\S+\s+[\d.]+p", text, re.M) is not None)
 
     print("\nbehavioural macromodels")
-    c.check("common-gate LNA stages", text.count("common-gate LNA stage") >= 2)
+    # Both LNAs are transconductances with the gate's DC bias referenced out.
+    # An ideal VCVS gain here is not a stage model: it amplified the 1.65 V gate
+    # bias as signal and put ~20 V on the drain.
+    c.check("common-gate LNA stages are transconductances",
+            len(re.findall(r"^G_Q_LNA\d\s+\S+\s+0\s+VALUE\s*=.*V\(LNA\d_G\)",
+                           text, re.M)) == 2)
+    c.check("LNA gate bias is referenced out, not amplified",
+            len(re.findall(r"^G_Q_LNA\d.*-\s*[\d.]+\)", text, re.M)) == 2)
     c.check("quarter-wave coupler modelled", "90-degree hybrid coupler" in text)
     c.check("coupler quadrature term is 1j, not bare j",
             "1j" in text and not re.search(r"V\(.*\)\s*\*\s*j\b", text))
@@ -138,22 +175,21 @@ def main() -> int:
         c.check("stop time reached", row[1] > 0, f"t_stop={row[1]:.3e}")
 
     print("\nsignal path reaches the ADC")
-    # Drive the MCU LO pin high the way the co-simulation host does. With it
-    # muted the chain is correctly silent, so a zero here would prove nothing.
-    high = re.sub(r"^(V_MCU_LO\s+\S+\s+0\s+DC)\s+0\s*$", r"\g<1> 3.3",
-                  text, flags=re.M)
-    changed = high != text
+    # The deck ships with the LO running, so the standing run already proves the
+    # chain carries signal. What still has to hold is that the pin is host
+    # drivable, which now means driving it *low* and watching the chain go
+    # quiet -- the same alter the co-simulation driver issues.
+    muted = re.sub(r"^(V_MCU_LO\s+\S+\s+0\s+DC)\s*[\d.]+\s*$", r"\g<1> 0",
+                   text, flags=re.M)
+    changed = muted != text
     c.check("LO pin is host-drivable for the test", changed)
     if changed:
-        code2, out2 = run(high, "sdr_lo")
-        row2 = widest_row(out2)
-        if row2 and len(row2) >= 4:
-            peak = max(abs(v) for v in row2[2:])
-            c.check("ADC output is non-zero with LO driven", peak > 1e-9,
-                    f"peak={peak:.3e}")
-        else:
-            c.check("ADC output is non-zero with LO driven", False,
-                    "no transient table")
+        code2, out2 = run(muted, "sdr_lo")
+        quiet = excursion(out2, 2)          # v(ADC_I)
+        loud = excursion(out, 2)             # the standing run, LO running
+        c.check("ADC output goes quiet with the LO muted",
+                quiet < 0.01 * loud,
+                f"excursion {quiet:.3e} V muted vs {loud:.3e} V with LO running")
 
     print()
     if c.failed:

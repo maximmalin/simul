@@ -52,6 +52,12 @@ static const uint8_t PIN_GAIN  = PA7;   // front-end A/B select
 static const uint32_t IDX_ADC_I = 0;
 static const uint32_t IDX_ADC_Q = 1;
 static const uint32_t IDX_LO    = 6;
+static const uint32_t IDX_GAIN  = 7;
+
+// Bound on the hardware calibration poll, in loop iterations. Generous enough
+// for real silicon to finish, finite enough that a target which never completes
+// calibration fails through to the main loop instead of spinning forever.
+#define ADC_CAL_TIMEOUT 1000000u
 
 // ---- ADC / DMA -------------------------------------------------------------
 static const uint16_t ADC_BUF_LEN = 256;          // 128 I/Q pairs per block
@@ -96,11 +102,19 @@ static void adc_configure(void) {
     ADC1->SQR2 = 1 << 4;       // SQ2 = ch1 (PA1, Q)
 
     // Calibration before first use.
-    while (ADC1->CR2 & ADC_CR2_CAL) {
-    }
+    //
+    // Bounded, because an unbounded wait here is not safe on every target: the
+    // CAL bit is cleared by hardware when calibration finishes, and an emulator
+    // that does not model the calibration block leaves it set forever. The
+    // unbounded form compiles to a single `b .` self-branch, so the firmware
+    // then sits in setup() with a live core and no way to tell that is what
+    // happened. Under COSIM_MODE the calibration is skipped outright.
+#ifndef COSIM_MODE
     ADC1->CR2 |= ADC_CR2_CAL;
-    while (ADC1->CR2 & ADC_CR2_CAL) {
+    for (volatile uint32_t spin = 0;
+         (ADC1->CR2 & ADC_CR2_CAL) && spin < ADC_CAL_TIMEOUT; ++spin) {
     }
+#endif
 }
 
 static void adc_start_dma(void) {
@@ -164,8 +178,23 @@ void setup() {
     Serial.begin(115200);
 #endif
 
+#ifdef COSIM_MODE
+    // PA7 as output push-pull, written straight to the register.
+    //
+    // The core's pinMode()/digitalWrite() go through pin_function(), which is
+    // what lands in Infinite_Loop under qemu: the stack at the fault shows
+    // pin_function under setup, and the core's pin layer asserts on peripherals
+    // the emulated machine does not fully model. Everything else this firmware
+    // does is already direct register access, so this keeps COSIM_MODE consistent
+    // and removes the last dependency on the core's pin layer.
+    RCC->APB2ENR |= RCC_APB2ENR_IOPAEN;
+    GPIOA->CRL &= ~(0xF << (IDX_GAIN * 4));
+    GPIOA->CRL |= (0x3 << (IDX_GAIN * 4));   // MODE=11 CNF=00: output, 50 MHz
+    GPIOA->BRR = 1u << IDX_GAIN;            // drive low
+#else
     pinMode(PIN_GAIN, OUTPUT);
     digitalWrite(PIN_GAIN, LOW);
+#endif
 
     adc_configure();
     lo_init(7150000UL);        // 7.15 MHz centre frequency

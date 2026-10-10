@@ -509,6 +509,7 @@ class SdrNgspiceFMU(Fmi2Slave):
     # cost grows with the window, and the full 400 us deck takes long enough
     # that a lockstep master never finishes. 20 us is ~0.4 s of ngspice.
     WINDOW_S = 20e-6
+    WINDOW_MAX_S = 50e-6
 
     def _bound_window(self, text: str) -> str:
         """Clamp .tran to a bounded window, preserving the timestep token.
@@ -526,10 +527,18 @@ class SdrNgspiceFMU(Fmi2Slave):
                       set_tran, text, flags=re.M)
 
     def _rerun(self, window=None):
-        """Re-run the batch simulation over a bounded window with new inputs."""
+        """Re-run the batch simulation over a bounded window with new inputs.
+
+        The window defaults to the master's communication step, so one doStep
+        advances the analog side by exactly the same amount as the MCU. Pinning
+        it to a fixed 20 us instead makes the two clocks drift apart by the ratio
+        of the step to the window, which is how a 20 us step ends up sampling
+        the same point of a 7.2 MHz square wave on every step.
+        """
         if self._proc is None:
             return
-        win = float(window or self.WINDOW_S)
+        win = float(window or getattr(self, "_step_s", None) or self.WINDOW_S)
+        win = max(1e-9, min(win, self.WINDOW_MAX_S))
 
         cir = os.path.join(self._tmpdir, "sdr.cir")
         with open(cir) as fh:
@@ -574,6 +583,7 @@ class SdrNgspiceFMU(Fmi2Slave):
 
     def do_step(self, current_time, step_size):
         self._t = current_time + step_size
+        self._step_s = float(step_size)
         try:
             self._rerun()
             self.adc_i, self.adc_q = self._read_peak()

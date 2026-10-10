@@ -18,7 +18,30 @@ What works today, what does not, and what to do about it.
 | **PicSimLab NOGUI rcontrol** | **responds**: `version`, `pinsl`, `sim`, `loadhex` all return `Ok` |
 | **STM32 backend** | **runs**: `qemu-stm32 -M stm32-f103c8-picsimlab-new`, `48 pins [stm32f103c8t6]` |
 
-## The remaining blocker
+## Co-simulation: working, via the FMU
+
+`sim/scripts/cosim_fmu_stm32.py` runs hard lockstep between the ngspice FMU and
+a host-side model of the Blue Pill firmware. Real FMI 2.0 calls
+(setReal / doStep / getReal) on both sides, the pin impedance is in the path,
+and real pulses cross the boundary every step:
+
+    1. pulses across the boundary (step = half an LO period)
+         t (ns)   PA6  adc_i (V)  adc_q (V)  I code  Q code
+            0.0   3.3     1.6500     3.0597    2048    3797
+          138.9   0.0     1.6500     1.6500    2048    2048
+
+    2. firmware stops TIM3  -> both channels rest at mid-rail
+    3. firmware restarts    -> I 3.2352 V, Q 3.0598 V, codes 4015 / 3797
+
+    PA6 took both levels         : True
+    LO stop drops the baseband   : +1.0568 V
+
+The MCU side is a behavioural model of `firmware/src/firmware.ino` -- TIM3_CH1
+on PA6, ADC1_IN0/IN1 on PA0/PA1, DMA latching I/Q -- not the firmware binary
+running on an emulated core. What is below is only about replacing that model
+with a real CPU.
+
+## The remaining PicSimLab blocker
 
 **When the qemu backend runs, the rcontrol listener never opens.** Not "opens
 and stays silent" -- it never binds. This is reproducible, and it is the whole

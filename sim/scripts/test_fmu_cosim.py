@@ -33,7 +33,12 @@ MID_RAIL = 1.65
 
 
 def run(stim: float) -> tuple[float, float, str]:
-    """Run the FMU with PA6 at `stim` and return (peak adc_i, peak adc_q, msg)."""
+    """Run the FMU with PA6 at `stim` and return (peak adc_i, peak adc_q, msg).
+
+    simulate_fmu returns a structured array with named fields (time, adc_i,
+    adc_q, model_status). Reading it positionally picks up `time` as if it were
+    adc_i, which made a working FMU look like it had a dead I channel.
+    """
     res = fmpy.simulate_fmu(
         str(FMU),
         stop_time=1.0,
@@ -42,10 +47,11 @@ def run(stim: float) -> tuple[float, float, str]:
         start_values={"rf_amplitude": 50e-3, "lo_frequency": 7.20e6,
                       "stim_level": stim},
     )
-    vals = [float(sig[1]) for sig in res]
-    if len(vals) < 2:
-        return 0.0, 0.0, f"only {len(vals)} outputs"
-    return vals[0], vals[1], "ok"
+    names = res.dtype.names or ()
+    if "adc_i" not in names or "adc_q" not in names:
+        return 0.0, 0.0, f"outputs present: {names}"
+    # Peaks across every reported sample, not just the last one.
+    return float(res["adc_i"].max()), float(res["adc_q"].max()), "ok"
 
 
 def main() -> int:
@@ -76,21 +82,18 @@ def main() -> int:
         if not ok:
             failed.append(name)
 
-    # adc_i currently reads 0.0 through the FMI interface while adc_q carries
-    # the baseband. Flagged rather than hidden: the Q channel proves the pin
-    # boundary and the conversion work, but the I channel is not reporting and
-    # that is a real defect, not a tolerance.
-    check("LO off leaves the baseband at mid-rail",
-          abs(off_q - MID_RAIL) < 0.02,
-          f"Q={off_q:.4f} V vs {MID_RAIL} V (I reads {off_i:.4f})")
+    check("LO off leaves both channels at mid-rail",
+          abs(off_i - MID_RAIL) < 0.02 and abs(off_q - MID_RAIL) < 0.02,
+          f"I={off_i:.4f} Q={off_q:.4f} V vs {MID_RAIL} V")
     check("PA6 high makes the mixer convert",
           max(on_i, on_q) > MID_RAIL + 0.5,
           f"peak {max(on_i, on_q):.4f} V")
-    check("Q channel is driven", on_q > MID_RAIL + 0.1,
-          f"Q {on_q:.4f} V")
-    check("I channel reports (known open defect: reads 0.0)",
-          on_i > MID_RAIL + 0.1,
-          f"I {on_i:.4f} V -- adc_i is not being reported")
+    check("both channels are driven",
+          on_i > MID_RAIL + 0.1 and on_q > MID_RAIL + 0.1,
+          f"I {on_i:.4f} V, Q {on_q:.4f} V")
+    check("I and Q are comparable, as a quadrature pair must be",
+          0.5 < on_i / on_q < 2.0,
+          f"I/Q = {on_i / on_q:.3f}")
     check("nothing exceeds the analog rail",
           max(on_i, on_q) <= V_LOGIC + 1e-3,
           f"max {max(on_i, on_q):.4f} V vs {V_LOGIC} V")

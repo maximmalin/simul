@@ -713,18 +713,27 @@ def post_s11(cfg: Config, port, sim_dir: Path, geometry: dict,
     else:
         ires = int(np.argmin(s11_db))
 
-    # Contiguous -10 dB band containing the resonance.  A naive first/last
-    # crossing would merge distant higher-order nulls.
-    below = s11_db < -10.0
-    if below[ires]:
-        lo = hi = ires
-        while lo > 0 and below[lo - 1]:
-            lo -= 1
-        while hi < len(below) - 1 and below[hi + 1]:
-            hi += 1
-        bw = float(freqs[hi] - freqs[lo])
-    else:
-        bw = 0.0
+    # Contiguous band containing the resonance, at -3 dB relative to the
+    # minimum actually achieved. -3 dB of reflected power is the conventional
+    # antenna definition; a fixed -10 dB threshold returns exactly 0.0 Hz for
+    # any element that never reaches -10 dB, which says something about the
+    # threshold rather than about the antenna. The patch peaked at -3.6 dB and
+    # so reported "BW = 0.0 kHz" while having a wide, shallow minimum.
+    #
+    # A naive first/last crossing would merge distant higher-order nulls, so
+    # the band is grown outward from the resonance only while contiguous.
+    bw_db = float(res.get("bw_threshold_db", 3.0))
+    below = s11_db <= s11_db[ires] + bw_db
+    lo = hi = ires
+    while lo > 0 and below[lo - 1]:
+        lo -= 1
+    while hi < len(below) - 1 and below[hi + 1]:
+        hi += 1
+    bw = float(freqs[hi] - freqs[lo])
+    # If the band ran into either edge of the sweep it is limited by the sweep,
+    # not by the element, and reporting it as the antenna's bandwidth would be
+    # wrong.
+    bw_truncated = bool(lo == 0 or hi == len(below) - 1)
 
     eta = res.get("eta_rad")
     eta_source = "config"
@@ -758,6 +767,8 @@ def post_s11(cfg: Config, port, sim_dir: Path, geometry: dict,
         "f_res": f_res,
         "S11_min": float(s11_db[ires]),
         "BW_hz": bw,
+        "BW_truncated": bw_truncated,
+        "BW_threshold_dB": bw_db,
         "Zin_res": [float(np.real(zin[ires])), float(np.imag(zin[ires]))],
         "eta_rad": eta,
         "eta_source": eta_source,
@@ -868,14 +879,19 @@ def simulate(cfg: Config, skip_fdtd: bool = False,
         result = post_s11(cfg, b["port"], b["dir"], geom, nf2ff=b["nf2ff"])
     elif cfg.type == "patch":
         W, L, eps_eff = balanis_patch(cfg)
-        print(f"[{cfg.name}] building patch FDTD (W={W:.2f} L={L:.2f} mm)")
         b = build_patch(cfg, sim_dir, clean=not repost)
+        # The banner must quote what build_patch actually used, not what
+        # balanis_patch derives from f0. With length_override_mm set those
+        # differ -- the repost banner claimed L=28.73 mm for a run that used
+        # 27.46 mm, which makes the cached geometry look like the wrong one.
+        print(f"[{cfg.name}] "
+              f"{'re-post-processing cached' if repost else 'building'} patch FDTD "
+              f"(W={b['W_mm']:.2f} L={b['L_mm']:.2f} mm)")
         print(f"[{cfg.name}]   {_mesh_diag(b['mesh_obj'], b['plan'])}")
         if repost:
             if not _has_fdtd_data(b["dir"]):
                 raise ConfigError(
                     f"--repost but {b['dir']} has no FDTD output; run without it")
-            print(f"[{cfg.name}] re-post-processing cached FDTD ...")
         else:
             print(f"[{cfg.name}] running FDTD ...")
             b["FDTD"].Run(str(b["dir"]), cleanup=True, verbose=False)
@@ -893,10 +909,22 @@ def simulate(cfg: Config, skip_fdtd: bool = False,
     if plot_s11(result, png):
         result["plot"] = str(png.relative_to(PROJECT))
 
+    # Auto-scale the bandwidth: a 171 MHz patch bandwidth printed as
+    # "171000.0 kHz" because the unit was hardcoded to kHz.
+    bw = float(result["BW_hz"])
+    bw_div, bw_unit = ((1e6, "MHz") if bw >= 1e6 else
+                       (1e3, "kHz") if bw >= 1e3 else (1.0, "Hz"))
+    bw_txt = f"BW={bw / bw_div:.1f} {bw_unit}"
+    if result.get("BW_truncated"):
+        bw_txt += " (limited by sweep, not the element)"
     print(f"[{cfg.name}] f_res={result['f_res'] / 1e6:.3f} MHz  "
           f"S11={result['S11_min']:.1f} dB  "
-          f"BW={result['BW_hz'] / 1e3:.1f} kHz  "
+          f"{bw_txt}  "
           f"eta={result['eta_rad'] * 100:.0f}% ({result.get('eta_source')})")
+    if result.get("Zin_res"):
+        zr, zi = result["Zin_res"]
+        print(f"[{cfg.name}] Zin at f_res = {zr:.1f} {zi:+.1f}j ohm "
+              f"against {result['z0']:.0f} ohm")
     print(f"[{cfg.name}] -> {out_json}")
     return result
 

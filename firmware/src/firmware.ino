@@ -14,6 +14,30 @@
  */
 
 #include <Arduino.h>
+#include "cosim.h"
+
+#ifdef COSIM_MODE
+/**
+ * Under co-simulation the firmware runs on qemu-system-arm, which does not
+ * model the STM32 PLL: RCC->CR's PLLRDY bit never goes high, so the core's
+ * SystemClock_Config() spins in `while (!(RCC->CR & RCC_CR_PLLRDY))` and never
+ * returns. The PC ends up at SystemClock_Config+0x44 -- a `b .` self-branch --
+ * and the main loop is never reached, which presents as a live core with a
+ * completely silent mailbox.
+ *
+ * Overriding the function is the right fix rather than working around it. The
+ * core calls it from main() before setup(), and because the application object's
+ * file always wins over the one in the library archive, an empty definition here
+ * replaces it outright. The clock tree is then left at its reset default: HSI at
+ * 8 MHz with the PLL off. Everything this firmware does is driven off APB timers
+ * and the ADC, both of which work at 8 MHz, and the co-simulation's timing comes
+ * from the master's clock rather than the emulated one -- so there is nothing
+ * to gain from waiting for a PLL that will never lock.
+ */
+extern "C" void SystemClock_Config(void) {
+    // Intentionally empty: leave the reset clock tree in place. See above.
+}
+#endif
 
 // ---- pin map (matches sim/scripts/sdr_skidl_circuit.py) --------------------
 static const uint8_t PIN_ADC_I = PA0;   // ADC1_IN0
@@ -126,9 +150,19 @@ static void lo_init(uint32_t freq_hz) {
     TIM3->CR1 |= TIM_CR1_ARPE | TIM_CR1_CEN;
 }
 
+volatile uint32_t cosim_canary = 0;
+
 void setup() {
+#ifndef COSIM_MODE
     // USB CDC first so the host sees the banner as soon as it enumerates.
+    //
+    // Only in the normal build. On this core Serial.begin() blocks until a USB
+    // host enumerates, and under qemu-system-arm there is no USB device model
+    // at all -- so setup() never returns and loop() never runs, which is why
+    // the co-simulation saw a running core but a silent mailbox. COSIM_MODE
+    // skips USB entirely and exchanges through the RAM mailbox instead.
     Serial.begin(115200);
+#endif
 
     pinMode(PIN_GAIN, OUTPUT);
     digitalWrite(PIN_GAIN, LOW);
@@ -137,11 +171,13 @@ void setup() {
     lo_init(7150000UL);        // 7.15 MHz centre frequency
     adc_start_dma();
 
+#ifndef COSIM_MODE
     if (Serial) {
         Serial.println(F("SDR direct-conversion receiver ready"));
         Serial.print(F("sample_rate="));
         Serial.println(SAMPLE_RATE_HZ);
     }
+#endif
 }
 
 // Build one host packet from the DMA buffer: 4-byte header then int16 I/Q pairs.
@@ -166,7 +202,30 @@ static void build_packet(const volatile uint16_t *src) {
 }
 
 void loop() {
+  cosim_canary++;
     static uint16_t last = 0;
+
+    // ---- co-simulation mailbox -------------------------------------------
+    // Only active once the host has claimed the block by writing the magic.
+    // Off the box that is one volatile read and a compare, so normal USB CDC
+    // operation is unchanged.
+    volatile uint32_t *mbox = cosim();
+    if (mbox[COSIM_OFF_MAGIC / 4] == COSIM_MAGIC) {
+        // Apply the pin state the host wrote. Driving PA6/PA7 through RAM is
+        // deliberate: the master has to be able to set them while the core runs.
+        digitalWrite(PIN_LO,   mbox[COSIM_OFF_LO / 4]   ? HIGH : LOW);
+        digitalWrite(PIN_GAIN, mbox[COSIM_OFF_GAIN / 4] ? HIGH : LOW);
+
+        // Publish the freshest pair and bump the stamp so the host can tell new
+        // data from a stale read.
+        uint16_t p = DMA1_Channel1->CNDTR;
+        if (p < ADC_BUF_LEN - 2) {
+            mbox[COSIM_OFF_ADC_I / 4]     = adc_buf[p];
+            mbox[COSIM_OFF_ADC_Q / 4]     = adc_buf[p + 1];
+            mbox[COSIM_OFF_ADC_STAMP / 4] = mbox[COSIM_OFF_ADC_STAMP / 4] + 1;
+        }
+        mbox[COSIM_OFF_MCU_STAMP / 4]++;
+    }
 
     // Only repack on a fresh half-block, so the stream runs at the block rate
     // rather than as fast as the loop can spin.
@@ -189,7 +248,9 @@ void loop() {
     }
     last = pos;
 
+#ifndef COSIM_MODE
     if (Serial) {
         Serial.write(packet, PACKET_BYTES);
     }
+#endif
 }

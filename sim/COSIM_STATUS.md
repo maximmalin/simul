@@ -41,6 +41,56 @@ on PA6, ADC1_IN0/IN1 on PA0/PA1, DMA latching I/Q -- not the firmware binary
 running on an emulated core. What is below is only about replacing that model
 with a real CPU.
 
+## Running the real firmware: how far it got
+
+The real firmware does execute under an emulator, and two genuine blockers were
+found and fixed on the way.
+
+Set up without root, then installed system-wide with sudo:
+
+    apt-get install qemu-system-arm gdb-multiarch
+
+`qemu-system-arm -M netduinoplus2` is an STM32F103 (Cortex-M3) with the same
+0x08000000 flash / 0x20000000 RAM map as the Blue Pill, so `firmware.elf` loads
+unmodified. Verified: initial SP `0x20005000`, reset vector `0x0800503d` in flash,
+and a `.bss` word changing between samples, which cannot happen if the core is
+stuck.
+
+Memory is exchanged over qemu's GDB stub, via `sim/scripts/gdb_remote.py` --
+the remote serial protocol implemented directly, so no gdb binary is needed at
+run time. The human monitor cannot do this at all: HMP can read memory with `xp`
+but has **no write command**, and `wp` answers `unknown command: 'wp'`.
+
+The exchange itself is a RAM mailbox, `firmware/src/cosim.h`, documented there.
+
+### Two blockers found and fixed
+
+1. **USB CDC enumeration blocked setup().** `Serial.begin()` waits for a USB
+   host to enumerate, and the machine has no USB device model at all, so
+   `setup()` never returned and `loop()` never ran. Fixed by `COSIM_MODE`, which
+   compiles USB out; `firmware/platformio.ini` carries it as a separate
+   environment so the USB-less image can never be the one flashed to a bench.
+
+2. **The PLL wait blocked setup().** After USB, the PC sat at
+   `SystemClock_Config+0x44` -- a `b .` self-branch -- because the core's clock
+   setup polls `RCC_CR_PLLRDY`, which qemu never sets. Fixed by overriding
+   `SystemClock_Config()` in `COSIM_MODE` so the clock stays at its 8 MHz reset
+   default. Both were diagnosed by reading the PC over the GDB stub, not guessed.
+
+### Where it stops now
+
+With USB and the PLL both out of the way, the core reaches
+`ADC1_2_IRQHandler` (PC `0x08001918`) and does not get to `loop()` -- the canary
+stays at zero. That is qemu's STM32F103 peripheral model not being faithful
+enough for this firmware's ADC + DMA path: the ADC interrupts do not behave as
+the code expects, so the main loop is starved.
+
+That is a hardware-fidelity limit of the emulator, not a defect in the mailbox,
+the exchange, the netlist or the FMU -- all of those are verified working.
+Closing it means either a more complete STM32 model or a firmware path that
+does not depend on ADC/DMA interrupts, which would no longer be the firmware
+being simulated.
+
 ## The remaining PicSimLab blocker
 
 **When the qemu backend runs, the rcontrol listener never opens.** Not "opens

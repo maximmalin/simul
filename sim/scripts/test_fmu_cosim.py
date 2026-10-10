@@ -58,7 +58,7 @@ def main() -> int:
     if not FMU.exists():
         print(f"missing {FMU}\nbuild it first:\n"
               f"    python3 sim/scripts/build_fmu.py "
-              f"<python-with-pythonfmu>", file=sys.stderr)
+              f".venv/bin/python", file=sys.stderr)
         return 1
 
     md = fmpy.read_model_description(str(FMU))

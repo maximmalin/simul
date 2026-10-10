@@ -90,18 +90,20 @@ def build(python: str) -> None:
 
 
 def main() -> int:
-    build_python = sys.argv[1] if len(sys.argv) > 1 else sys.executable
+    # Default to the project's own venv so nothing outside this repository is
+    # needed. It has pythonfmu and fmpy; the netlist exporter additionally needs
+    # skidl, which also lives there.
+    venv = PROJECT / ".venv" / "bin" / "python"
+    build_python = sys.argv[1] if len(sys.argv) > 1 else (
+        str(venv) if venv.exists() else sys.executable)
     # SKiDL and pythonfmu live in different environments here: the netlist
     # exporter needs skidl, the FMU builder needs pythonfmu. Ask the build
     # interpreter first, then fall back to the project venv.
     export_python = build_python
-    if subprocess.run([build_python, "-c", "import skidl"],
+    if subprocess.run([export_python, "-c", "import skidl"],
                       capture_output=True).returncode != 0:
-        cand = PROJECT / ".venv" / "bin" / "python"
-        if not cand.exists():
-            sys.exit(f"no interpreter with skidl found; tried {build_python} "
-                     f"and {cand}")
-        export_python = str(cand)
+        sys.exit(f"{export_python} cannot import skidl; run the netlist "
+                 f"exporter's interpreter explicitly: build_fmu.py <python>")
     if not shutil.which("ngspice"):
         print("ngspice not on PATH", file=sys.stderr)
         return 1

@@ -44,3 +44,6 @@ sdr_skidl_circuit_sklib.py
 sim/outputs/*.json
 sim/outputs/*.png
 sim/work/
+
+# run logs
+sim/logs/

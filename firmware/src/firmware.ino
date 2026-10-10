@@ -21,6 +21,14 @@ static const uint8_t PIN_ADC_Q = PA1;   // ADC1_IN1
 static const uint8_t PIN_LO    = PA6;   // TIM3_CH1 -> mixer LO
 static const uint8_t PIN_GAIN  = PA7;   // front-end A/B select
 
+// Bit indices within the GPIOA CRL register. These are written out explicitly
+// rather than derived from the PA* macros: those expand to port masks in some
+// Arduino-STM32 cores and to pin indices in others, so `PA6 * 4` overflows a
+// 32-bit shift in the first case.
+static const uint32_t IDX_ADC_I = 0;
+static const uint32_t IDX_ADC_Q = 1;
+static const uint32_t IDX_LO    = 6;
+
 // ---- ADC / DMA -------------------------------------------------------------
 static const uint16_t ADC_BUF_LEN = 256;          // 128 I/Q pairs per block
 static volatile uint16_t adc_buf[ADC_BUF_LEN];    // interleaved I0 Q0 I1 Q1...
@@ -45,7 +53,7 @@ static void adc_configure(void) {
     RCC->APB2ENR |= RCC_APB2ENR_ADC1EN | RCC_APB2ENR_AFIOEN;
 
     // Analog pins, no pull.
-    GPIOA->CRL &= ~((0xF << (PIN_ADC_I * 4)) | (0xF << (PIN_ADC_Q * 4)));
+    GPIOA->CRL &= ~((0xF << (IDX_ADC_I * 4)) | (0xF << (IDX_ADC_Q * 4)));
 
     // The ADC prescaler divides PCLK2 (72 MHz). 72/6 = 12 MHz -> 12 MSPS.
     RCC->CFGR &= ~RCC_CFGR_ADCPRE;
@@ -96,8 +104,8 @@ static void lo_init(uint32_t freq_hz) {
     // OUTPUT_ALTERNATE_PP mode (that arrived with F4), so set CRL directly:
     // MODE=0b10 (50 MHz) and CNF=0b10 (AF push-pull).
     RCC->APB2ENR |= RCC_APB2ENR_IOPAEN;
-    GPIOA->CRL &= ~(0xF << (PIN_LO * 4));
-    GPIOA->CRL |= (0xB << (PIN_LO * 4));   // CNF=10 MODE=10
+    GPIOA->CRL &= ~(0xF << (IDX_LO * 4));
+    GPIOA->CRL |= (0xB << (IDX_LO * 4));   // CNF=10 MODE=10
 
     RCC->APB1ENR |= RCC_APB1ENR_TIM3EN;
     TIM3->PSC = 0;                       // APB1 timer clock = 72 MHz

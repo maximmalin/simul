@@ -12,49 +12,52 @@
 * ---- 5 V supply -----------------------------------------------------------
 V_VIN VIN_5V 0 DC 5.0
 
-* ---- digital pin <-> analog node bridges ---------------------------------
+* ---- digital pin <-> analog node boundary ---------------------------------
 * This is the co-simulation boundary. The STM32 is NOT simulated here; PicSimLab
-* runs the firmware and drives these digital nodes. The bridges translate
-* between the event-driven digital domain and ngspice's analog solver:
+* runs the firmware and drives the *digital* nodes.
 *
-*   LO_SRC  digital  <- PicSimLab `pinsl` reading of PA6 (TIM3_CH1)
-*     |  dac_bridge: digital 0/1 -> analog 0..3.3 V with a real slew rate
-*   LO      analog   -> mixer LO port
+* The analog -> digital direction uses ngspice's native adc_bridge, which does
+* the thresholding properly:
 *
-*   ADC_I / ADC_Q analog -> digital, thresholded at in_low/in_high
-*     |  adc_bridge
-*   ADC_I_D / ADC_Q_D digital -> read back by the firmware for PA0 / PA1
+*   ADC_I / ADC_Q  analog  ->  adc_bridge  ->  ADC_I_D / ADC_Q_D digital
 *
-* t_rise/t_fall give the output a finite edge instead of an ideal step, and
-* input_load is a real capacitance loading the digital node. Both matter: a
-* zero-rise-time source would let the analog solver take an unbounded timestep
-* across every GPIO edge, and no load would let the digital node float.
-* Port vectors need square brackets in both models, despite the ngspice manual
+* The digital -> analog direction does NOT use dac_bridge, because its input is
+* an event-driven digital node and an external host cannot drive it: `alter
+* LO_SRC = 3.3` fails with "no such device or model name". A master simulator
+* therefore has to drive the analog side, and the pin is modelled explicitly
+* instead -- output resistance, load capacitance, and a finite edge:
+*
+*   V_MCU_*   host-alterable ideal source (the GPIO idealisation)
+*   R_PIN_*   pin output impedance
+*   C_PIN_*   pin load capacitance
+*   LO / GAIN analog node presented to the circuit
+*
+* That is still impedance matched: the pin is not an ideal zero-ohm source onto
+* the analog network, and the edges are finite, so the solver sees a real load.
+* Port vectors on the bridges need square brackets despite the ngspice manual
 * showing them unbracketed (ngspice bug #146).
-*
-* Standalone (no PicSimLab attached) the digital nodes are held by weak bias
-* resistors, so the deck still simulates and reports the chain's response to the
-* RF input with the LO muted.
-.model m_dac dac_bridge(out_low=0 out_high=3.3 out_undef=1.65
-+                       input_load=5e-12 t_rise=20n t_fall=20n)
 .model m_adc adc_bridge(in_low=1.0 in_high=2.3)
 
-A_DAC_LO   [LO_SRC]        [LO]       m_dac
-A_DAC_GAIN [GAIN_SRC]     [GAIN]     m_dac
-A_ADC_I    [ADC_I]        [ADC_I_D]  m_adc
-A_ADC_Q    [ADC_Q]        [ADC_Q_D]  m_adc
+A_ADC_I [ADC_I] [ADC_I_D] m_adc
+A_ADC_Q [ADC_Q] [ADC_Q_D] m_adc
 
-* Digital nodes need a DC reference for the event engine. 1 G is negligible
-* against a real pin but keeps the matrix non-singular.
-R_D_LO_SRC   LO_SRC   0 1Gig
-R_D_GAIN_SRC GAIN_SRC 0 1Gig
-R_D_ADC_I_D  ADC_I_D  0 1Gig
-R_D_ADC_Q_D  ADC_Q_D  0 1Gig
+* --- MCU output pins, driven by the co-simulation host ---
+* `alter V_MCU_LO 3.3` is how sdr_picsimlab_cosim.py pushes a PA6 pin state.
+V_MCU_LO   MCU_LO   0 DC 0
+V_MCU_GAIN MCU_GAIN 0 DC 0
 
-* The STM32 timer pin is open-drain capable, so an unloaded digital node
-* defaults to the logic-low level rather than an undefined 'U'.
-V_LO_SRC   LO_SRC   0 DC 0
-V_GAIN_SRC GAIN_SRC 0 DC 0
+* PA6/PA7 on an F103 in push-pull: roughly 40 ohm output, a few pF of load,
+* and the pin's own leakage path. A real edge is finite, which is what stops the
+* transient solver from taking an unbounded step across every GPIO transition.
+R_PIN_LO   MCU_LO   LO   40
+C_PIN_LO   LO       0    5p
+R_PIN_GAIN MCU_GAIN GAIN 40
+C_PIN_GAIN GAIN     0    5p
+
+* ADC inputs are high-impedance; the bridge presents the analog level as
+* digital, so all the firmware sees is the thresholded state.
+R_D_ADC_I_D ADC_I_D 0 1Gig
+R_D_ADC_Q_D ADC_Q_D 0 1Gig
 
 * ---- RF input -------------------------------------------------------------
 * S11-based antenna networks from export_antenna_ngspice.py can be substituted
@@ -144,7 +147,7 @@ RBUSB_DP_R USB_DP_R GND 1Gig  $ DC bias: USB_DP_R has no DC path
 run
 * Report both sides of the bridge: the analog nodes the mixer sees, and the
 * digital nodes the STM32 firmware would sample.
-print v(ADC_I) v(ADC_Q) v(ADC_I_D) v(ADC_Q_D) v(LO) v(LO_SRC)
+print v(ADC_I) v(ADC_Q) v(ADC_I_D) v(ADC_Q_D) v(LO) v(MCU_LO)
 .endc
 
 .end

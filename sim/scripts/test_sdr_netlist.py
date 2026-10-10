@@ -94,14 +94,24 @@ def main() -> int:
             not re.search(r"^[CL]\S*\s+\S+\s+\S+\s+\d+[a-zA-Z]\d+\s*$",
                           "\n".join(lines), re.M))
 
-    print("\nimpedance-matched bridges present")
-    c.check("dac_bridge model", ".model m_dac dac_bridge" in text)
-    c.check("adc_bridge model", ".model m_adc adc_bridge" in text)
-    c.check("dac_bridge has a real slew rate", "t_rise=" in text)
-    c.check("dac_bridge declares an input load", "input_load=" in text)
+    print("\nimpedance-matched pin boundary")
+    # Only the analog->digital direction uses a native XSPICE bridge. The
+    # digital->analog direction cannot: a dac_bridge input is an event-driven
+    # digital node, and `alter LO_SRC = 3.3` fails with "no such device or
+    # model name". The pin is modelled explicitly instead.
+    c.check("adc_bridge used for analog->digital",
+            ".model m_adc adc_bridge" in text)
     c.check("bridge port vectors are bracketed",
-            all(re.search(rf"^A_\w+\s+\[\S+\]\s+\[\S+\]", l)
+            all(re.search(r"^A_\w+\s+\[\S+\]\s+\[\S+\]", l)
                 for l in lines if l.startswith("A_")))
+    c.check("no unusable dac_bridge", ".model m_dac" not in text,
+            "a dac_bridge cannot be driven by the co-simulation host")
+    c.check("MCU output pin has a host-alterable source",
+            re.search(r"^V_MCU_\w+\s+\S+\s+0\s+DC\s+0", text, re.M) is not None)
+    c.check("pin output impedance modelled",
+            re.search(r"^R_PIN_\w+\s+\S+\s+\S+\s+\d+", text, re.M) is not None)
+    c.check("pin load capacitance modelled",
+            re.search(r"^C_PIN_\w+\s+\S+\s+\S+\s+\d+p", text, re.M) is not None)
 
     print("\nbehavioural macromodels")
     c.check("common-gate LNA stages", text.count("common-gate LNA stage") >= 2)
@@ -128,12 +138,12 @@ def main() -> int:
         c.check("stop time reached", row[1] > 0, f"t_stop={row[1]:.3e}")
 
     print("\nsignal path reaches the ADC")
-    # Drive the digital LO pin high. With it muted the chain is correctly
-    # silent, so a zero here would prove nothing either way.
-    high = re.sub(r"^(V_LO_SRC\s+LO_SRC\s+0\s+DC)\s+0\s*$", r"\g<1> 3.3",
+    # Drive the MCU LO pin high the way the co-simulation host does. With it
+    # muted the chain is correctly silent, so a zero here would prove nothing.
+    high = re.sub(r"^(V_MCU_LO\s+\S+\s+0\s+DC)\s+0\s*$", r"\g<1> 3.3",
                   text, flags=re.M)
     changed = high != text
-    c.check("LO digital pin is rewritable for the test", changed)
+    c.check("LO pin is host-drivable for the test", changed)
     if changed:
         code2, out2 = run(high, "sdr_lo")
         row2 = widest_row(out2)

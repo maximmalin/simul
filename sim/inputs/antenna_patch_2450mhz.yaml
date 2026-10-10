@@ -25,15 +25,23 @@ substrate:
 geometry:
   wire_radius_mm: 0.0 # unused for patch
   height_mm: 0.0 # element sits on substrate top surface
-  # Probe feed position as a fraction of -L (0.0 = element edge, 0.5 = centre).
-  # Tuned by FDTD to hit ~50 ohm at f0; 0.19 is the tutorial-proven value.
-  feed_offset_frac: 0.19
+  # Probe feed position as a fraction of -L (0.0 = centre, 0.5 = edge).
+  #
+  # Derived, not guessed. The cavity model gives
+  #     R_in(f) = Zc / (2 sin^2(pi f)),  Zc = z0/sqrt(eps_eff) = 24.1 ohm
+  # Input resistance RISES as the probe moves toward the centre. A first FDTD
+  # run at 0.19 measured 22.2 ohm where the model predicts 38.1, so the model
+  # runs 1.71x high here; matching 50 ohm measured needs ~85 ohm predicted,
+  # which this curve puts at f ~ 0.125.
+  feed_offset_frac: 0.125
 
   # null = compute W and L from Balanis for f0 on this substrate.
   width_mm: null
-  # Set to trim L onto the *simulated* resonance when the Balanis formula is off
-  # (common once feed probing shifts resonance). null = keep Balanis L.
-  length_override_mm: null
+  # Balanis gives L = 28.73 mm, which resonated at 2.342 GHz rather than
+  # 2.45 GHz. Since f_res is proportional to 1/L, the correction is
+  # 28.73 * (2.342/2.45) = 27.46 mm. Probe loading moves resonance as well, so
+  # this is one iteration, not a closed form.
+  length_override_mm: 27.46
 
 length_solve: auto # auto | manual
 length_mm: null

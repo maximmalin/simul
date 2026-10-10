@@ -20,24 +20,56 @@ What works today, what does not, and what to do about it.
 
 ## The remaining blocker
 
-**rcontrol goes silent exactly while the qemu backend runs.** Both halves of
-the co-simulation now work separately, but not at the same time:
+**When the qemu backend runs, the rcontrol listener never opens.** Not "opens
+and stays silent" -- it never binds. This is reproducible, and it is the whole
+blocker.
 
-| Build | rcontrol | STM32 backend | Together |
+Measured, same binary, same machine, board changed only in the config:
+
+| Build | Board | rcontrol port | Backend |
 |---|---|---|---|
-| GUI 0.9.2 (system) | resets the connection | yes | no |
-| GUI 0.9.3 (AppImage) | never responds | library missing | no |
-| NOGUI 0.9.3 | **works** | **library missing** | no |
-| NOGUI 0.9.2 | works on Arduino Uno | **yes** | no |
+| NOGUI 0.9.2 | Arduino Uno | listens, answers (`28 pins [atmega328p]`, `sim start` -> `Ok`) | gpsim |
+| NOGUI 0.9.2 | Blue Pill | **never listens** (`ECONNREFUSED`) | `qemu-stm32 -M stm32-f103c8-picsimlab-new` runs |
+| NOGUI 0.9.3 | Blue Pill | listens, answers (`48 pins [stm32f103c8t6]`, `Simulation running 1.00x`) | **none** -- library missing |
+| GUI 0.9.2 | Blue Pill | listens, then resets the connection | qemu-stm32 runs |
+| GUI 0.9.3 | Blue Pill | listens, never answers | library missing |
 
-On NOGUI 0.9.2 the Blue Pill loads and qemu-stm32 starts (`reset is called!`),
-but from that moment every rcontrol command returns zero bytes — retried five
-times on one connection, no response. On the same build with Arduino Uno,
-which uses the gpsim backend rather than qemu, rcontrol answers normally
-(`28 pins [atmega328p]`, `sim start` → `Ok`). Same on 0.9.3.
+Two halves, no build with both:
 
-So it is not the board, the protocol, or the client: **rcontrol and the qemu
-backends do not coexist in 0.9.2 or 0.9.3.**
+- **0.9.3 NOGUI** -- rcontrol works, but `libqemu-stm32.so` is missing, so no
+  firmware executes.
+- **0.9.2 NOGUI** -- the STM32 backend works (the log shows `reset is called!`,
+  so the firmware is being reset), but rcontrol never binds.
+
+This supersedes the earlier claim in this file that "rcontrol goes silent
+while qemu runs". That was measured against a stale instance. Repeated cleanly,
+the port is not open at all.
+
+## What brig-receiver does, and why it does not help
+
+`brig-receiver/PICSIMLAB_MCU_INTERFACE.md` and `picsimlab_rt_wrapper.py`
+describe rcontrol over a **virtual serial port** (`/dev/tnt2`, baud 921600)
+using a different protocol: `M <pin> OUTPUT`, `D <pin>`, `A <pin>`, answered
+with `DS:<pin> <state>` and `AD:<pin> <value>`.
+
+That protocol **does not exist in PicSimLab**. Checked against both binaries:
+
+| Token | In binary? |
+|---|---|
+| `DS:` | no -- the only hits are substrings of simavr's `CMDS:` |
+| `AD:` | no |
+| `921600` | no |
+
+The real remote-control interface is the text protocol (`version`, `pinsl`,
+`sim`, `loadhex`, ...), and it is TCP. "Serial Remote Tank" is a genuine
+PicSimLab tool, but it is a serial *terminal*, not the command interface those
+files assume. So the brig-receiver wrapper targets a protocol that was never
+implemented; there is nothing to port from it.
+
+Separately, the serial route could not be tried anyway: `/dev/tnt*` does not
+exist and `tty0tty` is not installed. `socat 1.8.0.3` is available and can
+stand in for it, so that path stays open if the protocol question is ever
+resolved.
 
 ## What was wrong before, and what fixed it
 

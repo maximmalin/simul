@@ -46,7 +46,7 @@ FMU = PROJECT / "sim" / "fmu" / "SdrNgspiceFMU.fmu"
 # Installed from the distribution: qemu-system-arm provides an STM32F103
 # machine, gdb-multiarch the debugger that drives it. See sim/SETUP.md.
 QEMU = "qemu-system-arm"
-MACHINE = "netduinoplus2"
+MACHINE = "stm32vldiscovery"
 
 GDB_PORT = 4544
 ANSI = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")

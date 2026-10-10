@@ -34,7 +34,7 @@ def symbol_for(addr):
 
 def main() -> int:
     qemu = subprocess.Popen(
-        ["qemu-system-arm", "-M", "netduinoplus2", "-nographic", "-S",
+        ["qemu-system-arm", "-M", "stm32vldiscovery", "-nographic", "-S",
          "-kernel", ELF, "-gdb", "tcp:127.0.0.1:1234"],
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     try:

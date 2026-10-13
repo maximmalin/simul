@@ -12,11 +12,10 @@ description: Half-wave wire dipole for the 7.15 MHz SDR centre frequency
 type: dipole
 
 # Model selection.
-#   false (default) -> analytic thin-wire model. A lambda/2 element needs an
-#     excitation pulse ~1/(sweep bandwidth) long; at +/-0.5 MHz that is ~880 us,
-#     i.e. >10^6 timesteps. Not affordable, and results would still be FDTD.
-#   true           -> real openEMS solver. Worth it only with a wide sweep.
-fdtd: false
+#   true  -> real openEMS FDTD solver (the shipped result for this antenna).
+#   false -> analytic thin-wire fallback for a machine without the openEMS
+#     bindings; the output is then marked `model: analytic`.
+fdtd: true
 
 # --- Operating point ---------------------------------------------------------
 f0: 7.15e6 # Hz, design centre frequency
@@ -89,9 +88,9 @@ results:
   search_frac: 0.2
   # Reference impedance for S11.
   z0: 50.0
-  # Assumed radiation efficiency. The analytic model has no NF2FF box, so this
-  # is imposed. A resonant half-wave wire dipole measures 0.75-0.85.
-  eta_rad: 0.80
+  # null -> measure radiation efficiency Prad/P_acc from the FDTD NF2FF box.
+  # Set a number to impose one instead (the analytic fallback needs a number).
+  eta_rad: null
   # Q of the thin-wire model, as fractional -10 dB bandwidth.
   bandwidth_frac: 0.01
   # Friis link budget inputs.

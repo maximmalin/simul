@@ -14,7 +14,7 @@ What works today, what does not, and what to do about it.
 | Regression tests | `sim/scripts/test_sdr_netlist.py`, 22/22 |
 | Analog + pin contract | `sim/scripts/verify_pin_contract.py`, 31/31 |
 | Firmware | `pio run` clean, `firmware.bin` 23 KB, `firmware.hex` via `pio run -t hex` |
-| Antennas | dipole -14.6 dB, meander -12.0 dB, patch FDTD 2442.5 MHz / eta_rad 30.8% |
+| Antennas | all real openEMS FDTD: dipole 6.90 MHz / -15.7 dB / eta 98%; patch 2442.5 MHz / -3.6 dB / 31%; meander reactive, no in-band match, eta 0% |
 | **PicSimLab NOGUI rcontrol** | **responds**: `version`, `pinsl`, `sim`, `loadhex` all return `Ok` |
 | **STM32 backend** | **runs**: `qemu-stm32 -M stm32-f103c8-picsimlab-new`, `48 pins [stm32f103c8t6]` |
 

@@ -11,6 +11,12 @@ name: meander_200mhz
 description: PCB meander antenna, 200 MHz wideband channel
 type: meander
 
+# Model selection.
+#   true  -> real openEMS FDTD solver: a printed meander on a 150 x 150 mm
+#     panel over a full bottom ground plane (the shipped result).
+#   false -> analytic transmission-line fallback; marked `model: analytic`.
+fdtd: true
+
 # --- Operating point ---------------------------------------------------------
 f0: 200e6 # Hz
 band: 550e6 # Hz, half-width of sweep (f0 +/- band => -350..750 MHz clamped
@@ -20,13 +26,20 @@ band: 550e6 # Hz, half-width of sweep (f0 +/- band => -350..750 MHz clamped
 substrate:
   eps_r: 4.5
   tan_d: 0.02
-  thickness_mm: 1.6 # mm, 2-layer FR-4
+  thickness_mm: 0.8 # mm, FR-4 panel (hardware/antenna/band_a/task.md)
 
 # --- Element geometry --------------------------------------------------------
+# Matches hardware/antenna/geometry/build_brig_antennas_fc.py:build_channel_a
+# (square FR-4 panel, full bottom ground, 3-arm boustrophedon fed at the lower
+# edge). The FDTD model reads these same numbers.
 geometry:
   trace_width_mm: 1.2
+  panel_mm: 150.0 # square FR-4 panel edge
+  arm_mm: 63.5 # arm length (3 arms -> 190.5 mm + 2 x 15 mm links)
   # Gap between successive arms, measured perpendicular to the trace.
   arm_gap_mm: 15.0
+  # Feed pad height above the lower panel edge (GCPW transition zone).
+  feed_y_mm: 15.0
   # Meander slows the guided wave; 1.7 is typical for PCB meander on FR-4.
   meander_factor: 1.7
 
@@ -38,17 +51,21 @@ ground:
   margin_mm: 10.0
 
 # --- Excitation / mesh -------------------------------------------------------
-# Unused for this antenna: type=meander runs the analytic model, not FDTD.
-# Kept here so the file becomes an FDTD config if you ever switch type.
 simulation:
-  cells_across_box: 64
+  cells_across_box: 60
   max_cells_per_lambda: 100
   mesh_grading: 1.4
   air_mm: 200.0
   air_lambda_min: 0.1
   max_gb: 3.0
-  nr_ts: 40000
+  nr_ts: 60000
   end_criteria: 1.0e-4
+  # The sweep runs to 800 MHz, so the Gaussian must reach that high, not just
+  # f0 +/- a little: excitation half-width 3.0 * f0 covers 0..800 MHz.
+  excite_bandwidth_frac: 3.0
+  # One cell through the FR-4 is enough: at 200 MHz h/lambda ~ 5e-4, and it
+  # keeps the Courant timestep from collapsing on the 0.8 mm panel.
+  substrate_cells: 1
 
 # --- Post-processing ---------------------------------------------------------
 results:
@@ -59,9 +76,9 @@ results:
   f_max_hz: 800e6
   search_frac: null # report the global minimum
   z0: 50.0
-  # A meander has narrowband, lossy FR-4 and no NF2FF here; 0.55 is a
-  # conservative estimate. Replace with a measured value if you have one.
-  eta_rad: 0.55
+  # null -> measure radiation efficiency Prad/Pacc from the FDTD NF2FF box.
+  # Set a number to impose one instead (the analytic fallback needs a number).
+  eta_rad: null
   link:
     g_tx_dbi: 2.0
     g_rx_dbi: 1.0

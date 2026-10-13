@@ -13,11 +13,12 @@ Then export to ngspice:
 
 Requires: openEMS, CSXCAD, numpy, matplotlib, pyyaml.
 
-Note on meander: at 200 MHz a PCB meander is only ~0.13 lambda, and a 3D FDTD
-box that size does not fit the RAM available here. The meander type therefore
-uses an analytic transmission-line model (branch_delay/linewidth) instead of
-FDTD. It is marked `model: analytic` in the results so downstream code never
-mistakes it for an EM result.
+Both element types have a real FDTD model: the dipole is a centre-fed wire in a
+PML box, and the meander is the printed panel element (a 3-arm meander over the
+full bottom ground of a square FR-4 panel, fed at the edge). Select it with
+`fdtd: true` in the YAML. The analytic transmission-line / thin-wire branches
+are still available (and still marked `model: analytic`) when `fdtd: false`, so
+the script works without the openEMS bindings.
 """
 
 from __future__ import annotations
@@ -259,7 +260,8 @@ def sim_dipole_analytic(cfg: Config) -> dict:
     else:
         bw = 0.0
 
-    eta = float(res.get("eta_rad", 0.80))
+    eta = res.get("eta_rad")
+    eta = float(0.80 if eta is None else eta)
     if not 0.0 < eta <= 1.0:
         raise ConfigError("results.eta_rad must be in (0, 1]")
 
@@ -327,7 +329,8 @@ def sim_meander_analytic(cfg: Config) -> dict:
 
     arm_mm, tot_mm = meander_length(cfg)
 
-    eta = float(cfg.results.get("eta_rad", 0.55))
+    eta = cfg.results.get("eta_rad")
+    eta = float(0.55 if eta is None else eta)
     if not 0.0 < eta <= 1.0:
         raise ConfigError("results.eta_rad must be in (0, 1]")
 
@@ -490,13 +493,15 @@ def build_dipole(cfg: Config, sim_dir: Path, clean: bool = True) -> dict:
     # (~420 mm at 7 MHz), so modelling its cross-section is neither possible nor
     # meaningful -- the line conductor is the correct representation.
     wire = CSX.AddMetal("dipole")
-    hw = length / 2 * 1e-3
-    z = height * 1e-3
+    # Mesh coordinates are millimetres (SetDeltaUnit(1e-3)); length/height/
+    # mesh_base are already millimetres, so no conversion is applied here.
+    hw = length / 2
+    z = height
 
     # Feed gap across the centre. It must span at least one cell so the port has
     # an edge to sit on, otherwise openEMS drops it as an unused primitive.
-    gap = max(length / 200.0, mesh_base) * 1e-3
-    feed_pos = length * float(g.get("feed_offset_frac", 0.0)) * 1e-3
+    gap = max(length / 200.0, mesh_base)
+    feed_pos = length * float(g.get("feed_offset_frac", 0.0))
 
     # Two arms either side of the gap, each a zero-thickness box.
     wire.AddBox([-hw, 0, z], [feed_pos - gap / 2, 0, z], priority=1)
@@ -638,6 +643,156 @@ def build_patch(cfg: Config, sim_dir: Path, clean: bool = True) -> dict:
             "lambda_mm": cfg.lambda_mm}
 
 
+def build_meander(cfg: Config, sim_dir: Path, clean: bool = True) -> dict:
+    """openEMS FDTD for the Channel-A printed meander on a square panel.
+
+    Geometry mirrors ``hardware/antenna/geometry/build_brig_antennas_fc.py``:
+    a boustrophedon meander (horizontal arms, ``arm_gap_mm`` pitch) on the top
+    copper of a square FR-4 panel over a *full* bottom ground plane, fed at the
+    bottom edge through the substrate by a lumped port (the GCPW transition).
+    The whole panel is the ground reference; the meander and its feed stub are
+    the only top copper.
+
+    The element length follows the analytic model (``c/(4 f0 k)``), so the two
+    geometries are comparable, but the FDTD result carries the real input
+    impedance, resonance and radiation the transmission-line estimate lacks.
+    """
+    import numpy as np
+
+    openEMS, ContinuousStructure = _load_openems()
+
+    g, sim = cfg.geometry, cfg.simulation
+    if cfg.h_mm <= 0:
+        raise ConfigError("meander needs substrate.thickness_mm > 0")
+    h = cfg.h_mm
+    eps_r, tan_d = cfg.eps_r, cfg.tan_d
+    sub_kappa = 2 * math.pi * cfg.f0 * EPS0 * eps_r * tan_d
+
+    n_arms = int(g.get("n_arms", 3))
+    if n_arms < 1:
+        raise ConfigError("meander n_arms must be >= 1")
+    _, tot_mm = meander_length(cfg)
+    panel = float(g.get("panel_mm", 150.0))   # square FR-4 panel edge, mm
+    arm = float(g.get("arm_mm", 63.5))        # meander arm length, mm
+    gap = float(g.get("arm_gap_mm", 15.0))
+    tw = float(g.get("trace_width_mm", 1.2))
+    feed_y = float(g.get("feed_y_mm", 15.0))  # feed pad height above panel edge
+    grading = float(sim.get("mesh_grading", 1.4))
+    sub_cells = int(sim.get("substrate_cells", 2))
+
+    # Meander centreline in panel coordinates (0..panel), mirroring
+    # hardware/antenna/geometry/build_brig_antennas_fc.py: arm i runs along x at
+    # y = cy0 + i*gap and alternates direction; consecutive arms share a vertical
+    # connector at their common end. pts[0] is the feed foot.
+    cx0 = (panel - arm) / 2.0
+    cy0 = panel / 2.0 - gap
+    pts = [(cx0, cy0)]
+    for i in range(n_arms):
+        x_end = cx0 + arm if i % 2 == 0 else cx0
+        pts.append((x_end, cy0 + i * gap))
+        if i < n_arms - 1:
+            pts.append((x_end, cy0 + (i + 1) * gap))
+
+    # Centre the panel on the origin so the FDTD domain is symmetric about it.
+    off = panel / 2.0
+    cpts = [(x - off, y - off) for (x, y) in pts]
+    feed_x, feed_yp = cpts[0]
+    panel2 = panel / 2.0
+    dx = dy = panel
+
+    plan = resolve_mesh(
+        f0=cfg.f0,
+        cells_across_box=int(sim.get("cells_across_box", 60)),
+        max_cells_per_lambda=float(sim.get("max_cells_per_lambda", 100)),
+        air_mm=float(sim.get("air_mm", 200.0)),
+        air_lambda_min=float(sim.get("air_lambda_min", 0.1)),
+        structure_half_extent_mm=panel2 * math.sqrt(2.0),  # panel half-diagonal
+        max_gb=float(sim.get("max_gb", 3.0)),
+    )
+    air = plan.air_mm
+    mesh_base = plan.cell_mm
+
+    FDTD = openEMS(NrTS=int(sim.get("nr_ts", 40000)),
+                   EndCriteria=float(sim.get("end_criteria", 1e-4)))
+    # The sweep runs well above f0, so the Gaussian must reach that high.
+    bw = float(sim.get("excite_bandwidth_frac", 3.0))
+    FDTD.SetGaussExcite(cfg.f0, cfg.f0 * bw)
+    FDTD.SetBoundaryCond(["PML_8"] * 6)
+
+    CSX = ContinuousStructure()
+    FDTD.SetCSX(CSX)
+    mesh = CSX.GetGrid()
+    mesh.SetDeltaUnit(1e-3)
+
+    mesh.AddLine("x", [-air, air])
+    mesh.AddLine("y", [-air, air])
+    mesh.AddLine("z", [-air * 0.35, air * 0.65])
+
+    def _seg_box(p, q):
+        """Trace rectangle (x0, y0, x1, y1) for an axis-aligned centreline p->q."""
+        (x1, y1), (x2, y2) = p, q
+        if abs(x1 - x2) < 1e-9:                        # vertical
+            return (x1 - tw / 2, min(y1, y2) - tw / 2,
+                    x1 + tw / 2, max(y1, y2) + tw / 2)
+        return (min(x1, x2) - tw / 2, y1 - tw / 2,      # horizontal
+                max(x1, x2) + tw / 2, y1 + tw / 2)
+
+    trace = CSX.AddMetal("meander")
+    for p, q in zip(cpts, cpts[1:]):
+        x0, y0, x1, y1 = _seg_box(p, q)
+        trace.AddBox(priority=10, start=[x0, y0, h], stop=[x1, y1, h])
+    for (x, y) in cpts[1:-1]:                          # corner fills
+        trace.AddBox(priority=10,
+                     start=[x - tw / 2, y - tw / 2, h],
+                     stop=[x + tw / 2, y + tw / 2, h])
+    # Feed line from the meander foot down to the bottom edge, plus the wider
+    # GCPW feed pad (mirrors build_channel_a's stub + pad).
+    fy0 = feed_y - off
+    trace.AddBox(priority=10,
+                 start=[feed_x - tw / 2, fy0 - tw / 2, h],
+                 stop=[feed_x + tw / 2, feed_yp + tw / 2, h])
+    trace.AddBox(priority=10,
+                 start=[feed_x - tw / 2, fy0 - 3.0, h],
+                 stop=[feed_x + tw / 2, fy0 + 3.0, h])
+    FDTD.AddEdges2Grid(dirs="xy", properties=trace)
+
+    substrate = CSX.AddMaterial("substrate", epsilon=eps_r, kappa=sub_kappa)
+    substrate.AddBox(priority=0,
+                     start=[-panel2, -panel2, 0],
+                     stop=[panel2, panel2, h])
+    mesh.AddLine("z", np.linspace(0, h, sub_cells + 1))
+
+    # Full bottom ground plane -- the whole panel, as on the real board.
+    gnd = CSX.AddMetal("gnd")
+    gnd.AddBox(priority=10,
+               start=[-panel2, -panel2, 0],
+               stop=[panel2, panel2, 0])
+    FDTD.AddEdges2Grid(dirs="xy", properties=gnd)
+
+    # Lumped feed across the substrate at the GCPW transition zone.
+    port = FDTD.AddLumpedPort(1, cfg.z0,
+                              start=[feed_x, feed_y - off, 0],
+                              stop=[feed_x, feed_y - off, h],
+                              p_dir="z", excite=1.0, priority=5,
+                              edges2grid="xy")
+
+    mesh.SmoothMeshLines("all", mesh_base, grading)
+
+    nf2ff = None
+    if cfg.results.get("eta_rad") is None:
+        nf2ff = FDTD.CreateNF2FFBox()
+
+    if clean and sim_dir.exists():
+        shutil.rmtree(sim_dir)
+    sim_dir.mkdir(parents=True, exist_ok=True)
+
+    return {"FDTD": FDTD, "port": port, "dir": sim_dir, "nf2ff": nf2ff,
+            "mesh_obj": mesh, "plan": plan,
+            "n_arms": n_arms, "arm_len_mm": arm, "cond_len_mm": tot_mm,
+            "arm_gap_mm": gap, "trace_width_mm": tw,
+            "board_mm": [dx, dy], "lambda_mm": cfg.lambda_mm}
+
+
 # ---------------------------------------------------------------------------
 # Post-processing
 # ---------------------------------------------------------------------------
@@ -694,7 +849,13 @@ def post_s11(cfg: Config, port, sim_dir: Path, geometry: dict,
 
     res = cfg.results
     npts = int(res.get("points", 401))
-    freqs = np.linspace(cfg.f0 - cfg.band, cfg.f0 + cfg.band, npts)
+    # Explicit limits (used by the wideband meander, whose band > f0 and would
+    # otherwise sweep negative) win over the implicit f0 +/- band window.
+    f_lo = float(res.get("f_min_hz") or 0.0)
+    f_hi = float(res.get("f_max_hz") or 0.0)
+    if f_lo <= 0 or f_hi <= 0:
+        f_lo, f_hi = cfg.f0 - cfg.band, cfg.f0 + cfg.band
+    freqs = np.linspace(f_lo, f_hi, npts)
 
     port.CalcPort(str(sim_dir), freqs, ref_impedance=cfg.z0)
     s11 = port.uf_ref / port.uf_inc
@@ -746,8 +907,11 @@ def post_s11(cfg: Config, port, sim_dir: Path, geometry: dict,
             eta = float(np.clip(prad / p_acc[ires], 0.0, 1.0))
             eta_source = "fdtd_prad_over_pacc"
         else:
-            eta = 1.0
-            eta_source = "unavailable_fell_back_to_1.0"
+            # No net radiated power in the NF2FF box (a reactive, unmatched
+            # element such as the meander over its ground).  Report 0 %, not a
+            # stand-in 100 %, so the number never flatters a non-radiator.
+            eta = 0.0
+            eta_source = "unavailable_no_radiated_power"
     eta = float(min(max(eta, 0.0), 1.0))
 
     f_res = float(freqs[ires])
@@ -849,19 +1013,40 @@ def simulate(cfg: Config, skip_fdtd: bool = False,
     OUTPUTS.mkdir(parents=True, exist_ok=True)
 
     use_fdtd = bool(cfg.raw.get("fdtd", False))
-    if cfg.type == "meander":
-        print(f"[{cfg.name}] analytic transmission-line model")
-        result = sim_meander_analytic(cfg)
-    elif cfg.type == "dipole" and not use_fdtd:
-        print(f"[{cfg.name}] analytic thin-wire model "
-              f"(set `fdtd: true` for the real solver)")
-        result = sim_dipole_analytic(cfg)
-    elif skip_fdtd:
+    if skip_fdtd:
         print(f"[{cfg.name}] --skip-fdtd: returning cached result")
         cached = OUTPUTS / f"{cfg.name}.json"
         if cached.exists():
             return json.loads(cached.read_text())
         raise ConfigError(f"--skip-fdtd but no cached result at {cached}")
+    elif cfg.type == "meander" and not use_fdtd:
+        print(f"[{cfg.name}] analytic transmission-line model "
+              f"(set `fdtd: true` for the real solver)")
+        result = sim_meander_analytic(cfg)
+    elif cfg.type == "dipole" and not use_fdtd:
+        print(f"[{cfg.name}] analytic thin-wire model "
+              f"(set `fdtd: true` for the real solver)")
+        result = sim_dipole_analytic(cfg)
+    elif cfg.type == "meander":
+        b = build_meander(cfg, sim_dir, clean=not repost)
+        print(f"[{cfg.name}] "
+              f"{'re-post-processing cached' if repost else 'building'} "
+              f"meander FDTD ({b['n_arms']} arms, "
+              f"L_cond={b['cond_len_mm']:.1f} mm)")
+        print(f"[{cfg.name}]   {_mesh_diag(b['mesh_obj'], b['plan'])}")
+        if repost:
+            if not _has_fdtd_data(b["dir"]):
+                raise ConfigError(
+                    f"--repost but {b['dir']} has no FDTD output; run without it")
+            print(f"[{cfg.name}] re-post-processing cached FDTD ...")
+        else:
+            print(f"[{cfg.name}] running FDTD ...")
+            b["FDTD"].Run(str(b["dir"]), cleanup=True, verbose=False)
+        geom = {"n_arms": b["n_arms"], "arm_len_mm": b["arm_len_mm"],
+                "arm_gap_mm": b["arm_gap_mm"], "cond_len_mm": b["cond_len_mm"],
+                "trace_width_mm": b["trace_width_mm"], "board_mm": b["board_mm"],
+                "mesh": b["plan"].summary()}
+        result = post_s11(cfg, b["port"], b["dir"], geom, nf2ff=b["nf2ff"])
     elif cfg.type == "dipole":
         print(f"[{cfg.name}] building dipole FDTD (L={dipole_length(cfg):.1f} mm)")
         b = build_dipole(cfg, sim_dir, clean=not repost)

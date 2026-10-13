@@ -218,8 +218,10 @@ Blocked upstream: with the QEMU backend running, rcontrol never binds (0.9.2);
 * **`sim/inputs/antenna_*.yaml`** — one file per antenna; adding an antenna = add
   a YAML file, no code edits. Present: dipole 7 MHz, meander 200 MHz, patch
   2.45 GHz.
-* **`sim/scripts/antenna_fdtd.py`** — YAML → S11/Zη → Touchstone. `fdtd: false`
-  uses an analytic thin-wire model; `true` uses the real openEMS solver.
+* **`sim/scripts/antenna_fdtd.py`** — YAML → S11/Zη → Touchstone. All three
+  shipped antennas run the **real openEMS FDTD** solver (`fdtd: true`); setting
+  `fdtd: false` falls back to an analytic thin-wire / transmission-line estimate
+  (marked `model: analytic` in the JSON).
 * **`sim/scripts/mesh.py`** — openEMS mesh sizing with a hard memory budget.
 * **`sim/scripts/export_antenna_ngspice.py`** — results → ngspice S-parameter networks.
 * **`sim/scripts/antenna_sim.py`**, **`smoke_tutorial.py`** — openEMS workflow and
@@ -230,10 +232,16 @@ Blocked upstream: with the QEMU backend running, rcontrol never binds (0.9.2);
   * Channel A: meander 200 MHz, Channel B: 2×2 patch @ 2.45 GHz, Channel C: 4×4
     patch @ 5.8 GHz; `geometry/build_brig_antennas_fc.py` rebuilds and exports
     STEP/STL.
-* Results (`sim/outputs/*.json`): dipole S11 −14.6 dB and meander −12.0 dB are
-  **analytic** estimates (`fdtd: false`), **not** FDTD runs; the patch is the one
-  real FDTD result — f<sub>res</sub> 2442.5 MHz, η<sub>rad</sub> 30.8% (its match is
-  modest, S11 ≈ −3.6 dB).
+* Results (`sim/outputs/*.json`, all `model: fdtd`):
+  * dipole 7 MHz — f<sub>res</sub> 6.90 MHz, S11 −15.7 dB, η<sub>rad</sub> 98 %.
+  * patch 2.45 GHz — f<sub>res</sub> 2442.5 MHz, S11 ≈ −3.6 dB, η<sub>rad</sub> 30.8 %.
+  * meander 200 MHz — no usable match anywhere in 50–800 MHz: S11 ≈ 0 dB and
+    Z<sub>in</sub> ≈ 5 − 63j Ω at 50 MHz, with |Re Z| only ≈ 0.6–2 Ω at the in-band
+    reactance zeros. The printed meander over its full ground plane is a low-Q,
+    low-resistance resonator, so the old analytic −12.0 dB estimate was
+    optimistic; the FDTD reports the element as effectively non-radiating
+    (η = 0 %, `eta_source: unavailable_no_radiated_power`). A genuine full-wave
+    result, not a solver failure.
 
 ### 3.11 Web GUI
 * **`sim/web_gui/app.py`** — Flask app that runs `SdrNgspiceFMU.fmu` via `fmpy`,
@@ -433,7 +441,7 @@ ships no `libqemu-stm32.so`). See `sim/COSIM_STATUS.md`.
 | Regression tests | `test_sdr_netlist.py` — 22/22 |
 | Analog + pin contract | `verify_pin_contract.py` — 31/31 |
 | Firmware | cosim build artifacts present (`firmware/.pio/build/cosim/`): `firmware.elf` ≈ 23 KB, `firmware.bin` ≈ 4.6 KB; `.hex` via `pio run -t hex` |
-| Antennas | dipole −14.6 dB, meander −12.0 dB (analytic estimates); patch FDTD 2442.5 MHz / η<sub>rad</sub> 30.8% (`sim/outputs/*.json`) |
+| Antennas | all real openEMS FDTD (`model: fdtd`): dipole 6.90 MHz / S11 −15.7 dB / η<sub>rad</sub> 98 %; patch 2442.5 MHz / −3.6 dB / 31 %; meander reactive with no in-band match (S11 ≈ 0 dB, η<sub>rad</sub> 0 %) — `sim/outputs/*.json` |
 | PicSimLab NOGUI rcontrol | answers `version`, `pinsl`, `sim`, `loadhex` |
 | STM32 backend | `qemu-stm32 -M stm32-f103c8-picsimlab-new`, 48 pins |
 
@@ -454,6 +462,13 @@ ships no `libqemu-stm32.so`). See `sim/COSIM_STATUS.md`.
    `sim/README.md` is the brig Bragg-cell module README, kept as reference.
 6. `docs/` is empty; `AGENT_MAP.md` + `sim/COSIM_STATUS.md` + `manifest.json` are
    the authoritative documentation.
+7. **Meander 200 MHz does not match in full-wave simulation.** Modelled over its
+   full ground plane (matching `hardware/antenna/geometry/build_brig_antennas_fc.py`)
+   it is a low-Q reactive resonator — S11 ≈ 0 dB across 50–800 MHz, no net
+   radiation (η = 0 %). The project's own definitions also disagree: the YAML/CAD
+   use 3 × 63.5 mm arms (220 mm), while `sim/nec/run_nec.py` uses 3 × 130 mm arms
+   (430 mm) and its `GN 1 0 0 0 1.0 0.0` ground card is rejected by nec2c. Treat
+   the meander figures as a design warning, not a finished antenna.
 
 ---
 

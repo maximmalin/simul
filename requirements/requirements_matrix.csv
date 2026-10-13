@@ -34,3 +34,5 @@ REQ-32,7,Package marking: GOST 14192-96/ISO 780:2015,Medium,Active,"Handling sig
 REQ-33,8,Low-level software: cross-platform C/C++ driver,ISO/IEC 25010,High,Active,"Driver development"
 REQ-34,8,Upper-level software: GNU Radio open module Source block,Project Requirement,High,Active,"Integration capability"
 REQ-35,8,USB 3.0 continuous capture without drops,Project Requirement,High,Active,"Data integrity"
+REQ-36,2,Signal-to-noise ratio of the receive path must be at least 60 dB,IEEE Std 1057,High,Active,"SNR ≥60 dB in 2.7 kHz at -60 dBm; ≥10 dB at MDS"
+REQ-37,2,Receiver noise floor must not exceed -120 dBm in 2.7 kHz bandwidth,ITU-R SM.326,High,Active,"MDS ≤ -110 dBm; consistent with NF REQ-04"

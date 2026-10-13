@@ -8,7 +8,7 @@
 
 ## Подпапки
 - `tests/requirements/antenna/` — антенная система (REQ-A1/B1/C1/SW1/ANT-ALL)
-- `tests/requirements/rf/` — RF Frontend (REQ-01/03/04/05/06)
+- `tests/requirements/rf/` — RF Frontend (REQ-01/03/04/05/06, SNR REQ-36, шум REQ-37)
 - `tests/requirements/ao/` — акустооптический процессор (REQ-07/08/09/11/13/14/15)
 - `tests/requirements/system/` — системные требования (REQ-01 покрытие, диапазон 0–7 ГГц)
 - `tests/requirements/checklist.csv` — чек-лист требований

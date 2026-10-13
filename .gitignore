@@ -22,11 +22,13 @@ __pycache__/
 # OS files
 Thumbs.db
 
-# Fake/placeholder outputs from text-template generators — NOT real artifacts
-out/gerbers.zip
-out/board.glb
-out/board.step
+# Placeholder project file from the legacy text-template generator
 crystal_radio.kicadproject
+
+# FreeCAD generated project/backup files (rebuild from the *_fc.py builders)
+*.FCStd
+*.FCStd1
+*.FCBak
 
 # FMU build artifacts
 sim/fmu/
@@ -44,6 +46,10 @@ sdr_skidl_circuit_sklib.py
 sim/outputs/*.json
 sim/outputs/*.png
 sim/work/
+
+# SKiDL's SPICE backend emits an 8-byte stub here; the real deck is
+# sim/netlists/sdr_skidl_ngspice.cir (export_ngspice.py).
+sim/netlists/sdr_skidl_ngspice.net
 
 # run logs
 sim/logs/

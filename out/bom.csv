@@ -1,9 +1,28 @@
-Ref,Name,Model,Role
-L_LNA1,LNA 1,2N7002,LNA
-Q_LNA1,QWC,LPJ-1,QWC
-R_LNA1,LNA 2,2N7002,LNA
-C_LNA1,Filter,C1+L1,Filter
-R_LPO1,LPO,AMS1117-3.3,LPO
-U_MIX1,Mixer,LT5560,Mixer
-U1,MCU,STM32F103C8T6,MCU
-U2,Amplifier,OPA2134,Amplifier
+"Refs","Value","Footprint","Qty"
+"C_AF_I,C_AF_Q,C_BS1,C_IN,C_LNA1,C_LO,C_MIX1,C_MIX2,C_OPI,C_OPQ,C_QWC","100p","Capacitor_SMD:C_0805_2012Metric","11"
+"C_ANA1","10u","Capacitor_SMD:C_0805_2012Metric","1"
+"C_ANA2,C_LDO2,C_MCU1,C_MCU2,C_MIX3","100n","Capacitor_SMD:C_0805_2012Metric","5"
+"C_BS2","10p","Capacitor_SMD:C_0805_2012Metric","1"
+"C_LDO1","100u","Capacitor_SMD:C_0805_2012Metric","1"
+"C_MCU3","4u7","Capacitor_SMD:C_0805_2012Metric","1"
+"C_OSC1,C_OSC2","22p","Capacitor_SMD:C_0805_2012Metric","2"
+"FB1,L_MIX","600R@100MHz","Inductor_SMD:L_0805_2012Metric","2"
+"J_ANT","SMA_EDGE","Connector_Coaxial:SMA_Amphenol_132289_EdgeMount","1"
+"J_PWR","5V_IN","Connector:USB_B_Receptacle","1"
+"J_USB","USB_CDC","Connector:USB_B_Receptacle","1"
+"L_BS1","100u","Inductor_SMD:L_1210_3225Metric","1"
+"L_LNA1,L_LNA2","18u","Inductor_SMD:L_1210_3225Metric","2"
+"Q_LNA1,Q_LNA2","2N7002","Package_TO_SOT_SMD:SOT-23","2"
+"R_AF_I,R_AF_Q,R_G1,R_G2,R_OPI,R_OPQ","10k","Resistor_SMD:R_0805_2012Metric","6"
+"R_BS,R_QWC,R_S1,R_S2","1k","Resistor_SMD:R_0805_2012Metric","4"
+"R_G3","4k7","Resistor_SMD:R_0805_2012Metric","1"
+"R_G4","2k2","Resistor_SMD:R_0805_2012Metric","1"
+"R_LO,R_TERM","50","Resistor_SMD:R_0805_2012Metric","2"
+"R_USB1,R_USB2","22","Resistor_SMD:R_0805_2012Metric","2"
+"TP_ADC_I,TP_ADC_Q,TP_ANT,TP_FIL,TP_LNA1_D,TP_LNA2_D","TESTPOINT","TestPoint:TestPoint_Pad_D1.5mm","6"
+"U1","STM32F103C8T6","Package_QFP:LQFP-48_7x7mm_P0.5mm","1"
+"U_LDO","AMS1117-3.3","Package_TO_SOT_SMD:SOT-223-3_TabPin2","1"
+"U_MIX1","LT5560","Package_SO:SOIC-8_3.9x4.9mm_P1.27mm","1"
+"U_OP1","OPA2134","Package_SO:SOIC-8_3.9x4.9mm_P1.27mm","1"
+"X_QWC1","LPJ-1","Connector:Pin_4_1.27mm","1"
+"Y1","8MHz","Crystal:Crystal_SMD_3225-4Pin","1"

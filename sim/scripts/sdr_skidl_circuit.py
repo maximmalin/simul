@@ -39,7 +39,7 @@ sys.path.insert(0, str(PROJECT / "src"))
 
 from skidl import (  # noqa: E402
     Alias, Circuit, Net, Part, Pin, SchLib, SKIDL, TEMPLATE, Pin as SkidlPin,
-    generate_netlist, logger as skidl_logging,
+    logger as skidl_logging,
 )
 from skidl.pin import pin_types  # noqa: E402
 
@@ -405,7 +405,7 @@ def main() -> int:
     kicad_dir.mkdir(parents=True, exist_ok=True)
     sch = kicad_dir / "sdr_receiver.kicad_sch"
     try:
-        generate_netlist(file=str(sch))
+        c.generate_netlist(file=str(sch))
         print(f"KiCad schematic: {sch}")
     except Exception as exc:
         print(f"KiCad schematic FAILED: {exc}")
@@ -418,7 +418,7 @@ def main() -> int:
     # netlist comes from export_ngspice.py, which walks this same netlist and
     # can express the behavioural macromodels that PySpice cannot.
     try:
-        generate_netlist(file=str(spice), tool="spice")
+        c.generate_netlist(file=str(spice), tool="spice")
         if spice.exists() and spice.stat().st_size > 64:
             print(f"SPICE netlist (SKiDL backend): {spice} "
                   f"({spice.stat().st_size} bytes)")

@@ -256,6 +256,12 @@ Blocked upstream: with the QEMU backend running, rcontrol never binds (0.9.2);
 patch antenna. Kept as the reproducible evidence trail, not scratch.
 
 ### 3.13 Hardware / PCB / 3D toolchain
+* **`hardware/kicad/build_board.py`** — deterministic code-first board build:
+  SKiDL netlist → `kinet2pcb` → `kicad-cli`. Writes the derived `out/` set
+  (`board.kicad_pcb`, `gerbers/`, `drill/`, `gerbers.zip`,
+  `board.{step,glb,svg,pdf,dxf}`, `pnp.csv`, `bom.csv`) with no hand editing.
+  Run `.venv/bin/python hardware/kicad/build_board.py`. The board is a placed,
+  net-complete definition; copper routing is not automated.
 * `tools/spec.py`, `tools/blocks.py` — the project spec (6 blocks, 24 parts) used
   by the generators.
 * `hardware/pipeline.py` — hardware build-pipeline orchestrator.
@@ -299,8 +305,9 @@ The acousto-optic branch is kept as a toolbox, **not** part of the SDR signal pa
 * `sim/outputs/elmer_results.json`, `sim/outputs/nec_results.json`, `openems_results.json`.
 
 ### 3.16 Requirements, plan, tests & CI
-* **Requirements matrix** — `requirements/requirements_matrix.csv` (35 requirements + header) and
-  per-block `requirements/blocks/req_*.md` (34 requirements + antenna system).
+* **Requirements matrix** — `requirements/requirements_matrix.csv` (37 requirements + header) and
+  per-block `requirements/blocks/req_*.md`; SNR and noise floor are project-wide
+  requirements **REQ-36** (SNR) and **REQ-37** (noise/MDS).
 * **Plan** — `plan/plan.md`, `plan/blocks.md`, `plan/README.md`, `plan/checks.py`.
 * **Technical task** — `technical_task.md` (RU), `technical_task_en.md` (EN),
   `technical_task_ua.md` (UA), plus per-block TZ in `work/tz-{a..e}/`.

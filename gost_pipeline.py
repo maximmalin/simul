@@ -29,7 +29,7 @@ import time
 import sys
 from pathlib import Path
 
-PROJECT = Path("/home/mirrage/Desktop/brig-receiver")
+PROJECT = Path(__file__).resolve().parent
 CAD = PROJECT / "sim" / "cad"
 FIG = CAD / "figures"
 WORK = PROJECT / "sim" / "work" / "gost"

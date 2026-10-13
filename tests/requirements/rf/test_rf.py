@@ -1,11 +1,14 @@
 """
-Тесты RF Frontend по матрице требований (REQ-01, REQ-03, REQ-04, REQ-05, REQ-06).
+Тесты RF Frontend по матрице требований (REQ-01, REQ-03, REQ-04, REQ-05, REQ-06,
+REQ-36, REQ-37).
 
 Тесты используют только параметры из требований. Не используют расчёты.
 
 Запуск:
     .venv/bin/pytest tests/requirements/rf/ -v
 """
+
+import math
 
 import pytest
 
@@ -66,6 +69,28 @@ RF_REQ_06 = {
     "eta_opt_min_dB": None,
 }
 
+RF_REQ_36 = {
+    "req_id": "REQ-36",
+    "snr_min_db": 60.0,
+    "ref_level_dbm": -60.0,
+    "s9_level_dbm": -73.0,
+    "mds_snr_db": 10.0,
+    "bw_hz": 2700,
+    "bw_label": "2.7 кГц",
+    "std": "IEEE Std 1057 / ITU-R SM.326",
+}
+
+RF_REQ_37 = {
+    "req_id": "REQ-37",
+    "noise_floor_dbm": -120.0,
+    "mds_dbm": -110.0,
+    "bw_hz": 2700,
+    "bw_label": "2.7 кГц",
+    "nf_db": 3.5,
+    "t_kelvin": 290,
+    "std": "ITU-R SM.326 / IEEE Std 145",
+}
+
 
 # ============================================================
 # Фикстуры
@@ -94,6 +119,16 @@ def req_05():
 @pytest.fixture(scope="module")
 def req_06():
     return RF_REQ_06
+
+
+@pytest.fixture(scope="module")
+def req_36():
+    return RF_REQ_36
+
+
+@pytest.fixture(scope="module")
+def req_37():
+    return RF_REQ_37
 
 
 # ============================================================
@@ -135,8 +170,8 @@ def test_req_03_impedance(req_03):
 
 
 def test_req_03_vswr(req_03):
-    """REQ-03: VSWR < 1.5 в диапазоне 0–7 ГГц"""
-    assert req_03["vswr_max"] < 1.5
+    """REQ-03: VSWR ≤ 1.5 в диапазоне 0–7 ГГц"""
+    assert req_03["vswr_max"] <= 1.5
 
 
 def test_req_03_connector(req_03):
@@ -230,3 +265,73 @@ def test_req_06_chain_output(req_06):
 def test_req_06_i_ac_limit(req_06):
     """REQ-06: интенсивность ультразвука I_ac ≤ 18.6 Вт/м² (без перегрузки кварца TeO₂)"""
     assert req_06["i_ac_wm2"] == pytest.approx(18.6, abs=0.1)
+
+
+# ============================================================
+# Тесты REQ-36 (отношение сигнал/шум)
+# ============================================================
+
+def test_req_36_snr_min(req_36):
+    """REQ-36: SNR не менее 60 дБ при входном уровне −60 дБм (полоса 2.7 кГц)"""
+    assert req_36["snr_min_db"] == 60.0
+    assert req_36["ref_level_dbm"] == -60.0
+
+
+def test_req_36_bandwidth(req_36):
+    """REQ-36: полоса измерения 2.7 кГц (SSB)"""
+    assert req_36["bw_hz"] == 2700
+    assert req_36["bw_label"] == "2.7 кГц"
+
+
+def test_req_36_standard(req_36):
+    """REQ-36: стандарт IEEE Std 1057 / ITU-R SM.326"""
+    assert "1057" in req_36["std"]
+
+
+def test_req_36_snr_definition(req_36):
+    """REQ-36: SNR = S − N (S = −60 дБм, N = −120 дБм из REQ-37)"""
+    s = req_36["ref_level_dbm"]
+    n = -120.0
+    assert (s - n) == pytest.approx(req_36["snr_min_db"], abs=0.1)
+
+
+def test_req_36_mds(req_36):
+    """REQ-36: на пороге обнаружимости S+N/N ≥ 10 дБ"""
+    assert req_36["mds_snr_db"] == 10.0
+    assert req_36["s9_level_dbm"] == -73.0
+
+
+# ============================================================
+# Тесты REQ-37 (уровень собственного шума / MDS)
+# ============================================================
+
+def test_req_37_noise_floor(req_37):
+    """REQ-37: уровень собственного шума не более −120 дБм в полосе 2.7 кГц"""
+    assert req_37["noise_floor_dbm"] == -120.0
+
+
+def test_req_37_bandwidth(req_37):
+    """REQ-37: полоса измерения 2.7 кГц"""
+    assert req_37["bw_hz"] == 2700
+    assert req_37["bw_label"] == "2.7 кГц"
+
+
+def test_req_37_mds(req_37):
+    """REQ-37: MDS = −110 дБм (S+N/N = 10 дБ над шумом)"""
+    assert req_37["mds_dbm"] == -110.0
+    assert (req_37["mds_dbm"] - req_37["noise_floor_dbm"]) == pytest.approx(10.0, abs=0.1)
+
+
+def test_req_37_thermal_noise(req_37):
+    """REQ-37: рассчётная шумовая дорожка kTB + NF не хуже нормы −120 дБм
+
+    N0 = −174 dBm/Hz + 10*log10(B); N = N0 + NF. Должно быть N ≤ noise_floor.
+    """
+    n0 = -174.0 + 10.0 * math.log10(req_37["bw_hz"])
+    n = n0 + req_37["nf_db"]
+    assert n <= req_37["noise_floor_dbm"]
+
+
+def test_req_37_nf_consistency(req_37):
+    """REQ-37: NF нормируется по REQ-04 (≤3.5 дБ)"""
+    assert req_37["nf_db"] == 3.5

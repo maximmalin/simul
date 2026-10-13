@@ -1,0 +1,17 @@
+* Structural ngspice analysis: Ch A printed dipole 0-900 MHz
+* 2-port: port 1 = feed, port 2 = radiated wave, pin 3 = GND
+* Wires ANT_CHA per touchstone ant_cha.s2p
+
+V1        feeda 0 dc 0 ac 1 portnum 1 z0 50
+Xant_cha  feeda space 0 ANT_CHA touchstone="sim/outputs/ngspice/ant_cha.s2p"
+Rfeed     feeda 0 50
+
+V2        spacea 0 dc 0 ac 0 portnum 2 z0 50
+
+.include sim/outputs/ngspice/ant_sparams.lib
+
+.control
+sp lin 201 150e6 900e6
+print S_1_1 S_2_1
+.endc
+.end

@@ -1,0 +1,23 @@
+* Antenna Array Section ngspice Netlist
+* Based on structural.drawio Antenna Section
+* Ant_A: Printed Dipole (0-900 MHz)
+* Ant_B: Patch array 2x2 (1.2-3 GHz)
+* Ant_C: Patch array 4x4 (4.0-7.0 GHz)
+* PIN_Switches: range selection
+
+VANT_A 1 0 AC 1
+VANT_B 2 0 AC 1
+VANT_C 3 0 AC 1
+VPIN_SW 4 0 DC 0
+
+* Dummy resistors for port definitions
+RANT_A 1 0 50
+RANT_B 2 0 50
+RANT_C 3 0 50
+RPIN_SW 4 0 50
+
+* Frequency sweep notes:
+* .AC DEC 10 100k 1GHz
+* .PRINT AC V(1) V(2) V(3) V(4)
+
+.END

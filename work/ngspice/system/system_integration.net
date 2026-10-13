@@ -1,0 +1,69 @@
+* Brig Receiver — System Integration Demo
+* Antenna (2-port Touchstone) → LNA → Bandpass Filter → Output
+*
+* Demonstrates that the exported antenna S-parameter model works in a
+* realistic receive chain: signal arrives at the antenna space port,
+* passes through the 2-port, gets amplified by the LNA, filtered, and
+* delivered to the output.
+*
+* Run from the repository root:
+*     ngspice -b work/ngspice/system/system_integration.net
+
+* ---- signal source (emulates received plane wave at antenna port 2) ----
+* 1 V AC at each band centre (three sequential AC analyses)
+Vsig    sig  0  dc 0  ac 1
+Rsrc    sig  sp 50
+
+* ---- antenna 2-port (port 1 = feed, port 2 = space) ----
+Xant    fda  sp  0  ANT_CHA  touchstone="sim/outputs/ngspice/ant_cha.s2p"
+
+* ---- LNA model: Av=20 dB (x10), Rin=Rout=50 Ω ----
+*   topology: input shunt 50 Ω, VCVS gain 10, output series 50 Ω
+*   Vout = Av * V(fda)  with Rin and Rout matched.
+Rlna_in   fda   0     50
+Elna      lna_v 0     fda  0  10
+Rlna_out  lna_v lna_o 50
+
+* ---- 2nd-order bandpass filter (Q=5, centre = band frequency) ----
+*   Each AC sweep sets .param fc to the band centre.
+*   The filter is a series RLC (series with signal path) in shunt:
+*       input node lna_o → L → C → output node filt_out
+*       R sets Q.
+*   For the Ch A sweep (fc=200 MHz):
+.param fc=200meg
+Lbp    lna_o  filt_mid  {1/(2*3.14159*fc)*50/3.14159/fc} IC=0
+Cbp    filt_mid  filt_out  {1/(4*3.14159*3.14159*fc*fc*Lbp)}
+Rbp    filt_out  0  50
+
+* ---- output load ----
+Rload  filt_out  0  50
+
+.include sim/outputs/ngspice/ant_sparams.lib
+
+.control
+
+* ---- Ch A: 50 MHz – 900 MHz ----
+.ac lin 201 50e6 900e6
+let v_out = v(filt_out)
+let gain_db = db(v_out) - db(vsig)      ; system gain dB
+wrdata /tmp/opencode/sys_cha.dat gain_db
+print v(filt_out) v(fda)
+
+* ---- Ch B: 1.2 – 3.0 GHz ----
+* (reuses same circuit; fc param affects filter, L/C re-evaluated)
+.ac lin 201 1.2e9 3.0e9
+let v_out = v(filt_out)
+let gain_db = db(v_out) - db(vsig)
+wrdata /tmp/opencode/sys_chb.dat gain_db
+print v(filt_out) v(fda)
+
+* ---- Ch C: 4.0 – 7.0 GHz ----
+.ac lin 201 4.0e9 7.0e9
+let v_out = v(filt_out)
+let gain_db = db(v_out) - db(vsig)
+wrdata /tmp/opencode/sys_chc.dat gain_db
+print v(filt_out) v(fda)
+
+.endc
+
+.END

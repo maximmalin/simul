@@ -1,0 +1,19 @@
+req_id,title,block,threshold,test_file,status,ref_file
+REQ-A1,Антенна Канал А (0–900 МГц) — печатная змейка,Антенна,диапазон 0–900 МГц, SWR≤2.0, импеданс 50±10 Ом, КНД≥5 дБи на 433 МГц,тесты/requirements/antenna/test_antenna.py#test_req_a1_*,requirements/blocks/req_antenna_system.md#REQ-A1
+REQ-B1,Антенна Канал Б (1.2–3.0 ГГц) — матрица 2×2,Антенна,резонанс 2.45±0.02 ГГц, импеданс 50±5 Ом, КНД≥8 дБи, SWR≤1.5, шаг 91.7 мм,тесты/requirements/antenna/test_antenna.py#test_req_b1_*,requirements/blocks/req_antenna_system.md#REQ-B1
+REQ-C1,Антенна Канал В (4.0–7.0 ГГц) — матрица 4×4,Антенна,резонанс 5.8±0.05 ГГц, импеданс 50±5 Ом, КНД≥12 дБи, SWR≤2.0, боковые лепестки ≤-15 дБ, экранирование≥1.5 мм,тесты/requirements/antenna/test_antenna.py#test_req_c1_*,requirements/blocks/req_antenna_system.md#REQ-C1
+REQ-SW1,Переключатель СВЧ-каналов (PIN-ключи),Антенна,изоляция ≥40 дБ, время ≤1 мкс, TTL от ESP32, коммутация 3→1,тесты/requirements/antenna/test_antenna.py#test_req_sw1_*,requirements/blocks/req_antenna_system.md#REQ-SW1
+REQ-ANT-ALL,Антенная система (комплекс),Антенна,покрытие 0–7 ГГц без пропусков, панель 150×150 мм FR-4 0.8 мм, переключение без потери КНД,тесты/requirements/antenna/test_antenna.py#test_req_ant_all_*,requirements/blocks/req_antenna_system.md#REQ-ANT-ALL
+REQ-01,Мгновенная полоса частот (Instantaneous Bandwidth),RF,БПЧ ≥500 МГц (целевая 1000 МГц), ≥25× шире HackRF (20 МГц), покрытие 0–7 ГГц,тесты/requirements/rf/test_rf.py#test_req_01_*,requirements/blocks/req_01.md
+REQ-03,Входное сопротивление и разъём (Input Impedance),RF,импеданс 50 Ом (SMA, ГОСТ 20275-91), VSWR<1.5 в диапазоне 0–7 ГГц,тесты/requirements/rf/test_rf.py#test_req_03_*,requirements/blocks/req_03.md
+REQ-04,Коэффициент шума входного тракта (Noise Figure),RF,NF ≤3.5 дБ (IEEE Std 145), чувствительность -110 дБм, итоговый NF≈3.53 дБ,тесты/requirements/rf/test_rf.py#test_req_04_*,requirements/blocks/req_04.md
+REQ-05,Защита от перегрузки (Overload Protection),RF,защита до +20 дБм, преселекторы, малошумящий усилитель, класс лазера 3B,тесты/requirements/rf/test_rf.py#test_req_05_*,requirements/blocks/req_05.md
+REQ-06,Выходной ВЧ-драйвер (RF Output Driver),RF,линейный усилитель до 1.5 Вт, P_rf_out = 3.1 мВт (+4.9 дБм), I_ac ≤18.6 Вт/м²,тесты/requirements/rf/test_rf.py#test_req_06_*,requirements/blocks/req_06.md
+REQ-07,Длина волны лазера (Laser Diode Wavelength),АО-процессор,λ = 650 нм (или 532 нм),тесты/requirements/ao/test_ao.py#test_req_07_*,requirements/blocks/req_07.md
+REQ-08,Стабильность оптической мощности (Optical Power Stability),АО-процессор,стабильность ≤0.5%, тесты/requirements/ao/test_ao.py#test_req_08_*,requirements/blocks/req_08.md
+REQ-09,Автоматическое регулирование мощности (Automatic Power Regulation),АО-процессор,наличие АРМ, класс лазера 3B (ГОСТ IEC 60825-1-2013),тесты/requirements/ao/test_ao.py#test_req_09_*,requirements/blocks/req_09.md
+REQ-11,Акустооптическая ячейка Брэгга (Bragg Cell),АО-процессор,кристалл TeO₂, медленная сдвиговая волна, Δn≈1.51×10⁻⁵,тесты/requirements/ao/test_ao.py#test_req_11_*,requirements/blocks/req_11.md
+REQ-13,Регистратор: CMOS-матрица (CMOS Array),АО-процессор,КМОП≥2048 пикселей, ДДП≥72 дБ, частота считывания≥50 кГц (EMVA 1288),тесты/requirements/ao/test_ao.py#test_req_13_*,requirements/blocks/req_13.md
+REQ-14,Динамический диапазон пикселя (Pixel Dynamic Range),АО-процессор,ДДП≥72 дБ, тесты/requirements/ao/test_ao.py#test_req_14_*,requirements/blocks/req_14.md
+REQ-15,Частота считывания строк (Line Readout Frequency),АО-процессор,частота считывания≥50 кГц, тесты/requirements/ao/test_ao.py#test_req_15_*,requirements/blocks/req_15.md
+REQ-01 (покрытие),Покрытие диапазона 0–7 ГГц,Система,покрытие 0–7000 МГц без пропусков, три канала (А/Б/В), тесты/requirements/system/test_system.py#test_antenna_coverage*,requirements/blocks/req_01.md + req_antenna_system.md

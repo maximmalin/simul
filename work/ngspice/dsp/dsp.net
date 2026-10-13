@@ -1,0 +1,16 @@
+* DSP Section ngspice Netlist
+* Based on structural.drawio Section 3: Нейро-фильтр и перемиgling
+* STM32_ADC, TinyML_Core, ESP32_Buffer, ESP32_WiFi
+
+VSTM32_ADC 1 0 AC 1
+VTinyML 2 0 AC 1
+VESP32_BUFFER 3 0 AC 1
+VESP32_WIFI 4 0 AC 1
+
+* Dummy components
+VSTM32_ADC 1 0 1e3
+VTinyML 2 0 1e3
+VESP32_BUFFER 3 0 1e3
+VESP32_WIFI 4 0 1e3
+
+.END

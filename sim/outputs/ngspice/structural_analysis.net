@@ -1,0 +1,51 @@
+* Structural ngspice analysis: Brig Receiver all-antenna network
+* Wires all three antenna blocks (Ch A, Ch B, Ch C) per the 2-port scheme:
+*   port 1 (feed) ---[ ANT_CHx ]--- port 2 (radiated wave)
+*   pin 3 = reference (GND)
+* Reference impedance: 50 ohm everywhere
+*
+* .step to select channel: .step arg list A B C
+* Or run individually by changing Xant_ch* line
+
+.INCLUDE sim/outputs/ngspice/ant_sparams.lib
+
+*======== CHANNEL A: 0-900 MHz printed dipole ========
+V1a       feeda 0 dc 0 ac 1 portnum 1 z0 50
+Xant_cha  feeda space 0 ANT_CHA touchstone="sim/outputs/ngspice/ant_cha.s2p"
+R_feda    feeda 0 50
+
+V1b       spacea 0 dc 0 ac 0 portnum 2 z0 50
+
+.control
+sp lin 201 150e6 900e6
+print S_1_1 S_2_1
+.endc
+.end
+
+*======== CHANNEL B: 2.45 GHz patch ========
+V1        feed  0  dc 0 ac 1 portnum 1 z0 50
+Xant_chB  feed space 0 ANT_CHB touchstone="sim/outputs/ngspice/ant_chb.s2p"
+Rfeed     feed  0 50
+
+V2        space 0  dc 0 ac 0 portnum 2 z0 50
+
+.include sim/outputs/ngspice/antenna_model.net
+
+.control
+sp lin 101 800e6 4.2e9
+print S_1_1 S_2_1
+.endc
+.end
+
+*======== CHANNEL C: 5.8 GHz patch ========
+V1c       feedc 0 dc 0 ac 1 portnum 1 z0 50
+Xant_chc  feedc space 0 ANT_CHC touchstone="sim/outputs/ngspice/ant_chc.s2p"
+Rfeedc    feedc 0 50
+
+V2c       spacec 0 dc 0 ac 0 portnum 2 z0 50
+
+.control
+sp lin 101 4.5e9 7.0e9
+print S_1_1 S_2_1
+.endc
+.end

@@ -1,0 +1,31 @@
+# Параметры модуля 1: Брэггова клетка (структурная механика → Δn)
+# Изменяй эти значения — при следующем запуске run_simulation.py всё пересчитается.
+
+glass:
+  density: 2500.0           # кг/м³
+  young: 70000000000.0      # Па (70 ГПа)
+  poisson: 0.22
+
+quartz:
+  density: 2650.0
+  young: 78500000000.0      # Па (78.5 ГПа)
+  poisson: 0.14
+
+force:
+  f1: 0.0045                # Н (приложенная сила к кварцу)
+  f2: 0.0
+  f3: 0.0
+
+mesh:
+  name: "bragg_cell"        # директория с mesh.nodes/elements/header/names
+  source: "/home/mirrage/elmer_work/bragg_cell"
+
+solver:
+  tolerance: 1.0e-6         # Linear System Convergence Tolerance
+  max_iterations: 1000
+  steady_state_tol: 1.0e-4
+
+output:
+  results_dir: "/home/mirrage/brig-receiver/results"
+  log_dir: "/home/mirrage/brig-receiver/logs"
+  sim_dir: "/home/mirrage/brig-receiver/sim"

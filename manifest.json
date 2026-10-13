@@ -1,0 +1,1090 @@
+{
+  "project": "kristall-radio",
+  "generated_utc": "2026-10-12T14:40:51+00:00",
+  "purpose": "Zero-IF SDR direct-conversion receiver with STM32 Blue Pill; code-generated hardware with ngspice/FMI co-simulation",
+  "source_of_truth": "sim/scripts/sdr_skidl_circuit.py",
+  "map": "AGENT_MAP.md",
+  "status": "sim/COSIM_STATUS.md",
+  "verified": {
+    "netlist_elements": 99,
+    "net_labels_seen": 59,
+    "skidl_parts": 60,
+    "by_prefix": {
+      "A": 2,
+      "B": 7,
+      "C": 25,
+      "E": 1,
+      "G": 2,
+      "L": 3,
+      "P": 1,
+      "R": 51,
+      "S": 1,
+      "V": 5,
+      "W": 1
+    }
+  },
+  "layout": {
+    "sim/scripts": {
+      "role": "Physics, netlist, co-simulation, antenna and diagnostic drivers",
+      "kind": "source",
+      "exists": true,
+      "size": "0.4 MB"
+    },
+    "sim/netlists": {
+      "role": "ngspice decks produced by export_ngspice.py",
+      "kind": "derived",
+      "exists": true,
+      "size": "75.1 MB"
+    },
+    "sim/inputs": {
+      "role": "YAML parameter files (one per antenna)",
+      "kind": "source",
+      "exists": true,
+      "size": "0.0 MB"
+    },
+    "sim/outputs": {
+      "role": "Physics results (JSON/PNG)",
+      "kind": "derived",
+      "exists": true,
+      "size": "2.5 MB"
+    },
+    "sim/fmu": {
+      "role": "Built FMUs (SdrNgspiceFMU, antenna/Bragg blocks)",
+      "kind": "data",
+      "exists": true,
+      "size": "0.7 MB"
+    },
+    "sim/work": {
+      "role": "Solver scratch (openEMS, Elmer, gmsh)",
+      "kind": "derived",
+      "exists": true,
+      "size": "822.5 MB"
+    },
+    "sim/web_gui": {
+      "role": "Flask I/Q web GUI for the FMU",
+      "kind": "source",
+      "exists": true,
+      "size": "191.0 MB"
+    },
+    "sim/nec": {
+      "role": "NEC antenna results",
+      "kind": "derived",
+      "exists": true,
+      "size": "0.0 MB"
+    },
+    "sim/cad": {
+      "role": "FreeCAD / CAD geometry",
+      "kind": "source",
+      "exists": true,
+      "size": "0.0 MB"
+    },
+    "sim/octave": {
+      "role": "Octave formula checks",
+      "kind": "source",
+      "exists": true,
+      "size": "0.0 MB"
+    },
+    "firmware": {
+      "role": "STM32F103C8T6 firmware, cosim mailbox, PlatformIO config",
+      "kind": "source",
+      "exists": true,
+      "size": "1.5 MB"
+    },
+    "firmware/src": {
+      "role": "firmware.ino and cosim.h",
+      "kind": "source",
+      "exists": true,
+      "size": "0.0 MB"
+    },
+    "src/picsimlab_fmu": {
+      "role": "PicSimLab rcontrol <-> ngspice bridge package",
+      "kind": "source",
+      "exists": true,
+      "size": "0.1 MB"
+    },
+    "hardware": {
+      "role": "Hardware pipeline orchestrator",
+      "kind": "source",
+      "exists": true,
+      "size": "0.4 MB"
+    },
+    "hardware/kicad": {
+      "role": "KiCad schematic generator and symbol/S-expression library",
+      "kind": "source",
+      "exists": true,
+      "size": "0.2 MB"
+    },
+    "hardware/tscircuit": {
+      "role": "PCB emitter, 3D models, part selection, viewer",
+      "kind": "source",
+      "exists": true,
+      "size": "0.2 MB"
+    },
+    "hardware/antenna": {
+      "role": "Antenna panel geometry (FreeCAD)",
+      "kind": "source",
+      "exists": true,
+      "size": "0.0 MB"
+    },
+    "tools": {
+      "role": "Project spec and manifest/init tooling",
+      "kind": "source",
+      "exists": true,
+      "size": "0.1 MB"
+    },
+    "tools/tscircuit": {
+      "role": "Legacy placeholder PCB generator",
+      "kind": "source",
+      "exists": true,
+      "size": "0.0 MB"
+    },
+    "tests": {
+      "role": "Requirement-matrix and stress tests",
+      "kind": "source",
+      "exists": true,
+      "size": "0.1 MB"
+    },
+    "requirements": {
+      "role": "Requirement matrix and per-block requirements",
+      "kind": "source",
+      "exists": true,
+      "size": "0.1 MB"
+    },
+    "plan": {
+      "role": "Build plan",
+      "kind": "source",
+      "exists": true,
+      "size": "0.0 MB"
+    },
+    "work": {
+      "role": "Technical specs and schematic assembly scratch",
+      "kind": "source",
+      "exists": true,
+      "size": "0.1 MB"
+    },
+    "references": {
+      "role": "Formulas and sources",
+      "kind": "source",
+      "exists": true,
+      "size": "0.0 MB"
+    },
+    "config": {
+      "role": "Module parameters",
+      "kind": "source",
+      "exists": true,
+      "size": "0.0 MB"
+    },
+    "docs": {
+      "role": "Documentation (currently empty; see AGENT_MAP.md)",
+      "kind": "source",
+      "exists": true,
+      "size": "0"
+    },
+    "local_footprints": {
+      "role": "KiCad footprint libraries",
+      "kind": "data",
+      "exists": true,
+      "size": "91.0 MB"
+    },
+    "out": {
+      "role": "Generated board artifacts (Gerbers/BOM/GLB/STEP)",
+      "kind": "derived",
+      "exists": true,
+      "size": "0.0 MB"
+    },
+    "node_modules": {
+      "role": "npm dependencies",
+      "kind": "derived",
+      "exists": true,
+      "size": "601.4 MB"
+    }
+  },
+  "automation": {
+    "sim/scripts/sdr_skidl_circuit.py": {
+      "purpose": "SKiDL netlist — the single source of truth (60 parts)",
+      "exists": true
+    },
+    "sim/scripts/export_ngspice.py": {
+      "purpose": "SKiDL netlist -> ngspice deck",
+      "exists": true
+    },
+    "sim/scripts/antenna_fdtd.py": {
+      "purpose": "Antenna YAML -> FDTD -> S11/Zin -> Touchstone",
+      "exists": true
+    },
+    "sim/scripts/mesh.py": {
+      "purpose": "openEMS mesh sizing with a memory budget",
+      "exists": true
+    },
+    "sim/scripts/export_antenna_ngspice.py": {
+      "purpose": "Antenna results -> ngspice S-parameter networks",
+      "exists": true
+    },
+    "sim/scripts/sdr_ngspice_fmu.py": {
+      "purpose": "Self-contained FMI 2.0 ngspice FMU source",
+      "exists": true
+    },
+    "sim/scripts/build_fmu.py": {
+      "purpose": "Rebuild the FMU from SKiDL (no drift)",
+      "exists": true
+    },
+    "sim/scripts/cosim_fmu_stm32.py": {
+      "purpose": "Hard-lockstep firmware model <-> ngspice FMU",
+      "exists": true
+    },
+    "sim/scripts/test_fmu_cosim.py": {
+      "purpose": "FMU regression through the fmpy FMI master",
+      "exists": true
+    },
+    "sim/scripts/cosim_real_stm32.py": {
+      "purpose": "Real firmware.elf on QEMU <-> ngspice",
+      "exists": true
+    },
+    "sim/scripts/gdb_remote.py": {
+      "purpose": "Minimal GDB remote-serial-protocol client",
+      "exists": true
+    },
+    "sim/scripts/build_cosim_firmware.py": {
+      "purpose": "Build the COSIM_MODE firmware ELF",
+      "exists": true
+    },
+    "sim/scripts/start_picsimlab.py": {
+      "purpose": "Launch PicSimLab NOGUI, poll rcontrol",
+      "exists": true
+    },
+    "sim/scripts/sdr_picsimlab_cosim.py": {
+      "purpose": "PicSimLab <-> ngspice co-sim driver",
+      "exists": true
+    },
+    "sim/scripts/rcontrol.py": {
+      "purpose": "Probe PicSimLab rcontrol",
+      "exists": true
+    },
+    "sim/scripts/rcontrol_analog.py": {
+      "purpose": "Drive PicSimLab analog pins over rcontrol",
+      "exists": true
+    },
+    "sim/scripts/rcontrol_session.py": {
+      "purpose": "One rcontrol session, all evidence at once",
+      "exists": true
+    },
+    "sim/scripts/test_sdr_netlist.py": {
+      "purpose": "22 regression checks on the SKiDL->ngspice export",
+      "exists": true
+    },
+    "sim/scripts/verify_pin_contract.py": {
+      "purpose": "31 closed-loop analog + pin-contract checks",
+      "exists": true
+    },
+    "sim/scripts/test_ngspice_nets.py": {
+      "purpose": "Smoke tests for the ngspice decks",
+      "exists": true
+    },
+    "firmware/scripts/hex.py": {
+      "purpose": "Emit Intel HEX for PicSimLab loadhex",
+      "exists": true
+    },
+    "tools/dump_manifest.py": {
+      "purpose": "Build this manifest",
+      "exists": true
+    },
+    "tools/init_project.py": {
+      "purpose": "Create a fresh project from tracked files",
+      "exists": true
+    },
+    "hardware/pipeline.py": {
+      "purpose": "Hardware build pipeline",
+      "exists": true
+    },
+    "hardware/kicad/kicad_lib.py": {
+      "purpose": "Read/write KiCad symbols and schematics",
+      "exists": true
+    },
+    "hardware/kicad/generate_brig_receiver.py": {
+      "purpose": "Generate a full single-sheet .kicad_sch from code",
+      "exists": true
+    },
+    "hardware/kicad/test_any_schematic.py": {
+      "purpose": "Prove the generator is schematic-agnostic",
+      "exists": true
+    },
+    "hardware/kicad/verify_nets.py": {
+      "purpose": "Cross-check KiCad netlist against the generator tables",
+      "exists": true
+    },
+    "hardware/tscircuit/build_pcb.mjs": {
+      "purpose": "Netlist -> TSX, placement, model_offsets.json",
+      "exists": true
+    },
+    "hardware/tscircuit/build_derived.py": {
+      "purpose": "Build local derived tables from the jlcparts DB",
+      "exists": true
+    },
+    "hardware/tscircuit/resolve_parts.py": {
+      "purpose": "Substitute parts by value and footprint",
+      "exists": true
+    },
+    "hardware/tscircuit/step2stl.py": {
+      "purpose": "STEP -> STL with orientation normalization",
+      "exists": true
+    },
+    "hardware/tscircuit/check_models3d.py": {
+      "purpose": "Check glb against circuit.json, write offsets",
+      "exists": true
+    },
+    "hardware/tscircuit/make_viewer.py": {
+      "purpose": "Build the local 3D viewer page",
+      "exists": true
+    },
+    "hardware/tscircuit/check_net.py": {
+      "purpose": "Verify the viewer makes no external requests",
+      "exists": true
+    },
+    "hardware/tscircuit/site_assets.py": {
+      "purpose": "Move 3D models into the static site",
+      "exists": true
+    },
+    "hardware/tscircuit/fetch_vendor_models.mjs": {
+      "purpose": "Fetch vendor 3D models",
+      "exists": true
+    },
+    "scripts/download-datasheets.js": {
+      "purpose": "Fetch MPN datasheets via kicad-tools",
+      "exists": true
+    },
+    "scripts/convert-kicad-to-circuit-json.js": {
+      "purpose": "KiCad -> circuit.json",
+      "exists": true
+    },
+    "block0_bus_power_calc.py": {
+      "purpose": "5 V bus / buck / LC filter calculation",
+      "exists": true
+    },
+    "gen_spice_from_kicad.py": {
+      "purpose": "KiCad .kicad_sch -> SPICE netlist",
+      "exists": true
+    },
+    "gost_pipeline.py": {
+      "purpose": "STEP -> cleaned -> GOST drawing",
+      "exists": true
+    }
+  },
+  "dependencies": {
+    "system_tools": {
+      "python3": "3.13.5",
+      "ngspice": "44.2",
+      "kicad-cli": "9.0.2",
+      "node": "22.23.2",
+      "npm": "10.9.8",
+      "pio": "6.2.0",
+      "qemu-system-arm": "10.0.13",
+      "gdb-multiarch": "16.3",
+      "gmsh": "4.13.1",
+      "ElmerSolver": "26.2"
+    },
+    "node": {
+      "dependencies": {
+        "kicad": "^4.0.0"
+      }
+    },
+    "external_data": {
+      "/usr/share/kicad/symbols": "KiCad symbol libraries",
+      "/usr/share/kicad/footprints": "KiCad footprint libraries",
+      "/home/mirrage/opt/openEMS": "openEMS install (antenna FDTD)",
+      "/mnt/ext4data/jlcparts": "JLCPCB parts database (part resolver, 279 MB)",
+      "/mnt/ext4data/downloads": "PicSimLab NOGUI AppImages"
+    },
+    "external_data_missing": []
+  },
+  "components": [
+    {
+      "ref": "V_VIN",
+      "nodes": [
+        "VIN_5V",
+        "0"
+      ]
+    },
+    {
+      "ref": "A_ADC_I",
+      "nodes": [
+        "[ADC_I]",
+        "[ADC_I_D]"
+      ]
+    },
+    {
+      "ref": "A_ADC_Q",
+      "nodes": [
+        "[ADC_Q]",
+        "[ADC_Q_D]"
+      ]
+    },
+    {
+      "ref": "V_MCU_GAIN",
+      "nodes": [
+        "MCU_GAIN",
+        "0"
+      ]
+    },
+    {
+      "ref": "V_LO_TONE",
+      "nodes": [
+        "LO_TONE",
+        "0"
+      ]
+    },
+    {
+      "ref": "B_LO_GATE",
+      "nodes": [
+        "LO_DRV",
+        "0"
+      ]
+    },
+    {
+      "ref": "V_MCU_LO",
+      "nodes": [
+        "MCU_EN",
+        "0"
+      ]
+    },
+    {
+      "ref": "R_LO_OUT",
+      "nodes": [
+        "LO_DRV",
+        "MCU_LO"
+      ]
+    },
+    {
+      "ref": "R_LO_QA",
+      "nodes": [
+        "LO",
+        "LO_QA_LP"
+      ]
+    },
+    {
+      "ref": "C_LO_QA",
+      "nodes": [
+        "LO_QA_LP",
+        "0"
+      ]
+    },
+    {
+      "ref": "E_LO_QA",
+      "nodes": [
+        "MIX_U_MIX1_LOQ",
+        "0"
+      ]
+    },
+    {
+      "ref": "R_PIN_LO",
+      "nodes": [
+        "MCU_LO",
+        "LO_SRC"
+      ]
+    },
+    {
+      "ref": "C_PIN_LO",
+      "nodes": [
+        "LO_SRC",
+        "0"
+      ]
+    },
+    {
+      "ref": "R_PIN_GAIN",
+      "nodes": [
+        "MCU_GAIN",
+        "GAIN"
+      ]
+    },
+    {
+      "ref": "C_PIN_GAIN",
+      "nodes": [
+        "GAIN",
+        "0"
+      ]
+    },
+    {
+      "ref": "R_D_ADC_I_D",
+      "nodes": [
+        "ADC_I_D",
+        "0"
+      ]
+    },
+    {
+      "ref": "R_D_ADC_Q_D",
+      "nodes": [
+        "ADC_Q_D",
+        "0"
+      ]
+    },
+    {
+      "ref": "V_ANT",
+      "nodes": [
+        "RF_IN",
+        "0"
+      ]
+    },
+    {
+      "ref": "R_TERM_SRC",
+      "nodes": [
+        "RF_IN",
+        "GND"
+      ]
+    },
+    {
+      "ref": "CC_AF_I",
+      "nodes": [
+        "ADC_I_F",
+        "GND"
+      ]
+    },
+    {
+      "ref": "CC_AF_Q",
+      "nodes": [
+        "ADC_Q_F",
+        "GND"
+      ]
+    },
+    {
+      "ref": "CC_ANA1",
+      "nodes": [
+        "VCC_3V3_ANA",
+        "GND"
+      ]
+    },
+    {
+      "ref": "CC_ANA2",
+      "nodes": [
+        "VCC_3V3_ANA",
+        "GND"
+      ]
+    },
+    {
+      "ref": "CC_BS1",
+      "nodes": [
+        "LNA2_D",
+        "FIL_IN"
+      ]
+    },
+    {
+      "ref": "CC_BS2",
+      "nodes": [
+        "FIL_OUT",
+        "GND"
+      ]
+    },
+    {
+      "ref": "CC_IN",
+      "nodes": [
+        "RF_IN",
+        "LNA1_G"
+      ]
+    },
+    {
+      "ref": "CC_LDO1",
+      "nodes": [
+        "VCC_3V3",
+        "GND"
+      ]
+    },
+    {
+      "ref": "CC_LDO2",
+      "nodes": [
+        "VCC_3V3",
+        "GND"
+      ]
+    },
+    {
+      "ref": "CC_LNA1",
+      "nodes": [
+        "LNA1_S",
+        "GND"
+      ]
+    },
+    {
+      "ref": "CC_LO",
+      "nodes": [
+        "LO",
+        "GND"
+      ]
+    },
+    {
+      "ref": "CC_MCU1",
+      "nodes": [
+        "VCC_3V3",
+        "GND"
+      ]
+    },
+    {
+      "ref": "CC_MCU2",
+      "nodes": [
+        "VCC_3V3",
+        "GND"
+      ]
+    },
+    {
+      "ref": "CC_MCU3",
+      "nodes": [
+        "VCC_3V3",
+        "GND"
+      ]
+    },
+    {
+      "ref": "CC_MIX1",
+      "nodes": [
+        "FIL_OUT",
+        "MIX_IN_P"
+      ]
+    },
+    {
+      "ref": "CC_MIX2",
+      "nodes": [
+        "GND",
+        "MIX_IN_N"
+      ]
+    },
+    {
+      "ref": "CC_MIX3",
+      "nodes": [
+        "VCC_MIX",
+        "GND"
+      ]
+    },
+    {
+      "ref": "CC_OPI",
+      "nodes": [
+        "ADC_I",
+        "GND"
+      ]
+    },
+    {
+      "ref": "CC_OPQ",
+      "nodes": [
+        "ADC_Q",
+        "GND"
+      ]
+    },
+    {
+      "ref": "CC_OSC1",
+      "nodes": [
+        "OSC_IN",
+        "GND"
+      ]
+    },
+    {
+      "ref": "CC_OSC2",
+      "nodes": [
+        "OSC_OUT",
+        "GND"
+      ]
+    },
+    {
+      "ref": "CC_QWC",
+      "nodes": [
+        "LNA1_D",
+        "QWC_IN"
+      ]
+    },
+    {
+      "ref": "RFB1",
+      "nodes": [
+        "VCC_3V3",
+        "VCC_3V3_ANA"
+      ]
+    },
+    {
+      "ref": "LL_BS1",
+      "nodes": [
+        "FIL_IN",
+        "L_BS1_MID"
+      ]
+    },
+    {
+      "ref": "RL_BS1",
+      "nodes": [
+        "L_BS1_MID",
+        "FIL_OUT"
+      ]
+    },
+    {
+      "ref": "LL_LNA1",
+      "nodes": [
+        "VCC_3V3",
+        "L_LNA1_MID"
+      ]
+    },
+    {
+      "ref": "RL_LNA1",
+      "nodes": [
+        "L_LNA1_MID",
+        "LNA1_D"
+      ]
+    },
+    {
+      "ref": "LL_LNA2",
+      "nodes": [
+        "VCC_3V3_ANA",
+        "L_LNA2_MID"
+      ]
+    },
+    {
+      "ref": "RL_LNA2",
+      "nodes": [
+        "L_LNA2_MID",
+        "LNA2_D"
+      ]
+    },
+    {
+      "ref": "RL_MIX",
+      "nodes": [
+        "VCC_3V3_ANA",
+        "VCC_MIX"
+      ]
+    },
+    {
+      "ref": "R_Q_LNA1_DRAIN",
+      "nodes": [
+        "LNA1_D",
+        "VCC_3V3"
+      ]
+    },
+    {
+      "ref": "R_Q_LNA2_DRAIN",
+      "nodes": [
+        "LNA2_D",
+        "VCC_3V3"
+      ]
+    },
+    {
+      "ref": "RR_AF_I",
+      "nodes": [
+        "ADC_I",
+        "ADC_I_F"
+      ]
+    },
+    {
+      "ref": "RR_AF_Q",
+      "nodes": [
+        "ADC_Q",
+        "ADC_Q_F"
+      ]
+    },
+    {
+      "ref": "RR_BS",
+      "nodes": [
+        "FIL_OUT",
+        "GND"
+      ]
+    },
+    {
+      "ref": "RR_G1",
+      "nodes": [
+        "VCC_3V3",
+        "LNA1_G"
+      ]
+    },
+    {
+      "ref": "RR_G2",
+      "nodes": [
+        "LNA1_G",
+        "GND"
+      ]
+    },
+    {
+      "ref": "RR_G3",
+      "nodes": [
+        "VCC_3V3",
+        "LNA2_G"
+      ]
+    },
+    {
+      "ref": "RR_G4",
+      "nodes": [
+        "LNA2_G",
+        "GND"
+      ]
+    },
+    {
+      "ref": "RR_LO",
+      "nodes": [
+        "LO_SRC",
+        "LO"
+      ]
+    },
+    {
+      "ref": "RR_OPI",
+      "nodes": [
+        "MIX_I1",
+        "MIX_I2"
+      ]
+    },
+    {
+      "ref": "RR_OPQ",
+      "nodes": [
+        "MIX_Q1",
+        "MIX_Q2"
+      ]
+    },
+    {
+      "ref": "RR_QWC",
+      "nodes": [
+        "QWC_CP",
+        "GND"
+      ]
+    },
+    {
+      "ref": "RR_S1",
+      "nodes": [
+        "LNA1_S",
+        "GND"
+      ]
+    },
+    {
+      "ref": "RR_S2",
+      "nodes": [
+        "LNA2_S",
+        "GND"
+      ]
+    },
+    {
+      "ref": "RR_TERM",
+      "nodes": [
+        "RF_IN",
+        "GND"
+      ]
+    },
+    {
+      "ref": "RR_USB1",
+      "nodes": [
+        "USB_DP",
+        "USB_DP_R"
+      ]
+    },
+    {
+      "ref": "RR_USB2",
+      "nodes": [
+        "USB_DN",
+        "USB_DN_R"
+      ]
+    },
+    {
+      "ref": "R_U_OP1_R1",
+      "nodes": [
+        "MIX_I1",
+        "BB_U_OP1_D1"
+      ]
+    },
+    {
+      "ref": "R_U_OP1_R2",
+      "nodes": [
+        "MIX_I2",
+        "BB_U_OP1_D1"
+      ]
+    },
+    {
+      "ref": "R_U_OP1_R3",
+      "nodes": [
+        "MIX_Q1",
+        "BB_U_OP1_D2"
+      ]
+    },
+    {
+      "ref": "R_U_OP1_R4",
+      "nodes": [
+        "MIX_Q2",
+        "BB_U_OP1_D2"
+      ]
+    },
+    {
+      "ref": "R_X_QWC1_CP",
+      "nodes": [
+        "QWC_CP",
+        "0"
+      ]
+    },
+    {
+      "ref": "R_Y1_B1",
+      "nodes": [
+        "OSC_IN",
+        "VCC_3V3_ANA"
+      ]
+    },
+    {
+      "ref": "R_Y1_B2",
+      "nodes": [
+        "OSC_OUT",
+        "VCC_3V3_ANA"
+      ]
+    },
+    {
+      "ref": "G_Q_LNA1",
+      "nodes": [
+        "LNA1_D",
+        "0"
+      ]
+    },
+    {
+      "ref": "G_Q_LNA2",
+      "nodes": [
+        "LNA2_D",
+        "0"
+      ]
+    },
+    {
+      "ref": "B_U_LDO",
+      "nodes": [
+        "VCC_3V3",
+        "0"
+      ]
+    },
+    {
+      "ref": "R_U_MIX1_BIASP",
+      "nodes": [
+        "MIX_IN_P",
+        "0"
+      ]
+    },
+    {
+      "ref": "R_U_MIX1_BIASN",
+      "nodes": [
+        "MIX_IN_N",
+        "0"
+      ]
+    },
+    {
+      "ref": "R_U_MIX1_DIFF",
+      "nodes": [
+        "MIX_IN_P",
+        "MIX_U_MIX1_D"
+      ]
+    },
+    {
+      "ref": "R_U_MIX1_DIFN",
+      "nodes": [
+        "MIX_IN_N",
+        "MIX_U_MIX1_D"
+      ]
+    },
+    {
+      "ref": "B_U_MIX1_I",
+      "nodes": [
+        "MIX_I1",
+        "0"
+      ]
+    },
+    {
+      "ref": "B_U_MIX1_Q",
+      "nodes": [
+        "MIX_Q1",
+        "0"
+      ]
+    },
+    {
+      "ref": "R_U_MIX1_TMIX_I2",
+      "nodes": [
+        "MIX_I2",
+        "MIX_I1"
+      ]
+    },
+    {
+      "ref": "R_U_MIX1_TMIX_Q2",
+      "nodes": [
+        "MIX_Q2",
+        "MIX_Q1"
+      ]
+    },
+    {
+      "ref": "B_U_OP1_I",
+      "nodes": [
+        "ADC_I",
+        "0"
+      ]
+    },
+    {
+      "ref": "B_U_OP1_Q",
+      "nodes": [
+        "ADC_Q",
+        "0"
+      ]
+    },
+    {
+      "ref": "B_X_QWC1",
+      "nodes": [
+        "LNA2_G",
+        "0"
+      ]
+    },
+    {
+      "ref": "RBLO",
+      "nodes": [
+        "LO",
+        "GND"
+      ]
+    },
+    {
+      "ref": "RBLO_SRC",
+      "nodes": [
+        "LO_SRC",
+        "GND"
+      ]
+    },
+    {
+      "ref": "RBQWC_IN",
+      "nodes": [
+        "QWC_IN",
+        "GND"
+      ]
+    },
+    {
+      "ref": "RBUSB_DN",
+      "nodes": [
+        "USB_DN",
+        "GND"
+      ]
+    },
+    {
+      "ref": "RBUSB_DN_R",
+      "nodes": [
+        "USB_DN_R",
+        "GND"
+      ]
+    },
+    {
+      "ref": "RBUSB_DP",
+      "nodes": [
+        "USB_DP",
+        "GND"
+      ]
+    },
+    {
+      "ref": "RBUSB_DP_R",
+      "nodes": [
+        "USB_DP_R",
+        "GND"
+      ]
+    },
+    {
+      "ref": "run",
+      "nodes": []
+    },
+    {
+      "ref": "set",
+      "nodes": [
+        "wr_vecnames"
+      ]
+    },
+    {
+      "ref": "wrdata",
+      "nodes": [
+        "sdr_trace.dat",
+        "v(ADC_I)"
+      ]
+    },
+    {
+      "ref": "print",
+      "nodes": [
+        "v(ADC_I)",
+        "v(ADC_Q)"
+      ]
+    }
+  ]
+}

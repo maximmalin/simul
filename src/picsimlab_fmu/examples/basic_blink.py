@@ -43,7 +43,7 @@ def main():
         return
 
     # 2. Connect to PicSimLab rcontrol
-    fmu = PicSimLabFMU(board="stm32_bluepill", host="127.0.0.1", port=5000)
+    fmu = PicSimLabFMU(board="stm32_bluepill", host="127.0.0.1", port=5002)
     print("Connecting to PicSimLab rcontrol ...")
     fmu.connect()
     print("Connected.")

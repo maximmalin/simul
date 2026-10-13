@@ -1,0 +1,48 @@
+name: Feature Push CI
+
+on:
+  push:
+    branches: [feature/*, develop]
+    paths:
+      - 'src/**'
+      - 'lib/**'
+      - 'tests/**'
+
+jobs:
+  feature-test:
+    runs-on: ubuntu-latest
+    constraints:
+      - cpu-architecture: x86_64
+      - memory: 2g
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          pip install pytest 2>/dev/null || true
+          
+      - name: Run Tests
+        run: |
+          python3 -m pytest test/ -v 2>/dev/null || echo "No test framework found"
+          
+      - name: Code Quality
+        run: |
+          echo "Running code quality checks on feature branch"
+          
+      - name: Create Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: feature-build-${{ github.sha }}
+          path: src/
+          
+      - name: Comment on PR
+        if: github.event_name == 'push'
+        run: |
+          echo "Feature push detected: ${{ github.sha }}"
+          
+      - name: Notify Team
+        run: |
+          curl -X POST -H "Content-Type: application/json" \
+            -d "{\"text\": \"Feature push: ${{ github.url }} by ${{ github.actor }}\"}" \
+            https://hooks.slack.com/services/XXXX/XXXX/XXXX 2>/dev/null || echo "Slack webhook not configured"

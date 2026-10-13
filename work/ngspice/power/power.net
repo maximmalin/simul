@@ -1,0 +1,17 @@
+* Power Section ngspice Netlist
+* Based on structural.drawio Section 5: Система питания 5 В
+* Battery, Buck Converter, LDO, Ferrite Bead
+
+VBAT 1 0 DC 7.4
+VBuck 2 0 DC 5.0
+VLDO 3 0 DC 5.0
+
+* Dummy components
+VBat 1 0 7.4
+VBuck 2 0 5.0
+VLdo 3 0 5.0
+
+* Ferrite Bead model (simplified)
+FB1 1 2 470
+
+.END

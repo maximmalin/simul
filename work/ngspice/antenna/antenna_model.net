@@ -1,0 +1,41 @@
+* Brig Receiver - real antenna networks from the openEMS simulation.
+* Replaces the dummy 50-ohm resistors of antenna.net with the exported
+* 2-port S-parameter models (sim/outputs/ngspice).
+*
+* Each antenna is a 2-port:  pin1 = feed (RF front-end side)
+*                            pin2 = radiated-wave port (test signal here)
+*                            pin3 = reference (GND)
+*
+* Run from the repository root:
+*     ngspice -b work/ngspice/antenna/antenna_model.net
+
+* ---- Ch A : printed dipole, 0-900 MHz ------------------------------------
+V_A    src_a 0 dc 0 ac 1
+Rs_A   src_a spa 50
+X_A    fda spa 0 ANT_CHA touchstone="sim/outputs/ngspice/ant_cha.s2p"
+R_A    fda 0 50
+
+* ---- Ch B : patch array 2.45 GHz -----------------------------------------
+V_B    src_b 0 dc 0 ac 1
+Rs_B   src_b spb 50
+X_B    fdb spb 0 ANT_CHB touchstone="sim/outputs/ngspice/ant_chb.s2p"
+R_B    fdb 0 50
+
+* ---- Ch C : patch array 5.8 GHz ------------------------------------------
+V_C    src_c 0 dc 0 ac 1
+Rs_C   src_c spc 50
+X_C    fdc spc 0 ANT_CHC touchstone="sim/outputs/ngspice/ant_chc.s2p"
+R_C    fdc 0 50
+
+.include sim/outputs/ngspice/ant_sparams.lib
+
+.control
+* signal delivered to the front-end input on each band, dBV
+ac lin 101 50e6 900e6
+print db(v(fda))
+ac lin 101 1.2e9 3.0e9
+print db(v(fdb))
+ac lin 101 4.0e9 7.0e9
+print db(v(fdc))
+.endc
+.END

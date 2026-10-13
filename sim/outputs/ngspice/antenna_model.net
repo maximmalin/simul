@@ -1,0 +1,17 @@
+* Demo: SP analysis of the exported Ch B antenna network.
+* Two ports: 1 = feed, 2 = radiated wave.  ngspice reports S_1_1 / S_2_1.
+*
+* Run from the repository root:
+*     ngspice -b sim/outputs/ngspice/antenna_model.net
+
+V1        feed  0  dc 0 ac 1 portnum 1 z0 50
+V2        space 0  dc 0 ac 0 portnum 2 z0 50
+Xant_chB  feed space 0 ANT_CHB touchstone="sim/outputs/ngspice/ant_chb.s2p"
+
+.include sim/outputs/ngspice/ant_sparams.lib
+
+.control
+sp lin 101 8.575e+08 4.0425e+09
+print S_1_1 S_2_1
+.endc
+.END

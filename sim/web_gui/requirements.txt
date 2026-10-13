@@ -1,0 +1,4 @@
+flask>=2.3.0
+numpy>=1.24.0
+pythonfmu>=0.3.0
+fmpy>=1.0.0

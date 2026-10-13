@@ -1,0 +1,20 @@
+* RF Front Section ngspice Netlist
+* Based on structural.drawio Section 1: SЧ-тракт и секция отсечения
+* PIN_Switches, Mixer_1, Mixer_2, TV_Tuner, KT368A buffer, Diode clamp
+
+VPIN_SW 1 0 DC 0
+VMIXER1 2 0 AC 1
+VMIXER2 3 0 AC 1
+VTV_TUNER 4 0 AC 1
+
+* Dummy components
+RPIN_SW 1 0 50
+RMIXER1 2 0 50
+RMIXER2 3 0 50
+RTV_TUNER 4 0 50
+
+* Frequency sweep notes:
+* .AC DEC 10 100k 10Meg
+* .PRINT AC V(1) V(2) V(3) V(4)
+
+.END

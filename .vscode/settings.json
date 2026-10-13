@@ -1,0 +1,10 @@
+{
+    "seugames.forgejo.url": "https://127.0.0.1:3000",
+    "seugames.forgejo.token": "",
+    "python.defaultInterpreterPath": "/home/mirrage/Desktop/brig-receiver/.venv/bin/python",
+    "python.terminal.activateEnvironment": true,
+    "python.terminal.activateEnvInCurrentTerminal": true,
+    "platformio-ide.customPATH": "/home/mirrage/Desktop/brig-receiver/.venv/bin",
+    "platformio-ide.disablePIOHomeStartup": false,
+    "platformio-ide.activateProjectOnTextEditorChange": true
+}

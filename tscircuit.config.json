@@ -1,0 +1,33 @@
+{
+  "name": "brig-receiver",
+  "version": "1.0.0",
+  "description": "Bragg Cell SDR Receiver - Block 0: 5V Buck Converter",
+  "license": "ISC",
+
+  "//": "Конфиг намеренно оффлайновый. Здесь не должно быть ни одного",
+  "//_network": "источника сетевых запросов. Что раньше было включено и что",
+
+  "//_was_on": "kicadPcm — ставит прокси к серверам KiCad; datasheets с",
+  "//_1": "api.lcsc.enabled — ходит на LCSC за PDF по каждому артикулу.",
+  "//_2": "Оба выключены. Проверяется это не на глаз, а запуском сборки в",
+  "//_3": "сетевом пространстве без интерфейса: unshare -rn node",
+
+  "kicadPcm": {
+    "schemaVersion": "auto",
+    "enabled": false
+  },
+
+  "datasheets": {
+    "enabled": false,
+    "outputDir": "datasheets",
+    "concurrency": 4,
+    "api": {
+      "octopart": {
+        "enabled": false
+      },
+      "lcsc": {
+        "enabled": false
+      }
+    }
+  }
+}

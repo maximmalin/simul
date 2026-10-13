@@ -1,0 +1,41 @@
+# ============================================================================
+# ВХОДНЫЕ ПАРАМЕТРЫ ЯЧЕЙКИ БРЭГГА  (sim/inputs/bragg_inputs.yaml)
+# ============================================================================
+# Правите ЭТОТ файл и запускаете:
+#     .venv/bin/python3 sim/scripts/bragg_sim.py
+# Результат: sim/outputs/elmer_results.json
+# Все величины в СИ (м, Н/м³, Па).
+
+geometry:
+  lx: 0.015          # длина по X, м
+  ly: 0.005          # ширина по Y, м
+  glass_lz: 0.00291  # высота стекла (низ блока), м
+  quartz_lz: 0.00009 # толщина кварца (сверху), м
+
+mesh_size: 0.0015    # характерный размер сетки, м
+
+material:
+  glass:
+    rho: 2500.0      # плотность, кг/м³
+    E: 7.0e10        # модуль Юнга, Па
+    nu: 0.22         # коэффициент Пуассона
+  quartz:
+    rho: 2650.0
+    E: 7.85e10
+    nu: 0.14
+
+bodyforce:           # объёмная сила на кварце, Н/м³
+  b1: 0.0045
+  b2: 0.0
+  b3: 0.0
+
+optics:
+  dn_scale_quartz: -0.46   # Δn = dn_scale * ε_zz
+
+bc:
+  front_code: 1
+  bottom_code: 5
+
+# Пути (в обычном случае не меняйте)
+gmsh_bin: /usr/bin/gmsh
+elmer_solver: /home/mirrage/Desktop/elmer_installed/bin/ElmerSolver_mpi

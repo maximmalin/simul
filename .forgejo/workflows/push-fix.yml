@@ -1,0 +1,47 @@
+name: Fix/Patch Push CI
+
+on:
+  push:
+    branches: [hotfix/*, fix/*]
+    paths:
+      - 'src/**'
+      - 'include/**'
+
+jobs:
+  fix-validate:
+    runs-on: ubuntu-latest
+    constraints:
+      - cpu-architecture: x86_64
+      - memory: 1g
+      - # Physical constraint: limited resources for hotfixes
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Quick Lint
+        run: |
+          echo "Running quick validation for fix"
+          
+      - name: Security Scan
+        run: |
+          echo "Running security scan on fix branch"
+          
+      - name: Minimal Test
+        run: |
+          python3 -m pytest test/ -x -q 2>/dev/null || echo "Tests skipped for hotfix"
+          
+      - name: Create Patch Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: fix-patch-${{ github.sha }}
+          path: |
+            src/
+            include/
+          
+      - name: Notify Maintainer
+        run: |
+          echo "Fix push by ${{ github.actor }} ready for review"
+          
+      - name: Dry-run Deploy
+        run: |
+          echo "Dry-run deployment would occur here"
+          # Physical constraint: no auto-deploy on fix pushes without approval

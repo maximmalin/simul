@@ -1,0 +1,16 @@
+* FPAA Section ngspice Netlist
+* Based on structural.drawio Section 3: Нейро-фильтрация и перемиgling
+* FPAA_Denoise, FPAA_Subtractor, STM32_ADC, TinyML_Core
+
+VFPAA_DEN 1 0 AC 1
+VFPAA_SUB 2 0 AC 1
+VSTM32_ADC 3 0 AC 1
+VTinyML 4 0 AC 1
+
+* Dummy components
+VFPAA_DEN 1 0 1e3
+VFPAA_SUB 2 0 1e3
+VSTM32_ADC 3 0 1e3
+VTinyML 4 0 1e3
+
+.END

@@ -118,6 +118,31 @@ print('detected:', [d.cls for d in detected]); print('peak:', peak)
 - **Ключевые файлы**: `tests/requirements/checklist.csv`
 - **Команда**: `cd /mnt/ext4data/kristall-radio && head -5 tests/requirements/checklist.csv && wc -l tests/requirements/checklist.csv`
 
+## 7. KiCad (принципиальная схема, структурная схема, TZ)
+- **ID**: `AGENT-KICAD-01`
+- **Название**: Сгенерировать полную принципиальную схему KiCad одним листом
+- **Цель**: Проверить, что `generate_brig_receiver.py` produces a valid `.kicad_sch` with empty Errors/Violations via `kicad-cli sch check`.
+- **Ключевые файлы**: `hardware/kicad/generate_brig_receiver.py`, `hardware/kicad/kicad_lib_brig.py`, `hardware/kicad/kicad_lib.py`
+- **Команда**: `cd /mnt/ext4data/kristall-radio && .venv/bin/python3 hardware/kicad/generate_brig_receiver.py && kicad-cli sch check hardware/kicad/brig_receiver.kicad_sch 2>&1 | tail -5`
+
+- **ID**: `AGENT-KICAD-02`
+- **Название**: Собрать PCB и экспортировать gerbers/3D через tscircuit + kicad-cli
+- **Цель**: Убедиться, что `make pcb` → `out/board.kicad_pcb` и `kicad-cli pcb export gerbers` генерирует полный набор.
+- **Ключевые файлы**: `hardware/tscircuit/build_pcb.mjs`, `hardware/kicad/build_board.py`, `Makefile`
+- **Команда**: `cd /mnt/ext4data/kristall-radio && make pcb 2>&1 | tail -5 && ls -la out/board.kicad_pcb out/gerbers.zip`
+
+- **ID**: `AGENT-KICAD-03`
+- **Название**: Проверить электрическую связность (netlist) схемы
+- **Цель**: Сравнить сгенерированный netlist и tscircuit-экспортированный, убедиться в отсутствии расхождений.
+- **Ключевые файлы**: `hardware/kicad/sdr_receiver.kicad_sch`, `hardware/tscircuit/out/circuit.json`
+- **Команда**: `cd /mnt/ext4data/kristall-radio && diff <(.venv/bin/python3 hardware/kicad/generate_brig_receiver.py 2>/dev/null || true) <cat hardware/tscircuit/out/circuit.json 2>/dev/null | head -20 || echo "compare manually"` 
+
+- **ID**: `AGENT-KICAD-04`
+- **Название**: Создать TZ-документацию (техническое задание) по антенной системе
+- **Цель**: Написать/обновить `requirements/blocks/req_antenna_system.md` и `hardware/antenna/` набор задач на проектирование 3-х антенных каналов (змейка 0-0.9 ГГц, патч 1.2-3 ГГц, матрица 4×4 4-7 ГГц).
+- **Ключевые файлы**: `requirements/blocks/req_antenna_system.md`, `hardware/antenna/band_a/task.md`, `hardware/antenna/band_b/task.md`, `hardware/antenna/band_c/task.md`
+- **Команда**: `cd /mnt/ext4data/kristall-radio && ls hardware/antenna/band_*/task.md && head -10 hardware/antenna/band_a/task.md`
+
 ## 8. Git & Release
 - **ID**: `AGENT-GIT-01`
 - **Название**: Подготовить коммит: пронуmeros все изменённые файлы, проверить `git status`

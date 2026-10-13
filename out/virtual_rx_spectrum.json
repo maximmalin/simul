@@ -1,0 +1,38 @@
+{
+  "samp_rate": 2400000.0,
+  "nsamples": 262144,
+  "adc_bits": 12,
+  "nf_db": 3.5,
+  "snr_target_db": 35.0,
+  "noise_floor_dbm": -106.67307477711205,
+  "peak_freq_hz": 150000.0,
+  "peak_dbfs": -21.93804277087532,
+  "snr_measured_db": 34.949602950615805,
+  "snr_time_db": 30.769826771050756,
+  "rms": 0.10821182691124569,
+  "emitters": [
+    {
+      "offset_hz": 150000.0,
+      "amplitude": 0.08,
+      "modulation": "cw"
+    },
+    {
+      "offset_hz": -220000.0,
+      "amplitude": 0.05,
+      "modulation": "am"
+    },
+    {
+      "offset_hz": 320000.0,
+      "amplitude": 0.04,
+      "modulation": "fm"
+    },
+    {
+      "offset_hz": -80000.0,
+      "amplitude": 0.02,
+      "modulation": "cw"
+    }
+  ],
+  "iq_file": "out/virtual_rx_iq.c64",
+  "waterfall_png": "out/waterfall.png",
+  "title": "Krystal Radio — virtual RX waterfall"
+}

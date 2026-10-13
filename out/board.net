@@ -1,0 +1,534 @@
+COMPONENTS:
+ - C_AF_I: 100p
+ - C_AF_Q: 100p
+ - C_ANA1: 10u
+ - C_ANA2: 100n
+ - C_BS1: 100p
+ - C_BS2: 10p
+ - C_IN: 100p
+ - C_LDO1: 100u
+ - C_LDO2: 100n
+ - C_LNA1: 100p
+ - C_LO: 100p
+ - C_MCU1: 100n
+ - C_MCU2: 100n
+ - C_MCU3: 4u7
+ - C_MIX1: 100p
+ - C_MIX2: 100p
+ - C_MIX3: 100n
+ - C_OPI: 100p
+ - C_OPQ: 100p
+ - C_OSC1: 22p
+ - C_OSC2: 22p
+ - C_QWC: 100p
+ - FB1: 600R@100MHz
+ - J_ANT: SMA_EDGE
+ - J_PWR: 5V_IN
+ - J_USB: USB_CDC
+ - L_BS1: 100u
+ - L_LNA1: 18u
+ - L_LNA2: 18u
+ - L_MIX: 600R@100MHz
+ - Q_LNA1: 2N7002
+ - Q_LNA2: 2N7002
+ - R_AF_I: 10k
+ - R_AF_Q: 10k
+ - R_BS: 1k
+ - R_G1: 10k
+ - R_G2: 10k
+ - R_G3: 4k7
+ - R_G4: 2k2
+ - R_LO: 50
+ - R_OPI: 10k
+ - R_OPQ: 10k
+ - R_QWC: 1k
+ - R_S1: 1k
+ - R_S2: 1k
+ - R_TERM: 50
+ - R_USB1: 22
+ - R_USB2: 22
+ - TP_ADC_I: TESTPOINT
+ - TP_ADC_Q: TESTPOINT
+ - TP_ANT: TESTPOINT
+ - TP_FIL: TESTPOINT
+ - TP_LNA1_D: TESTPOINT
+ - TP_LNA2_D: TESTPOINT
+ - U1: STM32F103C8T6
+ - U_LDO: AMS1117-3.3
+ - U_MIX1: LT5560
+ - U_OP1: OPA2134
+ - X_QWC1: LPJ-1
+ - Y1: 8MHz
+
+NET: J_ANT_P2
+  - J_ANT P2
+  - J_ANT pin2_internal_1
+
+NET: J_PWR_pin5
+  - J_PWR pin5
+  - J_PWR pin5_internal_1
+
+NET: J_USB_pin5
+  - J_USB pin5
+  - J_USB pin5_internal_1
+
+NET: U_LDO_P2
+  - U_LDO P2
+  - U_LDO pin2_internal_1
+
+NET: ADC_I
+  - U_OP1 P1
+  - R_AF_I P1
+  - C_OPI P1
+
+NET: ADC_I_F
+  - U1 P4
+  - TP_ADC_I P1
+  - R_AF_I P2
+  - C_AF_I P1
+
+NET: ADC_Q
+  - U_OP1 P4
+  - R_AF_Q P1
+  - C_OPQ P1
+
+NET: ADC_Q_F
+  - U1 P5
+  - TP_ADC_Q P1
+  - R_AF_Q P2
+  - C_AF_Q P1
+
+NET: FIL_IN
+  - L_BS1 P1
+  - C_BS1 P2
+
+NET: FIL_OUT
+  - TP_FIL P1
+  - R_BS P1
+  - L_BS1 P2
+  - C_MIX1 P1
+  - C_BS2 P1
+
+NET: LNA1_D
+  - TP_LNA1_D P1
+  - Q_LNA1 P1
+  - L_LNA1 P2
+  - C_QWC P1
+
+NET: LNA1_G
+  - R_G2 P1
+  - R_G1 P2
+  - Q_LNA1 P2
+  - C_IN P2
+
+NET: LNA1_S
+  - R_S1 P1
+  - Q_LNA1 P3
+  - C_LNA1 P1
+
+NET: LNA2_D
+  - TP_LNA2_D P1
+  - Q_LNA2 P1
+  - L_LNA2 P2
+  - C_BS1 P1
+
+NET: LNA2_G
+  - X_QWC1 P2
+  - R_G4 P1
+  - R_G3 P2
+  - Q_LNA2 P2
+
+NET: LNA2_S
+  - R_S2 P1
+  - Q_LNA2 P3
+
+NET: LO
+  - U_MIX1 P7
+  - R_LO P2
+  - C_LO P1
+
+NET: LO_SRC
+  - U1 P8
+  - R_LO P1
+
+NET: MIX_I1
+  - U_OP1 P2
+  - U_MIX1 P3
+  - R_OPI P1
+
+NET: MIX_I2
+  - U_OP1 P3
+  - U_MIX1 P4
+  - R_OPI P2
+
+NET: MIX_IN_N
+  - U_MIX1 P2
+  - C_MIX2 P2
+
+NET: MIX_IN_P
+  - U_MIX1 P1
+  - C_MIX1 P2
+
+NET: MIX_Q1
+  - U_OP1 P5
+  - U_MIX1 P5
+  - R_OPQ P1
+
+NET: MIX_Q2
+  - U_OP1 P6
+  - U_MIX1 P6
+  - R_OPQ P2
+
+NET: OSC_IN
+  - Y1 P1
+  - C_OSC1 P1
+
+NET: OSC_OUT
+  - Y1 P3
+  - C_OSC2 P1
+
+NET: QWC_CP
+  - X_QWC1 P3
+  - R_QWC P1
+
+NET: QWC_IN
+  - X_QWC1 P1
+  - C_QWC P2
+
+NET: RF_IN
+  - TP_ANT P1
+  - R_TERM P1
+  - J_ANT P1
+  - C_IN P1
+
+NET: USB_DP
+  - U1 P10
+  - R_USB1 P1
+  - J_USB P2
+
+NET: USB_D_
+  - U1 P11
+  - R_USB2 P1
+  - J_USB P3
+
+NET: VCC_MIX
+  - U_MIX1 P8
+  - L_MIX P2
+  - C_MIX3 P1
+
+NET: VIN_5V
+  - U_LDO P3
+  - J_USB P1
+  - J_PWR P1
+
+
+COMPONENT_PINS:
+C_AF_I (100p)
+- pin1(P1): NETS(ADC_I_F)
+- pin2(P2): NOT_CONNECTED
+
+C_AF_Q (100p)
+- pin1(P1): NETS(ADC_Q_F)
+- pin2(P2): NOT_CONNECTED
+
+C_ANA1 (10u)
+- pin1(P1): NOT_CONNECTED
+- pin2(P2): NOT_CONNECTED
+
+C_ANA2 (100n)
+- pin1(P1): NOT_CONNECTED
+- pin2(P2): NOT_CONNECTED
+
+C_BS1 (100p)
+- pin1(P1): NETS(LNA2_D)
+- pin2(P2): NETS(FIL_IN)
+
+C_BS2 (10p)
+- pin1(P1): NETS(FIL_OUT)
+- pin2(P2): NOT_CONNECTED
+
+C_IN (100p)
+- pin1(P1): NETS(RF_IN)
+- pin2(P2): NETS(LNA1_G)
+
+C_LDO1 (100u)
+- pin1(P1): NOT_CONNECTED
+- pin2(P2): NOT_CONNECTED
+
+C_LDO2 (100n)
+- pin1(P1): NOT_CONNECTED
+- pin2(P2): NOT_CONNECTED
+
+C_LNA1 (100p)
+- pin1(P1): NETS(LNA1_S)
+- pin2(P2): NOT_CONNECTED
+
+C_LO (100p)
+- pin1(P1): NETS(LO)
+- pin2(P2): NOT_CONNECTED
+
+C_MCU1 (100n)
+- pin1(P1): NOT_CONNECTED
+- pin2(P2): NOT_CONNECTED
+
+C_MCU2 (100n)
+- pin1(P1): NOT_CONNECTED
+- pin2(P2): NOT_CONNECTED
+
+C_MCU3 (4u7)
+- pin1(P1): NOT_CONNECTED
+- pin2(P2): NOT_CONNECTED
+
+C_MIX1 (100p)
+- pin1(P1): NETS(FIL_OUT)
+- pin2(P2): NETS(MIX_IN_P)
+
+C_MIX2 (100p)
+- pin1(P1): NOT_CONNECTED
+- pin2(P2): NETS(MIX_IN_N)
+
+C_MIX3 (100n)
+- pin1(P1): NETS(VCC_MIX)
+- pin2(P2): NOT_CONNECTED
+
+C_OPI (100p)
+- pin1(P1): NETS(ADC_I)
+- pin2(P2): NOT_CONNECTED
+
+C_OPQ (100p)
+- pin1(P1): NETS(ADC_Q)
+- pin2(P2): NOT_CONNECTED
+
+C_OSC1 (22p)
+- pin1(P1): NETS(OSC_IN)
+- pin2(P2): NOT_CONNECTED
+
+C_OSC2 (22p)
+- pin1(P1): NETS(OSC_OUT)
+- pin2(P2): NOT_CONNECTED
+
+C_QWC (100p)
+- pin1(P1): NETS(LNA1_D)
+- pin2(P2): NETS(QWC_IN)
+
+FB1 (600R@100MHz)
+- pin1(P1): NOT_CONNECTED
+- pin2(P2): NOT_CONNECTED
+
+J_ANT (SMA_EDGE)
+- pin2_internal_1(pin2, 2): NETS(J_ANT_P2)
+- pin1(P1): NETS(RF_IN)
+- pin2(P2): NETS(J_ANT_P2)
+
+J_PWR (5V_IN)
+- pin5_internal_1(pin5, 5): NETS(J_PWR_pin5)
+- pin1(P1): NETS(VIN_5V)
+- pin2: NOT_CONNECTED
+- pin3: NOT_CONNECTED
+- pin4(P4): NOT_CONNECTED
+- pin5: NETS(J_PWR_pin5)
+
+J_USB (USB_CDC)
+- pin5_internal_1(pin5, 5): NETS(J_USB_pin5)
+- pin1(P1): NETS(VIN_5V)
+- pin2(P2): NETS(USB_DP)
+- pin3(P3): NETS(USB_D_)
+- pin4(P4): NOT_CONNECTED
+- pin5: NETS(J_USB_pin5)
+
+L_BS1 (100u)
+- pin1(P1): NETS(FIL_IN)
+- pin2(P2): NETS(FIL_OUT)
+
+L_LNA1 (18u)
+- pin1(P1): NOT_CONNECTED
+- pin2(P2): NETS(LNA1_D)
+
+L_LNA2 (18u)
+- pin1(P1): NOT_CONNECTED
+- pin2(P2): NETS(LNA2_D)
+
+L_MIX (600R@100MHz)
+- pin1(P1): NOT_CONNECTED
+- pin2(P2): NETS(VCC_MIX)
+
+Q_LNA1 (2N7002)
+- pin1(P1): NETS(LNA1_D)
+- pin2(P2): NETS(LNA1_G)
+- pin3(P3): NETS(LNA1_S)
+
+Q_LNA2 (2N7002)
+- pin1(P1): NETS(LNA2_D)
+- pin2(P2): NETS(LNA2_G)
+- pin3(P3): NETS(LNA2_S)
+
+R_AF_I (10k)
+- pin1(P1): NETS(ADC_I)
+- pin2(P2): NETS(ADC_I_F)
+
+R_AF_Q (10k)
+- pin1(P1): NETS(ADC_Q)
+- pin2(P2): NETS(ADC_Q_F)
+
+R_BS (1k)
+- pin1(P1): NETS(FIL_OUT)
+- pin2(P2): NOT_CONNECTED
+
+R_G1 (10k)
+- pin1(P1): NOT_CONNECTED
+- pin2(P2): NETS(LNA1_G)
+
+R_G2 (10k)
+- pin1(P1): NETS(LNA1_G)
+- pin2(P2): NOT_CONNECTED
+
+R_G3 (4k7)
+- pin1(P1): NOT_CONNECTED
+- pin2(P2): NETS(LNA2_G)
+
+R_G4 (2k2)
+- pin1(P1): NETS(LNA2_G)
+- pin2(P2): NOT_CONNECTED
+
+R_LO (50)
+- pin1(P1): NETS(LO_SRC)
+- pin2(P2): NETS(LO)
+
+R_OPI (10k)
+- pin1(P1): NETS(MIX_I1)
+- pin2(P2): NETS(MIX_I2)
+
+R_OPQ (10k)
+- pin1(P1): NETS(MIX_Q1)
+- pin2(P2): NETS(MIX_Q2)
+
+R_QWC (1k)
+- pin1(P1): NETS(QWC_CP)
+- pin2(P2): NOT_CONNECTED
+
+R_S1 (1k)
+- pin1(P1): NETS(LNA1_S)
+- pin2(P2): NOT_CONNECTED
+
+R_S2 (1k)
+- pin1(P1): NETS(LNA2_S)
+- pin2(P2): NOT_CONNECTED
+
+R_TERM (50)
+- pin1(P1): NETS(RF_IN)
+- pin2(P2): NOT_CONNECTED
+
+R_USB1 (22)
+- pin1(P1): NETS(USB_DP)
+- pin2: NOT_CONNECTED
+
+R_USB2 (22)
+- pin1(P1): NETS(USB_D_)
+- pin2: NOT_CONNECTED
+
+TP_ADC_I (TESTPOINT)
+- pin1(P1): NETS(ADC_I_F)
+
+TP_ADC_Q (TESTPOINT)
+- pin1(P1): NETS(ADC_Q_F)
+
+TP_ANT (TESTPOINT)
+- pin1(P1): NETS(RF_IN)
+
+TP_FIL (TESTPOINT)
+- pin1(P1): NETS(FIL_OUT)
+
+TP_LNA1_D (TESTPOINT)
+- pin1(P1): NETS(LNA1_D)
+
+TP_LNA2_D (TESTPOINT)
+- pin1(P1): NETS(LNA2_D)
+
+U1 (STM32F103C8T6)
+- pin1(P1): NOT_CONNECTED
+- pin2(P2): NOT_CONNECTED
+- pin3(P3): NOT_CONNECTED
+- pin4(P4): NETS(ADC_I_F)
+- pin5(P5): NETS(ADC_Q_F)
+- pin6: NOT_CONNECTED
+- pin7: NOT_CONNECTED
+- pin8(P8): NETS(LO_SRC)
+- pin9: NOT_CONNECTED
+- pin10(P10): NETS(USB_DP)
+- pin11(P11): NETS(USB_D_)
+- pin12: NOT_CONNECTED
+- pin13: NOT_CONNECTED
+- pin14: NOT_CONNECTED
+- pin15: NOT_CONNECTED
+- pin16: NOT_CONNECTED
+- pin17: NOT_CONNECTED
+- pin18: NOT_CONNECTED
+- pin19: NOT_CONNECTED
+- pin20: NOT_CONNECTED
+- pin21: NOT_CONNECTED
+- pin22: NOT_CONNECTED
+- pin23: NOT_CONNECTED
+- pin24: NOT_CONNECTED
+- pin25: NOT_CONNECTED
+- pin26: NOT_CONNECTED
+- pin27: NOT_CONNECTED
+- pin28: NOT_CONNECTED
+- pin29: NOT_CONNECTED
+- pin30: NOT_CONNECTED
+- pin31: NOT_CONNECTED
+- pin32: NOT_CONNECTED
+- pin33: NOT_CONNECTED
+- pin34: NOT_CONNECTED
+- pin35: NOT_CONNECTED
+- pin36: NOT_CONNECTED
+- pin37: NOT_CONNECTED
+- pin38: NOT_CONNECTED
+- pin39: NOT_CONNECTED
+- pin40: NOT_CONNECTED
+- pin41: NOT_CONNECTED
+- pin42: NOT_CONNECTED
+- pin43: NOT_CONNECTED
+- pin44: NOT_CONNECTED
+- pin45: NOT_CONNECTED
+- pin46: NOT_CONNECTED
+- pin47: NOT_CONNECTED
+- pin48: NOT_CONNECTED
+
+U_LDO (AMS1117-3.3)
+- pin2_internal_1(pin2, 2): NETS(U_LDO_P2)
+- pin1(P1): NOT_CONNECTED
+- pin2(P2): NETS(U_LDO_P2)
+- pin3(P3): NETS(VIN_5V)
+
+U_MIX1 (LT5560)
+- pin1(P1): NETS(MIX_IN_P)
+- pin2(P2): NETS(MIX_IN_N)
+- pin3(P3): NETS(MIX_I1)
+- pin4(P4): NETS(MIX_I2)
+- pin5(P5): NETS(MIX_Q1)
+- pin6(P6): NETS(MIX_Q2)
+- pin7(P7): NETS(LO)
+- pin8(P8): NETS(VCC_MIX)
+- pin9(P9): NOT_CONNECTED
+
+U_OP1 (OPA2134)
+- pin1(P1): NETS(ADC_I)
+- pin2(P2): NETS(MIX_I1)
+- pin3(P3): NETS(MIX_I2)
+- pin4(P4): NETS(ADC_Q)
+- pin5(P5): NETS(MIX_Q1)
+- pin6(P6): NETS(MIX_Q2)
+- pin7(P7): NOT_CONNECTED
+- pin8(P8): NOT_CONNECTED
+
+X_QWC1 (LPJ-1)
+- pin1(P1): NETS(QWC_IN)
+- pin2(P2): NETS(LNA2_G)
+- pin3(P3): NETS(QWC_CP)
+- pin4(P4): NOT_CONNECTED
+
+Y1 (8MHz)
+- pin1(P1): NETS(OSC_IN)
+- pin2(P2): NOT_CONNECTED
+- pin3(P3): NETS(OSC_OUT)
+- pin4(P4): NOT_CONNECTED

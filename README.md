@@ -256,12 +256,38 @@ Blocked upstream: with the QEMU backend running, rcontrol never binds (0.9.2);
 patch antenna. Kept as the reproducible evidence trail, not scratch.
 
 ### 3.13 Hardware / PCB / 3D toolchain
-* **`hardware/kicad/build_board.py`** — deterministic code-first board build:
-  SKiDL netlist → `kinet2pcb` → `kicad-cli`. Writes the derived `out/` set
-  (`board.kicad_pcb`, `gerbers/`, `drill/`, `gerbers.zip`,
-  `board.{step,glb,svg,pdf,dxf}`, `pnp.csv`, `bom.csv`) with no hand editing.
-  Run `.venv/bin/python hardware/kicad/build_board.py`. The board is a placed,
-  net-complete definition; copper routing is not automated.
+* **`hardware/tscircuit/build_pcb.mjs`** — the PCB stage. Reads the SKiDL netlist
+  (`sim/scripts/sdr_skidl_circuit.py` → `hardware/kicad/sdr_receiver.kicad_sch`),
+  places parts, autoroutes with explicit Altium-grade design rules and exports
+  `out/`: `board.kicad_pcb`, `board.kicad_sch`, `gerbers.zip`, `board.step`,
+  `board.{glb,gltf}`, `board.net`, `board_schematic.pdf`, `circuit.json`.
+  Run `node hardware/tscircuit/build_pcb.mjs` (or `make pcb`).
+* The earlier `hardware/kicad/build_board.py` (`kinet2pcb` + `kicad-cli`) path is
+  superseded by the tscircuit emitter.
+* **Reliability** — `sim/octave/reliability_model.m` (Octave) reads datasheet
+  parameters from `sim/octave/reliability_parts.tsv` (base FIT, Ea, T_ref/T_use,
+  π_Q) and computes system MTBF as parts-count + Arrhenius. Requirement **REQ-26**
+  (MTBF ≥ 10 000 ч). Run `make reliability` → `out/reliability.json`;
+  tests in `tests/requirements/reliability/`.
+* **Thermal** — `sim/scripts/thermal_pcb.py` couples **ngspice** (DC operating
+  point → dissipated power) with the **PCB CAD** (`circuit.json` → outline,
+  stackup, placement). Two levels: *fast* `T_j = T_a + P·θ_JA` and a *deep* 2D FEM
+  of heat conduction/spreading over the board. Run `make thermal` →
+  `out/thermal_{fast,fem}.json`; tests in `tests/requirements/thermal/`.
+* **Reception distance (link budget)** — `sim/scripts/link_budget.py` computes the
+  receiver noise floor (REQ-37), MDS (REQ-36/37) and the Friis range per antenna
+  channel (A/B/C). Run `make link-budget` → `out/link_budget.{json,svg}`;
+  «дальность приёма» сводится по разделам в `requirements/reception_range.md`
+  (и столбец `Reception_Distance_m` в `requirements_matrix.csv`).
+* **Direction finding** — `sim/scripts/direction_finding.py` implements a phase
+  interferometer (Δφ = 2π·d·sinθ/λ), draws the combined bearing + range diagram,
+  and emits a NEC-2 `.nec` that opens in
+  [EA1FUO/AntennaSim](https://github.com/EA1FUO/AntennaSim)
+  (`--antennasim-url` posts to its `/api/v1/simulate`). Run `make direction` →
+  `out/direction_finding.{json,svg}`.
+* **EMC** — `tests/requirements/emc/` verifies REQ-21…REQ-25: skin depth and
+  shielding effectiveness, immunity to 3 V/m (IEC 61000-4-3 level 2), CISPR 22
+  Class B emission, supply filters and enclosure zoning.
 * `tools/spec.py`, `tools/blocks.py` — the project spec (6 blocks, 24 parts) used
   by the generators.
 * `hardware/pipeline.py` — hardware build-pipeline orchestrator.
@@ -277,8 +303,6 @@ patch antenna. Kept as the reproducible evidence trail, not scratch.
   circuit.json), `make_viewer.py` + `site_assets.py` (offline 3D viewer),
   `fetch_vendor_models.mjs` / `fetch_3dmodels*.sh` (vendor 3D models),
   `check_net.py` (verify the viewer makes no external requests).
-* `tools/tscircuit/build_pcb.mjs` — legacy placeholder generator; its `out/`
-  artifacts are templates, **not** real Gerbers.
 * Part selection / datasheets: `scripts/download-datasheets.js`,
   `scripts/convert-kicad-to-circuit-json.js`, `scripts/post-build-datasheets.js`,
   `scripts/lib/*`.
@@ -311,8 +335,8 @@ The acousto-optic branch is kept as a toolbox, **not** part of the SDR signal pa
 * **Plan** — `plan/plan.md`, `plan/blocks.md`, `plan/README.md`, `plan/checks.py`.
 * **Technical task** — `technical_task.md` (RU), `technical_task_en.md` (EN),
   `technical_task_ua.md` (UA), plus per-block TZ in `work/tz-{a..e}/`.
-* **Tests** — pytest suites under `tests/requirements/{rf,ao,antenna,system}/`,
-  `tests/stress/test_co_simulation.py`, `tests/test_principle_schematic.py`;
+* **Tests** — pytest suites under `tests/requirements/{antenna,rf,ao,system,reliability,thermal}/`,
+  `tests/stress/test_co_simulation.py` (co-simulation, needs `fmpy`);
   checklist at `tests/requirements/checklist.csv`.
 * **CI** — `.forgejo/workflows/push-{general,fix,feature,docs}.yml` (Elmer-FEM
   physical-constraint jobs on push).
@@ -328,6 +352,9 @@ The acousto-optic branch is kept as a toolbox, **not** part of the SDR signal pa
 
 ```bash
 cd <repo>
+
+# --- Everything (netlist → PCB → docs → tests → reliability/thermal) ---
+make all
 
 # --- Circuit → netlist ---
 .venv/bin/python sim/scripts/sdr_skidl_circuit.py     # regenerate SKiDL netlist
@@ -371,6 +398,15 @@ python3 hardware/tscircuit/resolve_parts.py   # part substitution
 python3 tools/dump_manifest.py                # write manifest.json
 node scripts/download-datasheets.js           # fetch MPN datasheets
 python3 gost_pipeline.py                       # STEP → cleaned → GOST drawing
+
+# --- Reliability / thermal ---
+make reliability                              # Octave parts-count MTBF (REQ-26)
+make thermal                                  # fast θ_JA + 2D FEM (PCB CAD + ngspice)
+
+# --- Reception distance / direction finding / EMC ---
+make link-budget                              # Friis + шум → out/link_budget.{json,svg}
+make direction                                # пеленгация (NEC-2 / AntennaSim)
+pytest tests/requirements/emc tests/requirements/reception -q
 ```
 
 > `.venv/bin/python` is the project venv (`skidl`, `pythonfmu`, `fmpy`, `numpy`,
@@ -401,7 +437,6 @@ external/binary.
 | `hardware/kicad/` | source | Schematic generator + KiCad symbol/S-expression library |
 | `hardware/tscircuit/` | source | PCB emitter, 3D model resolution, part selection, viewer |
 | `tools/` | source | Spec (`spec.py`, `blocks.py`), manifest/init tooling |
-| `tools/tscircuit/` | source | Legacy placeholder PCB generator (`build_pcb.mjs`) |
 | `tests/` | source | Requirement-matrix + stress tests |
 | `requirements/`, `plan/`, `work/`, `tz/`, `references/`, `config/`, `issues/` | source | Requirements, plan, TZ, formulas, parameters |
 | `local_footprints/` | data | KiCad footprint libraries |
@@ -461,10 +496,8 @@ ships no `libqemu-stm32.so`). See `sim/COSIM_STATUS.md`.
    fidelity limit, not a project defect.
 2. **PicSimLab rcontrol never binds while QEMU runs** (0.9.2), and **0.9.3 has no
    STM32 backend**. Needs an upstream fix / a 0.9.3-built `libqemu-stm32.so`.
-3. **`tools/tscircuit/build_pcb.mjs` is a placeholder** — the real emitter is
-   `hardware/tscircuit/build_pcb.mjs`.
-4. **`out/` artifacts are text templates**, not manufacturing outputs.
-5. Several transferred brig scripts assume brig's paths/data (e.g. `config/params.yaml`
+3. **`out/` artifacts are text templates**, not manufacturing outputs.
+4. Several transferred brig scripts assume brig's paths/data (e.g. `config/params.yaml`
    points at `/home/mirrage/brig-receiver/...`); adapt before use. Likewise
    `sim/README.md` is the brig Bragg-cell module README, kept as reference.
 6. `docs/` is empty; `AGENT_MAP.md` + `sim/COSIM_STATUS.md` + `manifest.json` are

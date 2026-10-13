@@ -1,0 +1,47 @@
+{
+  "channel": {
+    "key": "channel_b",
+    "title": "Канал Б — решётка 2×2, 2.45 ГГц",
+    "f_hz": 2450000000.0,
+    "f_mhz": 2450.0,
+    "lambda_m": 0.12236426857142857,
+    "g_rx_dbi": 6.0,
+    "noise_floor_dbm": -136.16154955263823,
+    "sensitivity_dbm": -126.16154955263823,
+    "fspl_at_1km_db": 100.23110490917402,
+    "range_free_space_m": 1248884.3751818326,
+    "range_realistic_m": 124888.43751818326,
+    "standard": "SWR≤2.0, 1.2–3.0 ГГц"
+  },
+  "lambda_m": 0.12236426857142857,
+  "baseline_half_wave_m": 0.061182134285714285,
+  "theta_true_deg": 35.0,
+  "theta_est_deg": 35.0,
+  "dphi_deg": 103.24375854318829,
+  "sigma_phi_deg": 10.0,
+  "sigma_theta_deg": 3.8858462040472292,
+  "fov_deg": 90.0,
+  "nec_file": "out/df_array.nec",
+  "emitters": [
+    {
+      "label": "источник",
+      "bearing_deg": 35.0,
+      "range_frac": 0.72,
+      "is_target": true
+    },
+    {
+      "label": "мешающий",
+      "bearing_deg": 128.0,
+      "range_frac": 0.45,
+      "is_target": false
+    },
+    {
+      "label": "слабый",
+      "bearing_deg": 292.0,
+      "range_frac": 0.3,
+      "is_target": false
+    }
+  ],
+  "gain_dbi": 8.170599913279624,
+  "backend": "analytic array factor (nec2c недоступен)"
+}

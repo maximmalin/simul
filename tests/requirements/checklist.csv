@@ -19,3 +19,10 @@ REQ-15,Частота считывания строк (Line Readout Frequency),�
 REQ-01 (покрытие),Покрытие диапазона 0–7 ГГц,Система,покрытие 0–7000 МГц без пропусков, три канала (А/Б/В), тесты/requirements/system/test_system.py#test_antenna_coverage*,requirements/blocks/req_01.md + req_antenna_system.md
 REQ-36,Отношение сигнал/шум (Signal-to-Noise Ratio),RF,SNR ≥60 дБ в полосе 2.7 кГц при -60 дБм; S+N/N ≥10 дБ на MDS,тесты/requirements/rf/test_rf.py#test_req_36_*,implemented,requirements/blocks/req_36.md
 REQ-37,Уровень собственного шума (Noise Floor / MDS),RF,≤-120 дБм в полосе 2.7 кГц; MDS ≤-110 дБм,тесты/requirements/rf/test_rf.py#test_req_37_*,implemented,requirements/blocks/req_37.md
+REQ-21,Экранирование корпуса (Case Shielding),ЭМС,SE≥40 дБ; δ≈2.6 мкм при 1 ГГц; прокладки ≤10 мОм; 0–7 ГГц,тесты/requirements/emc/test_emc.py#test_req_21_*,implemented,requirements/blocks/req_21.md
+REQ-22,Иммунитет к внешним ЭМ-полям,ЭМС,IEC 61000-4-3 ур.2 = 3 В/м (80–2700 МГц); подавление 40–60 дБ; ДД 85–100 дБ,тесты/requirements/emc/test_emc.py#test_req_22_*,implemented,requirements/blocks/req_22.md
+REQ-23,Уровень радиопомех (эмиссия),ЭМС,ГОСТ CISPR 22-2012 Класс Б; экранированный Wi-Fi ≤ −30 дБм/м,тесты/requirements/emc/test_emc.py#test_req_23_*,implemented,requirements/blocks/req_23.md
+REQ-24,Фильтры питания,ЭМС,fc=1/(2π√(LC)); ferrite beads R≈100 Ом@100 МГц,тесты/requirements/emc/test_emc.py#test_req_24_*,implemented,requirements/blocks/req_24.md
+REQ-25,Зонирование экранирования,ЭМС,3 зоны (ВЧ/оптика/цифра); гальваническая изоляция,тесты/requirements/emc/test_emc.py#test_req_25_*,implemented,requirements/blocks/req_25.md
+REQ-RX,Дальность приёма (reception distance),Система,Friis + шумовая дорожка; каналы A/B/C; внешняя помеха 40–60 дБ,тесты/requirements/reception/test_reception.py#test_*,implemented,requirements/reception_range.md
+REQ-DF,Пеленгация (direction finding),Система,θ=asin(λΔφ/2πd); зона однозначности; NEC-2/AntennaSim,тесты/requirements/reception/test_reception.py#test_doa_*,implemented,requirements/reception_range.md

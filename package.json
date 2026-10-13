@@ -2,10 +2,10 @@
   "name": "crystal-radio-sdr",
   "version": "1.0.0",
   "description": "Zero-IF SDR direct-conversion receiver with STM32 Blue Pill",
-  "main": "tools/tscircuit/build_pcb.mjs",
+  "main": "hardware/tscircuit/build_pcb.mjs",
   "scripts": {
-    "build": "node tools/tscircuit/build_pcb.mjs",
-    "generate-pcb": "node tools/tscircuit/build_pcb.mjs"
+    "build": "node hardware/tscircuit/build_pcb.mjs",
+    "generate-pcb": "node hardware/tscircuit/build_pcb.mjs"
   },
   "keywords": [
     "sdr",

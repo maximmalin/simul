@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * brig-receiver -> код tscircuit из нетлиста KiCad, затем нативный экспорт.
+ * krystal-radio (zero-IF SDR) -> код tscircuit из нетлиста KiCad, затем экспорт.
  *
  * Разделение ответственности:
  *   ЭТОТ ФАЙЛ делает ровно одно: превращает проверенный нетлист KiCad
@@ -40,7 +40,7 @@ const require = createRequire(import.meta.url)
 const HERE = dirname(fileURLToPath(import.meta.url))
 const ROOT = resolve(HERE, "../..")
 
-const NETLIST = process.env.NETLIST ?? resolve(ROOT, "hardware/kicad/brig_receiver.net")
+const NETLIST = process.env.NETLIST ?? resolve(ROOT, "hardware/kicad/sdr_receiver.kicad_sch")
 const OUT = resolve(ROOT, "hardware/tscircuit/out")
 const TSX = resolve(OUT, "board.circuit.tsx")
 const OFFSETS_FILE = resolve(OUT, "model_offsets.json")
@@ -49,18 +49,53 @@ const FP_ROOT = process.env.KICAD_FP_ROOT ?? "/usr/share/kicad/footprints"
 
 // Сети, которые трассируются ПЕРВЫМИ: питание и земля. Остальное идёт
 // последним и само обходит уже проложенную медь.
-const POWER_NETS = new Set(["GND", "+3V3_DIG", "+5V_ANA", "VBIAS", "VBAT", "+5V", "+3V3"])
+const POWER_NETS = new Set(["GND", "+3V3", "+3V3_ANA", "+5V", "VIN"])
 
 // Слои: 4 — двух слоёв для 73 компонентов и ~150 соединений мало.
 const BOARD_W = process.env.BOARD_W ?? "170"
 const BOARD_H = process.env.BOARD_H ?? "130"
 
+// ═══════════════════════════════════════════════════ правила проектирования
+//
+// Набор повторяет то, что в Altium задаётся в Design » Rules, а в KiCad —
+// в Board Setup » Design Rules. Значения — IPC-2221B класс 2 (1 унц. медь,
+// фабрика 0.1 мм / 0.1 мм): такую плату берёт любой дешёвый прототип.
+//
+//   Ширина дорожки:     min 0.15 мм, номинал и default 0.25 мм
+//   Переход:            сверло ≥ 0.30 мм, площадка ≥ 0.60 мм (кольцо 0.15 мм)
+//   Зазор медь-медь:    ≥ 0.20 мм (след, площадка, отверстие)
+//   Край платы:         ≥ 0.30 мм
+//   Толщина платы:      1.6 мм — стандарт FR-4
+//
+// Без этих ограничений tscircuit берёт фабричные умолчания своего
+// circuit-json, и kicad-cli находит сверло/кольцо меньше нормы
+// (via_diameter, drill_out_of_range, annular_width). Явные допуски
+// снимают эти замечания ещё до autoroute.
+const DESIGN_RULES = {
+  thickness: "1.6mm",
+  minTraceWidth: "0.15mm",
+  nominalTraceWidth: "0.25mm",
+  defaultTraceWidth: "0.25mm",
+  minViaHoleDiameter: "0.30mm",
+  minViaPadDiameter: "0.60mm",
+  minPadEdgeToPadEdgeClearance: "0.20mm",
+  minBoardEdgeClearance: "0.30mm",
+  traceClearance: "0.20mm",
+}
+
+// Уровень усилий авроутера: 1x/1.5x/2x/5x/10x/100x. 10x — «как у Altium»:
+// достраивает неразведённые соединения перебором, но не уходит в часы.
+const AUTOROUTER_EFFORT = process.env.AUTOROUTER_EFFORT ?? "10x"
+
 // ═══════════════════════════════════════════════════════ разбор нетлиста KiCad
 
 function parseNetlist(text) {
   const comps = []
+  // KiCad netlist versions differ: brig's "E" puts (ref)(value)(footprint)
+  // adjacent, while Kristall's "D" inserts (description) between (value) and
+  // (footprint). Match the nearest value/footprint inside one comp block.
   for (const m of text.matchAll(
-    /\(comp\s+\(ref\s+"([^"]+)"\)\s*\(value\s+"([^"]*)"\)\s*\(footprint\s+"([^"]*)"\)/g,
+    /\(comp\s+\(ref\s+"([^"]+)"\)[\s\S]*?\(value\s+"([^"]*)"\)[\s\S]*?\(footprint\s+"([^"]*)"\)/g,
   )) comps.push({ ref: m[1], value: m[2], footprint: m[3] })
 
   const pinFn = new Map()
@@ -72,7 +107,8 @@ function parseNetlist(text) {
   // Блок сети закрывается ")))" в конце строки последнего узла, поэтому
   // искать "\n  )" бесполезно. Границы берём по позициям следующего
   // заголовка (net ...) — это устойчиво к любому отступу.
-  const heads = [...text.matchAll(/\(net\s+\(code\s+"(\d+)"\)\s+\(name\s+"([^"]*)"/g)]
+  // Net code is quoted in netlist version "E" and bare in version "D".
+  const heads = [...text.matchAll(/\(net\s+\(code\s+"?(\d+)"?\)\s+\(name\s+"([^"]*)"/g)]
   for (let k = 0; k < heads.length; k++) {
     const start = heads[k].index
     const end = k + 1 < heads.length ? heads[k + 1].index : text.length
@@ -272,7 +308,7 @@ function padCenter(libId, name) {
  */
 function footprintSize(libId, name) {
   const mod = resolve(FP_ROOT, `${libId}.pretty`, `${name}.kicad_mod`)
-  if (!existsSync(mod)) return { w: 5, h: 5 }
+  if (!existsSync(mod)) return { w: 5, h: 5, cx: 0, cy: 0 }
   const txt = readFileSync(mod, "utf8")
   const pts = []
   // В .kicad_mod слой указывается ПОСЛЕ start/end, поэтому блоки режем
@@ -285,9 +321,17 @@ function footprintSize(libId, name) {
     if (s) pts.push([+s[1], +s[2]])
     if (e) pts.push([+e[1], +e[2]])
   }
-  if (!pts.length) return { w: 5, h: 5 }
+  if (!pts.length) return { w: 5, h: 5, cx: 0, cy: 0 }
   const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1])
-  return { w: Math.max(...xs) - Math.min(...xs), h: Math.max(...ys) - Math.min(...ys) }
+  // cx/cy — смещение центра courtyard относительно начала координат корпуса.
+  // У SMA edge-mount, USB-B и штыревых разъёмов courtyard не центрирован, и
+  // без этого смещения shelf-упаковка ставит соседей внахлёст.
+  return {
+    w: Math.max(...xs) - Math.min(...xs),
+    h: Math.max(...ys) - Math.min(...ys),
+    cx: (Math.min(...xs) + Math.max(...xs)) / 2,
+    cy: (Math.min(...ys) + Math.max(...ys)) / 2,
+  }
 }
 
 /**
@@ -351,7 +395,7 @@ function computePlacement() {
       rowH = 0
       rowW = 0
     }
-    place.set(c.ref, { x: rowX + s.w / 2, y: -(rowY + s.h / 2) })
+    place.set(c.ref, { x: rowX + s.w / 2 - s.cx, y: -(rowY + s.h / 2) - s.cy })
     rowX += s.w + clear
     rowW = rowX
     rowH = Math.max(rowH, s.h)
@@ -365,10 +409,10 @@ function computePlacement() {
   for (const c of order) {
     const s = sizes.get(c.ref)
     const p = place.get(c.ref)
-    minX = Math.min(minX, p.x - s.w / 2)
-    maxX = Math.max(maxX, p.x + s.w / 2)
-    minY = Math.min(minY, p.y - s.h / 2)
-    maxY = Math.max(maxY, p.y + s.h / 2)
+    minX = Math.min(minX, p.x + s.cx - s.w / 2)
+    maxX = Math.max(maxX, p.x + s.cx + s.w / 2)
+    minY = Math.min(minY, p.y + s.cy - s.h / 2)
+    maxY = Math.max(maxY, p.y + s.cy + s.h / 2)
   }
 
   const cx = (minX + maxX) / 2
@@ -385,7 +429,7 @@ function computePlacement() {
 
 function emitTsx() {
   const L = []
-  L.push("// СГЕНЕРИРОВАНО автоматически из hardware/kicad/brig_receiver.net")
+  L.push("// СГЕНЕРИРОВАНО автоматически из " + relPath(ROOT, NETLIST))
   L.push("// Не редактировать вручную: источник истины — принципиальная схема KiCad.")
   L.push("// Обработку (автотрассировку, 3D, экспорт) выполняет официальный tsci.")
   L.push("")
@@ -416,7 +460,21 @@ function emitTsx() {
   shiftedRefs.length = 0
 
   L.push("export default () => (")
-  L.push(`  <board width={\`\${BOARD_W}mm\`} height={\`\${BOARD_H}mm\`} layers={4} minTraceWidth="0.15mm" nominalTraceWidth="0.25mm">`)
+  L.push("  <board")
+  L.push(`    width={\`\${BOARD_W}mm\`}`)
+  L.push(`    height={\`\${BOARD_H}mm\`}`)
+  L.push("    layers={4}")
+  L.push(`    thickness="${DESIGN_RULES.thickness}"`)
+  L.push(`    minTraceWidth="${DESIGN_RULES.minTraceWidth}"`)
+  L.push(`    nominalTraceWidth="${DESIGN_RULES.nominalTraceWidth}"`)
+  L.push(`    defaultTraceWidth="${DESIGN_RULES.defaultTraceWidth}"`)
+  L.push(`    minViaHoleDiameter="${DESIGN_RULES.minViaHoleDiameter}"`)
+  L.push(`    minViaPadDiameter="${DESIGN_RULES.minViaPadDiameter}"`)
+  L.push(`    minPadEdgeToPadEdgeClearance="${DESIGN_RULES.minPadEdgeToPadEdgeClearance}"`)
+  L.push(`    minBoardEdgeClearance="${DESIGN_RULES.minBoardEdgeClearance}"`)
+  L.push(`    autorouter={{ traceClearance: "${DESIGN_RULES.traceClearance}" }}`)
+  L.push(`    autorouterEffortLevel="${AUTOROUTER_EFFORT}"`)
+  L.push("  >")
 
   // Фаза 0 — обычная трассировка.
   //
@@ -505,7 +563,7 @@ function emitTsx() {
   // заливка соединяет их площадки сама, а трассы лишь добавляют авроутеру
   // работу. Один GND давал 46 трасс, +3V3_DIG — ещё 15; вместе это
   // почти половина задачи и причина исчерпания итераций.
-  const poured = new Set(["GND", "P3V3_DIG", "P5V_ANA", "VBIAS"])
+  const poured = new Set(["GND", "P3V3", "P3V3_ANA"])
   let i = 0
   for (const net of NETS) {
     if (poured.has(tscNetName(net.name))) continue
@@ -525,12 +583,12 @@ function emitTsx() {
     L.push(`    <copperpour connectsTo=${j("net.GND")} layer="bottom" />`)
     L.push(`    <copperpour connectsTo=${j("net.GND")} layer="inner1" />`)
   }
-  if (netNames.includes("P3V3_DIG")) {
-    L.push(`    <copperpour connectsTo=${j("net.P3V3_DIG")} layer="inner2" />`)
+  if (netNames.includes("P3V3")) {
+    L.push(`    <copperpour connectsTo=${j("net.P3V3")} layer="inner2" />`)
   }
   // Остальные силовые сети — на верхний слой, разводятся трассами
   // в фазе 0 (см. routingPhaseIndex выше).
-  for (const n of ["+3V3_DIG", "+5V_ANA", "VBIAS"].map(tscNetName)) {
+  for (const n of ["+3V3_ANA"].map(tscNetName)) {
     if (netNames.includes(n)) {
       L.push(`    <copperpour connectsTo=${j("net." + tscNetName(n))} layer="top" />`)
     }
@@ -638,7 +696,7 @@ function main() {
   mkdirSync(OUT, { recursive: true })
 
   console.log("=".repeat(74))
-  console.log("BRIG RECEIVER -> tscircuit (эмиттер TSX + нативный экспорт tsci)")
+  console.log("KRYSTAL RADIO (zero-IF SDR) -> tscircuit (эмиттер TSX + экспорт tsci)")
   console.log("=".repeat(74))
   console.log(`\n  [вход] ${NETLIST}`)
 
@@ -694,7 +752,7 @@ function main() {
   writeFileSync(TSX, emitTsx())
   // Трассы создаются не для всех сетей: у сетей с медной заливкой
   // площадки соединяет заливка. Считаем по факту.
-  const pouredNames = new Set(["GND", "P3V3_DIG", "P5V_ANA", "VBIAS"])
+  const pouredNames = new Set(["GND", "P3V3", "P3V3_ANA"])
   const nTraces = NETS
     .filter((n) => !pouredNames.has(tscNetName(n.name)))
     .reduce((a, n) => a + n.nodes.length, 0)
@@ -724,7 +782,7 @@ function main() {
 
   // ---- нативный экспорт через tsci ----
   // ROUTING_ONLY: прогоняем только circuit.json, чтобы проверять
-  // авроутинг за секунды, а не ждать все 8 экспортов по минуте каждый.
+  // авроутинг за секунды, а не ждать все экспорты по минуте каждый.
   const routingOnly = process.env.ROUTING_ONLY === "1"
   console.log("\n  [tsci] автотрассировка + экспорт …")
   const jobs = routingOnly
@@ -732,12 +790,14 @@ function main() {
     : [
         ["json", "circuit.json"],
         ["kicad_pcb", "board.kicad_pcb"],
-        ["kicad_zip", "brig-receiver-kicad.zip"],
+        ["kicad_sch", "board.kicad_sch"],
+        ["kicad_zip", "krystal-radio-kicad.zip"],
         ["step", "board.step"],
         ["glb", "board.glb"],
         ["gltf", "board.gltf"],
         ["gerbers", "gerbers.zip"],
         ["readable-netlist", "board.net"],
+        ["schematic-pdf", "board_schematic.pdf"],
       ]
   const ok = []
   for (const [fmt, out] of jobs) {

@@ -1,6 +1,6 @@
 {
   "project": "kristall-radio",
-  "generated_utc": "2026-10-12T14:40:51+00:00",
+  "generated_utc": "2026-10-13T21:00:46+00:00",
   "purpose": "Zero-IF SDR direct-conversion receiver with STM32 Blue Pill; code-generated hardware with ngspice/FMI co-simulation",
   "source_of_truth": "sim/scripts/sdr_skidl_circuit.py",
   "map": "AGENT_MAP.md",
@@ -28,7 +28,7 @@
       "role": "Physics, netlist, co-simulation, antenna and diagnostic drivers",
       "kind": "source",
       "exists": true,
-      "size": "0.4 MB"
+      "size": "0.6 MB"
     },
     "sim/netlists": {
       "role": "ngspice decks produced by export_ngspice.py",
@@ -58,7 +58,7 @@
       "role": "Solver scratch (openEMS, Elmer, gmsh)",
       "kind": "derived",
       "exists": true,
-      "size": "822.5 MB"
+      "size": "921.8 MB"
     },
     "sim/web_gui": {
       "role": "Flask I/Q web GUI for the FMU",
@@ -76,7 +76,7 @@
       "role": "FreeCAD / CAD geometry",
       "kind": "source",
       "exists": true,
-      "size": "0.0 MB"
+      "size": "1.7 MB"
     },
     "sim/octave": {
       "role": "Octave formula checks",
@@ -106,43 +106,37 @@
       "role": "Hardware pipeline orchestrator",
       "kind": "source",
       "exists": true,
-      "size": "0.4 MB"
+      "size": "13.1 MB"
     },
     "hardware/kicad": {
       "role": "KiCad schematic generator and symbol/S-expression library",
       "kind": "source",
       "exists": true,
-      "size": "0.2 MB"
+      "size": "0.3 MB"
     },
     "hardware/tscircuit": {
       "role": "PCB emitter, 3D models, part selection, viewer",
       "kind": "source",
       "exists": true,
-      "size": "0.2 MB"
+      "size": "12.5 MB"
     },
     "hardware/antenna": {
       "role": "Antenna panel geometry (FreeCAD)",
       "kind": "source",
       "exists": true,
-      "size": "0.0 MB"
+      "size": "0.2 MB"
     },
     "tools": {
       "role": "Project spec and manifest/init tooling",
       "kind": "source",
       "exists": true,
-      "size": "0.1 MB"
-    },
-    "tools/tscircuit": {
-      "role": "Legacy placeholder PCB generator",
-      "kind": "source",
-      "exists": true,
-      "size": "0.0 MB"
+      "size": "0.2 MB"
     },
     "tests": {
       "role": "Requirement-matrix and stress tests",
       "kind": "source",
       "exists": true,
-      "size": "0.1 MB"
+      "size": "0.4 MB"
     },
     "requirements": {
       "role": "Requirement matrix and per-block requirements",
@@ -190,7 +184,7 @@
       "role": "Generated board artifacts (Gerbers/BOM/GLB/STEP)",
       "kind": "derived",
       "exists": true,
-      "size": "0.0 MB"
+      "size": "20.9 MB"
     },
     "node_modules": {
       "role": "npm dependencies",
@@ -218,6 +212,14 @@
     },
     "sim/scripts/export_antenna_ngspice.py": {
       "purpose": "Antenna results -> ngspice S-parameter networks",
+      "exists": true
+    },
+    "sim/scripts/link_budget.py": {
+      "purpose": "Friis + noise floor -> reception distance (out/link_budget.*)",
+      "exists": true
+    },
+    "sim/scripts/direction_finding.py": {
+      "purpose": "Phase interferometer + NEC-2/AntennaSim -> bearing (out/direction_finding.*)",
       "exists": true
     },
     "sim/scripts/sdr_ngspice_fmu.py": {

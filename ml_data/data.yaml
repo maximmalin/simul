@@ -1,0 +1,8 @@
+# Krystal Radio — synthetic signal dataset (generated)
+path: /mnt/ext4data/kristall-radio/ml_data
+train: images/train
+val: images/val
+nc: 4
+names: ['cw', 'am', 'fm', 'noise']
+img_size: [128, 128]
+grid: 16

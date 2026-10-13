@@ -50,7 +50,6 @@ LAYOUT: dict[str, tuple[str, str]] = {
     "hardware/tscircuit": ("PCB emitter, 3D models, part selection, viewer", "source"),
     "hardware/antenna": ("Antenna panel geometry (FreeCAD)", "source"),
     "tools": ("Project spec and manifest/init tooling", "source"),
-    "tools/tscircuit": ("Legacy placeholder PCB generator", "source"),
     "tests": ("Requirement-matrix and stress tests", "source"),
     "requirements": ("Requirement matrix and per-block requirements", "source"),
     "plan": ("Build plan", "source"),
@@ -73,6 +72,9 @@ AUTOMATION: dict[str, str] = {
     "sim/scripts/antenna_fdtd.py": "Antenna YAML -> FDTD -> S11/Zin -> Touchstone",
     "sim/scripts/mesh.py": "openEMS mesh sizing with a memory budget",
     "sim/scripts/export_antenna_ngspice.py": "Antenna results -> ngspice S-parameter networks",
+    # reception / direction finding
+    "sim/scripts/link_budget.py": "Friis + noise floor -> reception distance (out/link_budget.*)",
+    "sim/scripts/direction_finding.py": "Phase interferometer + NEC-2/AntennaSim -> bearing (out/direction_finding.*)",
     # co-simulation
     "sim/scripts/sdr_ngspice_fmu.py": "Self-contained FMI 2.0 ngspice FMU source",
     "sim/scripts/build_fmu.py": "Rebuild the FMU from SKiDL (no drift)",

@@ -40,6 +40,17 @@ sim/work/
 sim/sim/
 *.erc
 
+# tscircuit working directory (build cache; published artifacts go to out/)
+.tscircuit/
+hardware/tscircuit/out/
+
+# bundled three.js viewer (rebuilt by `make viewer` from viewer/main.js)
+hardware/tscircuit/viewer/dist/
+
+# GNU Radio co-sim raw I/Q dump and NEC scratch output
+out/virtual_rx_iq.c64
+out/df_array.out
+
 # SKiDL / openEMS scratch output
 sdr_skidl_circuit*.net
 sdr_skidl_circuit_sklib.py

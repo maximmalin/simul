@@ -1,0 +1,31 @@
+Krystal Radio — SKiDL ERC report
+source: sim/scripts/sdr_skidl_circuit.py
+parts: 60  nets: 38
+
+errors:   0
+warnings: 23
+
+WARNINGS:
+  - No drivers for net VIN_5V.
+  - Insufficient drive current on net VIN_5V for pin POWER-IN pin 1/VBUS of USB_B/J_PWR.
+  - Insufficient drive current on net VIN_5V for pin POWER-IN pin 1/VBUS of USB_B/J_USB.
+  - Insufficient drive current on net VIN_5V for pin POWER-IN pin 3/VIN of AMS1117-3.3/U_LDO.
+  - Only one pin (PASSIVE pin 2/2 of R/R_USB2) attached to net USB_D-_R.
+  - Only one pin (BIDIRECTIONAL pin 9/PA7 of STM32F103C8T6/U1) attached to net CTRL.
+  - Insufficient drive current on net VCC_MIX for pin POWER-IN pin 8/VCC of LT5560/U_MIX1.
+  - Insufficient drive current on net +3V3_ANA for pin POWER-IN pin 7/V+ of OPA2134/U_OP1.
+  - Only one pin (PASSIVE pin 2/2 of R/R_USB1) attached to net USB_D+_R.
+  - Only one pin (BIDIRECTIONAL pin 3/D- of USB_B/J_PWR) attached to net PWR_D-.
+  - Only one pin (BIDIRECTIONAL pin 2/D+ of USB_B/J_PWR) attached to net PWR_D+.
+  - Insufficient drive current on net GND for pin POWER-IN pin 4/4 of XTAL8MHz/Y1.
+  - Insufficient drive current on net GND for pin POWER-IN pin 2/VSS of STM32F103C8T6/U1.
+  - Insufficient drive current on net GND for pin POWER-IN pin 4/GND of USB_B/J_PWR.
+  - Insufficient drive current on net GND for pin POWER-IN pin 2/GND of SMA_EDGE/J_ANT.
+  - Insufficient drive current on net GND for pin POWER-IN pin 1/GND of AMS1117-3.3/U_LDO.
+  - Insufficient drive current on net GND for pin POWER-IN pin 9/GND of LT5560/U_MIX1.
+  - Insufficient drive current on net GND for pin POWER-IN pin 4/GND of USB_B/J_USB.
+  - Insufficient drive current on net GND for pin POWER-IN pin 8/V- of OPA2134/U_OP1.
+  - Insufficient drive current on net GND for pin POWER-IN pin 2/2 of XTAL8MHz/Y1.
+  - Insufficient drive current on net GND for pin POWER-IN pin 4/GND of LPJ-1/X_QWC1.
+  - Unconnected pin: BIDIRECTIONAL pin 6/PA2 of STM32F103C8T6/U1.
+  - Unconnected pin: BIDIRECTIONAL pin 7/PA3 of STM32F103C8T6/U1.

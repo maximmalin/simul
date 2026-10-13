@@ -1,0 +1,64 @@
+{
+  "model": "Friis + шумовая дорожка приёмника (свободное пространство)",
+  "reference": {
+    "eirp_dbm": 30.0,
+    "eirp_w": 1.0,
+    "clutter_margin_db": 20.0,
+    "bw_hz": 2700.0,
+    "nf_db": 3.5,
+    "snr_db": 10.0,
+    "t_kelvin": 290.0
+  },
+  "noise": {
+    "noise_floor_calc_dbm": -136.16154955263823,
+    "noise_floor_max_dbm": -120.0,
+    "mds_required_dbm": -110.0,
+    "sensitivity_calc_dbm": -126.16154955263823,
+    "noise_floor_pass": true,
+    "mds_pass": true
+  },
+  "channels": [
+    {
+      "key": "channel_a",
+      "title": "Канал А — змейка 200 МГц",
+      "f_hz": 200000000.0,
+      "f_mhz": 200.0,
+      "lambda_m": 1.49896229,
+      "g_rx_dbi": 2.15,
+      "noise_floor_dbm": -136.16154955263823,
+      "sensitivity_dbm": -126.16154955263823,
+      "fspl_at_1km_db": 78.468383135163,
+      "range_free_space_m": 9821059.018085094,
+      "range_realistic_m": 982105.9018085094,
+      "standard": "SWR≤2.0, 0–900 МГц"
+    },
+    {
+      "key": "channel_b",
+      "title": "Канал Б — решётка 2×2, 2.45 ГГц",
+      "f_hz": 2450000000.0,
+      "f_mhz": 2450.0,
+      "lambda_m": 0.12236426857142857,
+      "g_rx_dbi": 6.0,
+      "noise_floor_dbm": -136.16154955263823,
+      "sensitivity_dbm": -126.16154955263823,
+      "fspl_at_1km_db": 100.23110490917402,
+      "range_free_space_m": 1248884.3751818326,
+      "range_realistic_m": 124888.43751818326,
+      "standard": "SWR≤2.0, 1.2–3.0 ГГц"
+    },
+    {
+      "key": "channel_c",
+      "title": "Канал В — решётка 4×4, 5.8 ГГц",
+      "f_hz": 5800000000.0,
+      "f_mhz": 5800.0,
+      "lambda_m": 0.05168835482758621,
+      "g_rx_dbi": 12.0,
+      "noise_floor_dbm": -136.16154955263823,
+      "sensitivity_dbm": -126.16154955263823,
+      "fspl_at_1km_db": 107.71634309314211,
+      "range_free_space_m": 1052592.6254149505,
+      "range_realistic_m": 105259.26254149506,
+      "standard": "SWR≤2.0, 3.0–7.0 ГГц"
+    }
+  ]
+}

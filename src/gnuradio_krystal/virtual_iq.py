@@ -1,0 +1,312 @@
+"""
+Виртуальный радиоприёмник для Krystal Radio (zero-IF SDR).
+
+Этот модуль — «полезная нагрузка» без зависимости от GNU Radio: он
+синтезирует комплексный I/Q-поток (виртуальный эфир) и моделирует шум
+приёмного тракта. Благодаря этому физику сигнала можно проверять обычным
+pytest'ом с numpy, а GNU Radio-блок (virtual_source.py) остаётся тонкой
+обёрткой над `VirtualScene`.
+
+Модель виртуального приёма:
+    x[n] = Σ_k A_k·m_k(t)·exp(j2π·Δf_k·t) + n[n] + dc
+
+    * A_k, Δf_k  — амплитуда и смещение несущей k-го источника от центра
+                   (все источники лежат внутри мгновенной полосы приёмника);
+    * m_k(t)     — закон модуляции (CW / AM / FM / шумовой);
+    * n[n]       — комплексный белый гауссов шум с заданным SNR;
+    * dc         — постоянное смещение (утечка гетеродина, свойственная
+                   zero-IF/direct-conversion тракту);
+    * ADC        — опциональное квантование по разрядности (clip + шаг).
+
+Смещения частоты отсчитываются от нуля ПЧ: для direct-conversion приёмника
+это и есть «расстройка» сигнала относительно центральной частоты. Полоса
+однозначно определяется частотой дискретизации fs: спектр занимает
+[-fs/2, +fs/2).
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Iterable, Mapping, Sequence
+
+import numpy as np
+
+# --- физические константы и параметры тракта по требованиям ----------------
+
+K_BOLTZMANN = 1.380649e-23   # Дж/К
+T0_KELVIN = 290.0            # опорная температура, К
+
+# REQ-04: NF входного тракта SDR не хуже 3.5 дБ.
+DEFAULT_NF_DB = 3.5
+# Мгновенная полоса цифрового тракта виртуального приёма.
+DEFAULT_SAMP_RATE = 2.4e6
+# Разрядность АЦП: 12 бит — типовое значение для SDR-тракта.
+DEFAULT_ADC_BITS = 12
+
+
+def noise_floor_dbm(bandwidth_hz: float, nf_db: float = 0.0,
+                    temp_k: float = T0_KELVIN) -> float:
+    """Тепловой шум k·T·B в дБм с добавлением коэффициента шума.
+
+    Для 2.7 кГц и NF=0 получается ≈ -139.3 дБм — нижняя граница, от
+    которой отсчитывается реальная чувствительность приёмника.
+    """
+    if bandwidth_hz <= 0:
+        raise ValueError("bandwidth_hz must be > 0")
+    # k·T·B в ваттах -> дБм (×1000).
+    return 10.0 * np.log10(K_BOLTZMANN * temp_k * bandwidth_hz * 1000.0) + nf_db
+
+
+def snr_db_from_signal_dbm(signal_dbm: float, bandwidth_hz: float,
+                           nf_db: float = DEFAULT_NF_DB,
+                           temp_k: float = T0_KELVIN) -> float:
+    """Отношение сигнал/шум для сигнала заданной мощности в полосе B."""
+    return signal_dbm - noise_floor_dbm(bandwidth_hz, nf_db, temp_k)
+
+
+def sigma_from_snr(signal_amplitude: float, snr_db: float) -> float:
+    """СКО комплексного шума для сигнала мощности A² при заданном SNR.
+
+    Для комплексного тона A·exp(jωt) средняя мощность равна A², поэтому
+    σ² = A² / 10^(SNR/10), а E|n|² = σ².
+    """
+    if snr_db <= 0:
+        raise ValueError("snr_db must be > 0")
+    return float(signal_amplitude) / np.sqrt(10.0 ** (snr_db / 10.0))
+
+
+@dataclass
+class Emitter:
+    """Один виртуальный источник в полосе приёма.
+
+    offset_hz   — смещение от центра (Гц, может быть отрицательным);
+    amplitude   — линейная амплитуда относительно полной шкалы АЦП (1.0 = FS);
+    modulation  — 'cw' | 'am' | 'fm' | 'noise';
+    mod_index   — глубина AM (0..1) или индекс FM;
+    mod_rate_hz — частота модуляции.
+    """
+
+    offset_hz: float
+    amplitude: float = 0.1
+    modulation: str = "cw"
+    mod_index: float = 0.5
+    mod_rate_hz: float = 1_000.0
+
+    def __post_init__(self) -> None:
+        if self.modulation not in ("cw", "am", "fm", "noise"):
+            raise ValueError(f"unknown modulation: {self.modulation}")
+        if self.amplitude < 0:
+            raise ValueError("amplitude must be >= 0")
+
+    def deterministic(self) -> bool:
+        """Детерминированные источники не используют ГПСЧ сцены."""
+        return self.modulation in ("cw", "am", "fm")
+
+    def expected_power(self) -> float:
+        """Средняя мощность источника с учётом модуляции.
+
+        CW/FM/шум — A²; AM — A²·(1 + m²/2).
+        """
+        if self.modulation == "am":
+            return self.amplitude ** 2 * (1.0 + self.mod_index ** 2 / 2.0)
+        return self.amplitude ** 2
+
+    def samples(self, t: np.ndarray) -> np.ndarray:
+        """Комплексная огибающая источника на моменты времени t (сек)."""
+        ph = 2.0 * np.pi * float(self.offset_hz) * t
+        if self.modulation == "cw":
+            return self.amplitude * np.exp(1j * ph)
+        if self.modulation == "am":
+            env = 1.0 + self.mod_index * np.cos(2.0 * np.pi * self.mod_rate_hz * t)
+            return self.amplitude * env * np.exp(1j * ph)
+        if self.modulation == "fm":
+            ph = ph + self.mod_index * np.sin(2.0 * np.pi * self.mod_rate_hz * t)
+            return self.amplitude * np.exp(1j * ph)
+        raise ValueError("noise emitter is generated by VirtualScene")
+
+
+def emitters_from_spec(spec: Sequence[Mapping] | None) -> tuple[Emitter, ...]:
+    """Собрать список `Emitter` из простых словарей (JSON-сцена, CLI).
+
+    Принимает последовательность словарей вида
+    ``{"offset_hz": 150e3, "amplitude": 0.08, "modulation": "cw"}``.
+    Отсутствующие поля берутся из значений по умолчанию `Emitter`.
+    """
+    out: list[Emitter] = []
+    for item in spec or ():
+        out.append(
+            Emitter(
+                offset_hz=float(item["offset_hz"]),
+                amplitude=float(item.get("amplitude", Emitter.amplitude)),
+                modulation=str(item.get("modulation", Emitter.modulation)),
+                mod_index=float(item.get("mod_index", Emitter.mod_index)),
+                mod_rate_hz=float(item.get("mod_rate_hz", Emitter.mod_rate_hz)),
+            )
+        )
+    return tuple(out)
+
+
+@dataclass
+class VirtualScene:
+    """Генератор непрерывного виртуального I/Q-потока.
+
+    Объект хранит абсолютный индекс отсчёта, поэтому фаза несущих и
+    последовательность шума непрерывны при разбиении на блоки `work()`.
+    Один и тот же seed даёт детерминированный поток.
+    """
+
+    samp_rate: float = DEFAULT_SAMP_RATE
+    emitters: Sequence[Emitter] = field(default_factory=tuple)
+    snr_db: float = 30.0
+    seed: int = 0
+    adc_bits: int = DEFAULT_ADC_BITS
+    dc_offset: complex = 0j
+    nf_db: float = DEFAULT_NF_DB
+
+    def __post_init__(self) -> None:
+        if self.samp_rate <= 0:
+            raise ValueError("samp_rate must be > 0")
+        self.emitters = tuple(self.emitters)
+        self._index = 0
+        self._rng = np.random.default_rng(self.seed)
+
+    @property
+    def sample_index(self) -> int:
+        return self._index
+
+    def reset(self) -> None:
+        self._index = 0
+        self._rng = np.random.default_rng(self.seed)
+
+    # -- физика шума --------------------------------------------------------
+    @property
+    def signal_power(self) -> float:
+        """Средняя мощность источников с учётом модуляции (Σ P_k)."""
+        return float(sum(e.expected_power() for e in self.emitters))
+
+    @property
+    def signal_amplitude(self) -> float:
+        return float(np.sqrt(self.signal_power))
+
+    @property
+    def sigma(self) -> float:
+        """СКО комплексного шума, дающая заданный SNR."""
+        a = self.signal_amplitude
+        ref = a if a > 0 else 1.0
+        return sigma_from_snr(ref, self.snr_db)
+
+    def noise_floor_dbm(self) -> float:
+        return noise_floor_dbm(self.samp_rate, self.nf_db)
+
+    # -- генерация ----------------------------------------------------------
+    def generate(self, n: int) -> np.ndarray:
+        """Следующие n комплексных отсчётов (np.complex64)."""
+        if n < 0:
+            raise ValueError("n must be >= 0")
+        if n == 0:
+            return np.zeros(0, dtype=np.complex64)
+
+        idx = np.arange(self._index, self._index + n, dtype=np.float64)
+        t = idx / self.samp_rate
+
+        x = np.zeros(n, dtype=np.complex128)
+        for e in self.emitters:
+            if e.deterministic():
+                x += e.samples(t)
+            else:
+                # Шумовой источник: квадратуры берутся из одного розыгрыша,
+                # чтобы поток не зависел от размера блока.
+                v = self._rng.standard_normal(2 * n)
+                x += (e.amplitude / np.sqrt(2.0)) * (v[0::2] + 1j * v[1::2])
+        x += self.dc_offset
+
+        # Комплексный белый гауссов шум: каждая квадратура σ/√2.
+        # Единый розыгрыш на блок + выборка чётных/нечётных индексов делают
+        # поток инвариантным к размеру блока (важно для GNU Radio work()).
+        s = self.sigma / np.sqrt(2.0)
+        v = self._rng.standard_normal(2 * n)
+        x += s * (v[0::2] + 1j * v[1::2])
+
+        # Ограничение по полной шкале и квантование АЦП.
+        x = np.clip(x.real, -1.0, 1.0) + 1j * np.clip(x.imag, -1.0, 1.0)
+        if self.adc_bits and self.adc_bits > 0:
+            levels = 2 ** int(self.adc_bits)
+            step = 2.0 / levels
+            x = np.round(x / step) * step
+
+        self._index += n
+        return x.astype(np.complex64)
+
+
+# ---------------------------------------------------------------------------
+#  спектральный анализ виртуального потока (для тестов, waterfall и отчёта)
+# ---------------------------------------------------------------------------
+
+def _window(n: int, kind: str) -> np.ndarray:
+    if kind == "hann":
+        return np.hanning(n)
+    if kind in ("none", None):
+        return np.ones(n)
+    raise ValueError(f"unknown window: {kind}")
+
+
+def spectrum(x: np.ndarray, samp_rate: float, window: str = "hann"):
+    """Спектр комплексного сигнала: (freqs_hz, power_dbfs).
+
+    Масштаб: для комплексного тона амплитуды A пик равен 20·log10(A), то
+    есть 0 дБ = полная шкала АЦП. Частоты идут по всему диапазону
+    [-fs/2, +fs/2).
+    """
+    x = np.asarray(x, dtype=np.complex128).ravel()
+    n = x.size
+    if n == 0:
+        raise ValueError("empty signal")
+    w = _window(n, window)
+    X = np.fft.fftshift(np.fft.fft(x * w))
+    freqs = np.fft.fftshift(np.fft.fftfreq(n, d=1.0 / samp_rate))
+    amp = np.abs(X) / np.sum(w)
+    return freqs, 20.0 * np.log10(np.maximum(amp, 1e-12))
+
+
+def peak_frequency(x: np.ndarray, samp_rate: float, window: str = "hann") -> float:
+    """Частота наибольшего пика спектра (Гц)."""
+    f, p = spectrum(x, samp_rate, window)
+    return float(f[int(np.argmax(p))])
+
+
+def measured_snr_db(x: np.ndarray, signal_power: float) -> float:
+    """SNR по мощности: сигнал/шум = P_signal / (P_total − P_signal)."""
+    x = np.asarray(x, dtype=np.complex128)
+    p_total = float(np.mean(np.abs(x) ** 2))
+    p_noise = p_total - float(signal_power)
+    if p_noise <= 0:
+        return float("inf")
+    return 10.0 * np.log10(float(signal_power) / p_noise)
+
+
+def deterministic_samples(emitters: Sequence[Emitter], n: int,
+                          samp_rate: float) -> np.ndarray:
+    """Детерминированная часть сцены (без шума, DC и квантования)."""
+    t = np.arange(n, dtype=np.float64) / samp_rate
+    x = np.zeros(n, dtype=np.complex128)
+    for e in emitters:
+        if e.deterministic():
+            x += e.samples(t)
+    return x
+
+
+def snr_db_from_reference(x: np.ndarray, reference: np.ndarray,
+                          dc_offset: complex = 0j) -> float:
+    """Точный SNR: после вычитания известного сигнала остаётся только шум.
+
+    В отличие от `measured_snr_db`, не страдает от ошибки вычитания двух
+    почти равных больших чисел, поэтому корректен и при SNR в десятки дБ.
+    """
+    x = np.asarray(x, dtype=np.complex128)
+    ref = np.asarray(reference, dtype=np.complex128)
+    residual = x - ref - dc_offset
+    p_sig = float(np.mean(np.abs(ref) ** 2))
+    p_noise = float(np.mean(np.abs(residual) ** 2))
+    if p_noise <= 0:
+        return float("inf")
+    return 10.0 * np.log10(p_sig / p_noise)

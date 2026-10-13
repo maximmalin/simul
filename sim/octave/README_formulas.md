@@ -71,3 +71,17 @@ displacement_max(b) = Σᵢ |bᵢ| · max|u(eᵢ)|    (верхняя оценк
 ```
 
 `engine_mode = 1` (full) каждый шаг решает полную FEM-задачу.
+
+## Надёжность (Krystal Radio, SDR)
+
+`reliability_model.m` — модель parts-count с температурным ускорением по
+Аррениусу. Проверяет **REQ-26** (MTBF ≥ 10 000 ч) по данным даташитов из
+`reliability_parts.tsv` (base FIT, Ea, T_ref/T_use, π_Q).
+
+```bash
+octave --quiet --eval "addpath('sim/octave'); \
+    reliability_model('sim/octave/reliability_parts.tsv','out/reliability.json')"
+# или просто: make reliability
+```
+
+Тесты: `tests/requirements/reliability/`.

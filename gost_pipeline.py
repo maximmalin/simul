@@ -36,6 +36,9 @@ WORK = PROJECT / "sim" / "work" / "gost"
 YAML = PROJECT / "sim" / "inputs" / "bragg_inputs.yaml"
 TPL_DIR = "/usr/share/freecad/Mod/TechDraw/Templates"
 ASI = "/mnt/ext4data/home-mirrage/Desktop/analysis-situs/AnalysisSitus-2025.2.AppImage"
+# Analysis Situs может подвиснуть на VTK/X; ограничиваем ожидание (сек) и при
+# неудаче переходим на headless-резерв FreeCAD (stage_import_brep).
+ASI_TIMEOUT = int(os.environ.get("GOST_ASITUS_TIMEOUT", "180"))
 
 for d in (FIG, WORK):
     d.mkdir(parents=True, exist_ok=True)
@@ -162,6 +165,26 @@ save-brep "{brep}"
 puts "CLEAN_OK"
 exit
 """
+
+# Резервный путь, когда Analysis Situs недоступен/завис: STEP → BREP силами
+# FreeCAD. Геометрия уже валидна (её строит FreeCAD), поэтому для чертежа
+# достаточно объединения тел в один BREP.
+IMPORT_BREP = r'''
+# --- fallback: STEP -> BREP силами FreeCAD (Analysis Situs недоступен) ---
+import FreeCAD as App, Import, Part, sys
+IN = __IN__
+OUT = __OUT__
+doc = App.newDocument("ImportBrep")
+Import.insert(IN, doc.Name)
+doc.recompute()
+shapes = [o.Shape for o in doc.Objects
+          if hasattr(o, "Shape") and o.Shape and not o.Shape.isNull()]
+if not shapes:
+    print("IMPORT_FAIL"); sys.exit(5)
+comp = Part.makeCompound(shapes)
+comp.exportBrep(OUT)
+print("IMPORT_BREP_OK:", OUT)
+'''
 
 
 # --------------------------------------------------------------------------- #
@@ -801,9 +824,51 @@ if os.environ.get("GOST_XVFB") == "1":
 '''
 
 
-def run(cmd: list, label: str, timeout: int = 240, cwd: str = str(PROJECT)):
-    r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, cwd=cwd)
-    return r
+def _kill_tree(proc) -> None:
+    """Снять процесс вместе со всеми потомками.
+
+    AppImage (Analysis Situs) порождает дочерние процессы; убийство одного
+    лишь лаунчера оставляет их висеть и блокирует следующий запуск.
+    """
+    import signal
+    try:
+        os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+    except (ProcessLookupError, PermissionError, OSError):
+        try:
+            proc.kill()
+        except OSError:
+            pass
+
+
+def headless_env() -> dict:
+    """Окружение без GUI: Qt уходит в offscreen, окно не открывается."""
+    env = dict(os.environ)
+    env.setdefault("QT_QPA_PLATFORM", "offscreen")
+    return env
+
+
+def run(cmd: list, label: str, timeout: int = 240, cwd: str = str(PROJECT),
+        env: dict | None = None):
+    """Запуск внешнего процесса в собственной сессии.
+
+    Собственная группа процессов нужна, чтобы по таймауту снималось всё
+    дерево, а не только лаунчер AppImage.
+    """
+    proc = subprocess.Popen(
+        cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+        cwd=cwd, start_new_session=True, env=env)
+    try:
+        out, _ = proc.communicate(timeout=timeout)
+        rc = proc.returncode
+    except subprocess.TimeoutExpired:
+        _kill_tree(proc)
+        try:
+            out, _ = proc.communicate(timeout=10)
+        except subprocess.TimeoutExpired:
+            out = ""
+        rc = -9
+        print(f"    [{label}] таймаут {timeout} с — процесс снят вместе с потомками")
+    return subprocess.CompletedProcess(cmd, rc, out or "", "")
 
 
 def stage_generate(src: str, out_step: Path) -> bool:
@@ -817,14 +882,33 @@ def stage_generate(src: str, out_step: Path) -> bool:
 
 
 def stage_clean(in_step: Path, out_brep: Path) -> bool:
+    # Analysis Situs (AppImage) в batch-режиме использует VTK/OpenGL и зависит
+    # от X-сервера, поэтому может подвиснуть. Таймаут ограничивает ожидание;
+    # при неудаче вызывающий код переходит на stage_import_brep (FreeCAD).
+    if not Path(ASI).exists():
+        return False
     tcl = CLEAN_TCL.format(step=str(in_step), brep=str(out_brep))
     tp = WORK / "_clean.tcl"
     tp.write_text(tcl)
-    r = run([ASI, f"/runscript={tp}"], "clean", timeout=300)
+    # Analysis Situs здесь запускается ТОЛЬКО headless: QT_QPA_PLATFORM=offscreen
+    # — окно на дисплее не появляется. Иначе AppImage поднимает GUI.
+    r = run([ASI, f"/runscript={tp}"], "clean", timeout=ASI_TIMEOUT,
+            env=headless_env())
     for line in r.stdout.splitlines():
         if line.startswith(("BEFORE", "AFTER", "sound", "CLEAN_OK")):
             print("   ", line)
     return "CLEAN_OK" in r.stdout and out_brep.exists()
+
+
+def stage_import_brep(in_step: Path, out_brep: Path) -> bool:
+    """STEP → BREP силами FreeCAD — детерминированный headless-резерв."""
+    s = IMPORT_BREP.replace("__IN__", repr(str(in_step)))
+    s = s.replace("__OUT__", repr(str(out_brep)))
+    sp = WORK / "_import_brep.py"
+    sp.write_text(s)
+    r = run(["freecadcmd", str(sp)], "import-brep", timeout=300)
+    return "IMPORT_BREP_OK" in r.stdout and out_brep.exists()
+
 
 
 def stage_draw(brep: Path, stem: str, cfg: dict) -> bool:
@@ -959,8 +1043,10 @@ def build_model(src_path: Path, cfg: dict) -> Path | None:
         print(f"[2/3] Очистка в Analysis Situs: {raw_step.name}")
         brep = WORK / f"{stem}_clean.brep"
         if not stage_clean(raw_step, brep):
-            print("   ❌ очистка не удалась")
-            return None
+            print("   ⚠ Analysis Situs недоступен — резервный STEP → BREP (FreeCAD)")
+            if not stage_import_brep(raw_step, brep):
+                print("   ❌ не удалось подготовить геометрию")
+                return None
     else:
         print("[2/3] BREP — очистка не требуется")
         brep = src_path

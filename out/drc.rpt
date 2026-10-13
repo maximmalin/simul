@@ -1,0 +1,2630 @@
+** Drc report for board.kicad_pcb **
+** Created on 2026-10-13T23:03:29+0300 **
+
+** Found 705 DRC violations **
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1800 mm)
+    Rule: netclass 'Default'; error
+    @(95.3261 mm, 80.7791 mm): Via [FIL_OUT] on F.Cu - B.Cu
+    @(96.2967 mm, 79.5806 mm): Track [MIX_IN_P] on F.Cu, length 1.0029 mm
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1150 mm)
+    Rule: netclass 'Default'; error
+    @(93.9000 mm, 94.9400 mm): Pad 2 [<no net>] of Y1 on F.Cu
+    @(95.0150 mm, 94.6310 mm): Via [LNA1_D] on F.Cu - B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(97.7714 mm, 105.5831 mm): Track [LO] on In1.Cu, length 6.3218 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on In1.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(117.9920 mm, 108.1306 mm): Track [RF_IN] on B.Cu, length 5.8627 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(96.2967 mm, 79.5806 mm): Track [MIX_IN_P] on F.Cu, length 1.0029 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1150 mm)
+    Rule: netclass 'Default'; error
+    @(95.3261 mm, 80.7791 mm): Via [FIL_OUT] on F.Cu - B.Cu
+    @(95.5869 mm, 80.2891 mm): Track [MIX_IN_P] on F.Cu, length 0.4920 mm
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1344 mm)
+    Rule: netclass 'Default'; error
+    @(95.3261 mm, 80.7791 mm): Via [FIL_OUT] on F.Cu - B.Cu
+    @(95.0948 mm, 80.2890 mm): Track [MIX_IN_P] on F.Cu, length 0.2792 mm
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1430 mm)
+    Rule: netclass 'Default'; error
+    @(95.3261 mm, 80.7791 mm): Via [FIL_OUT] on F.Cu - B.Cu
+    @(94.8981 mm, 80.4872 mm): Track [MIX_IN_P] on F.Cu, length 1.7186 mm
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(86.9334 mm, 67.5001 mm): Track [LNA1_S] on F.Cu, length 0.5457 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1986 mm)
+    Rule: netclass 'Default'; error
+    @(72.7000 mm, 130.5400 mm): Track [VIN_5V] on F.Cu, length 15.3037 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(105.1795 mm, 103.5725 mm): Track [ADC_I_F] on F.Cu, length 3.4896 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(95.9500 mm, 84.3200 mm): Track [FIL_IN] on F.Cu, length 3.5078 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(95.0150 mm, 94.6310 mm): Via [LNA1_D] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(123.8547 mm, 108.1306 mm): Track [RF_IN] on B.Cu, length 0.8856 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(109.6275 mm, 94.0400 mm): Track [LNA2_S] on F.Cu, length 0.7584 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(90.2306 mm, 86.8574 mm): Track [MIX_IN_P] on B.Cu, length 0.3544 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1693 mm)
+    Rule: netclass 'Default'; error
+    @(89.9800 mm, 87.1080 mm): Track [MIX_IN_P] on B.Cu, length 3.7833 mm
+    @(90.5193 mm, 87.5383 mm): Via [ADC_Q] on F.Cu - B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(86.5475 mm, 67.1142 mm): Track [LNA1_S] on F.Cu, length 0.7042 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1986 mm)
+    Rule: netclass 'Default'; error
+    @(88.0037 mm, 130.5463 mm): Track [VIN_5V] on F.Cu, length 2.1899 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(107.6470 mm, 106.0400 mm): Track [ADC_I_F] on F.Cu, length 1.2530 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(95.0150 mm, 94.6310 mm): Via [LNA1_D] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(98.4304 mm, 86.8004 mm): Track [FIL_IN] on F.Cu, length 4.0961 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1936 mm)
+    Rule: netclass 'Default'; error
+    @(104.3160 mm, 83.3800 mm): Track [FIL_OUT] on F.Cu, length 12.2972 mm
+    @(107.1308 mm, 86.8004 mm): Track [FIL_IN] on F.Cu, length 10.0686 mm
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(89.9800 mm, 87.1080 mm): Track [MIX_IN_P] on B.Cu, length 3.7833 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(110.8090 mm, 79.6020 mm): Track [LNA1_G] on In1.Cu, length 4.6060 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on In1.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(124.4948 mm, 107.4705 mm): Track [RF_IN] on F.Cu, length 2.0231 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(116.4512 mm, 89.2783 mm): Track [ADC_I] on B.Cu, length 2.7154 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(95.0150 mm, 94.6310 mm): Via [LNA1_D] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on In1.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(109.0910 mm, 93.5040 mm): Track [LNA2_S] on F.Cu, length 1.9290 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1986 mm)
+    Rule: netclass 'Default'; error
+    @(89.5509 mm, 132.0961 mm): Track [VIN_5V] on F.Cu, length 1.1007 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(107.1308 mm, 86.8004 mm): Track [FIL_IN] on F.Cu, length 10.0686 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(89.9356 mm, 90.8910 mm): Track [MIX_IN_P] on B.Cu, length 0.6853 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(110.8090 mm, 74.9960 mm): Track [LNA1_G] on In1.Cu, length 1.6423 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on In1.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(95.0150 mm, 94.6310 mm): Via [LNA1_D] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(109.0684 mm, 91.3733 mm): Track [LNA2_S] on B.Cu, length 5.0309 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(116.4512 mm, 91.9937 mm): Track [ADC_I] on B.Cu, length 15.2297 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(125.9253 mm, 106.0400 mm): Track [RF_IN] on F.Cu, length 0.9747 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1986 mm)
+    Rule: netclass 'Default'; error
+    @(90.6515 mm, 132.0885 mm): Track [VIN_5V] on F.Cu, length 2.1899 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(114.2504 mm, 93.9200 mm): Track [FIL_IN] on F.Cu, length 1.2496 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(89.8362 mm, 91.5690 mm): Track [MIX_IN_P] on B.Cu, length 0.1955 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(74.1808 mm, 74.1845 mm): Track [QWC_IN] on B.Cu, length 1.3115 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(105.5110 mm, 87.8159 mm): Track [LNA2_S] on B.Cu, length 5.2149 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(109.6400 mm, 73.7930 mm): Track [LNA1_G] on F.Cu, length 0.4900 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(81.9640 mm, 95.9520 mm): Via [LNA1_D] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(105.5851 mm, 102.7904 mm): Track [ADC_I] on F.Cu, length 7.8155 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(89.9624 mm, 91.7183 mm): Track [MIX_IN_P] on B.Cu, length 0.4874 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(72.7000 mm, 130.5400 mm): Track [VIN_5V] on F.Cu, length 13.3500 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(71.8500 mm, 84.3200 mm): Track [ADC_Q_F] on F.Cu, length 1.7437 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1604 mm)
+    Rule: netclass 'Default'; error
+    @(74.3957 mm, 82.5516 mm): Via [OSC_OUT] on F.Cu - B.Cu
+    @(73.0830 mm, 83.0870 mm): Track [ADC_Q_F] on F.Cu, length 2.2559 mm
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(75.1082 mm, 75.1119 mm): Track [QWC_IN] on B.Cu, length 21.1902 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(81.9640 mm, 95.9520 mm): Via [LNA1_D] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(105.2639 mm, 82.3539 mm): Track [LNA2_S] on F.Cu, length 0.0011 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(109.6400 mm, 73.3030 mm): Track [LNA1_G] on F.Cu, length 1.3191 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(97.7696 mm, 102.7904 mm): Track [ADC_I] on F.Cu, length 2.1844 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(90.3070 mm, 92.0629 mm): Track [MIX_IN_P] on B.Cu, length 1.2616 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(72.7000 mm, 117.1900 mm): Track [VIN_5V] on F.Cu, length 10.9602 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(73.0830 mm, 83.0870 mm): Track [ADC_Q_F] on F.Cu, length 2.2559 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(75.0704 mm, 96.4743 mm): Track [QWC_IN] on F.Cu, length 9.0361 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(81.9640 mm, 95.9520 mm): Via [LNA1_D] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on In1.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(110.2987 mm, 83.3001 mm): Track [LNA1_G] on In2.Cu, length 3.7744 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(105.2628 mm, 82.3539 mm): Track [LNA2_S] on F.Cu, length 4.5876 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1150 mm)
+    Rule: netclass 'Default'; error
+    @(101.3475 mm, 72.3700 mm): Pad 1 [<no net>] of R_G1 on F.Cu
+    @(105.2618 mm, 77.7663 mm): Track [LNA2_S] on F.Cu, length 16.0588 mm
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(79.2675 mm, 72.3700 mm): Track [ADC_I] on F.Cu, length 0.7944 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(90.2359 mm, 93.3616 mm): Track [MIX_IN_P] on F.Cu, length 7.6522 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(81.9640 mm, 95.9520 mm): Via [LNA1_D] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(107.6079 mm, 85.9468 mm): Track [LNA1_G] on In2.Cu, length 4.1973 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1986 mm)
+    Rule: netclass 'Default'; error
+    @(108.8500 mm, 78.3600 mm): Track [VCC_MIX] on F.Cu, length 6.6840 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(75.0704 mm, 105.5104 mm): Track [QWC_IN] on F.Cu, length 4.2137 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(75.3389 mm, 83.0870 mm): Track [ADC_Q_F] on F.Cu, length 8.3253 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1816 mm)
+    Rule: netclass 'Default'; error
+    @(85.9600 mm, 80.0180 mm): Via [ADC_I_F] on F.Cu - B.Cu
+    @(83.6642 mm, 83.0870 mm): Track [ADC_Q_F] on F.Cu, length 5.1907 mm
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(105.2618 mm, 77.7663 mm): Track [LNA2_S] on F.Cu, length 16.0588 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(79.8290 mm, 72.9320 mm): Track [ADC_I] on F.Cu, length 3.5860 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1150 mm)
+    Rule: netclass 'Default'; error
+    @(88.6463 mm, 85.4380 mm): Track [ADC_I] on In2.Cu, length 0.1394 mm
+    @(89.0494 mm, 83.1100 mm): Track [ADC_I_F] on In2.Cu, length 5.1235 mm
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1150 mm)
+    Rule: netclass 'Default'; error
+    @(88.7857 mm, 85.4380 mm): Track [ADC_I] on In2.Cu, length 11.2467 mm
+    @(89.0494 mm, 83.1100 mm): Track [ADC_I_F] on In2.Cu, length 5.1235 mm
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1888 mm)
+    Rule: netclass 'Default'; error
+    @(88.7888 mm, 96.6846 mm): Track [ADC_I] on In2.Cu, length 9.5008 mm
+    @(88.4000 mm, 85.9787 mm): Track [MIX_Q2] on In2.Cu, length 21.0213 mm
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1160 mm)
+    Rule: netclass 'Default'; error
+    @(117.4300 mm, 75.6783 mm): Track [LNA2_G] on F.Cu, length 2.8459 mm
+    @(116.9390 mm, 73.6310 mm): Via [VCC_MIX] on F.Cu - B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(84.8250 mm, 98.7725 mm): Track [MIX_IN_P] on F.Cu, length 5.5625 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(103.4473 mm, 85.9835 mm): Track [LNA1_G] on B.Cu, length 0.2423 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(125.2000 mm, 96.0000 mm): Via [LNA1_D] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1986 mm)
+    Rule: netclass 'Default'; error
+    @(113.5763 mm, 73.6337 mm): Track [VCC_MIX] on F.Cu, length 3.3158 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(79.1875 mm, 66.4100 mm): Track [QWC_CP] on F.Cu, length 1.2830 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(83.6642 mm, 83.0870 mm): Track [ADC_Q_F] on F.Cu, length 5.1907 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1150 mm)
+    Rule: netclass 'Default'; error
+    @(87.3441 mm, 79.4262 mm): Track [ADC_Q_F] on F.Cu, length 5.9292 mm
+    @(86.6500 mm, 78.3600 mm): Pad 1 [<no net>] of C_MCU3 on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(117.8925 mm, 72.3700 mm): Track [LNA2_G] on F.Cu, length 1.4392 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(116.9390 mm, 73.6310 mm): Via [VCC_MIX] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(125.2000 mm, 96.0000 mm): Via [LNA1_D] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(103.2051 mm, 85.9835 mm): Track [LNA1_G] on B.Cu, length 2.0052 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1986 mm)
+    Rule: netclass 'Default'; error
+    @(103.3500 mm, 78.3600 mm): Track [MIX_IN_N] on F.Cu, length 2.0520 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1986 mm)
+    Rule: netclass 'Default'; error
+    @(118.2405 mm, 73.6270 mm): Track [VCC_MIX] on F.Cu, length 0.9971 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1200 mm)
+    Rule: netclass 'Default'; error
+    @(119.2376 mm, 73.6270 mm): Track [VCC_MIX] on F.Cu, length 8.9974 mm
+    @(122.8000 mm, 70.8000 mm): Via [LNA2_G] on F.Cu - B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(78.2800 mm, 67.3170 mm): Track [QWC_CP] on F.Cu, length 0.7070 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1150 mm)
+    Rule: netclass 'Default'; error
+    @(77.6254 mm, 102.8069 mm): Via [LO] on F.Cu - B.Cu
+    @(78.1138 mm, 74.5928 mm): Track [QWC_CP] on B.Cu, length 28.4818 mm
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(87.3441 mm, 79.4262 mm): Track [ADC_Q_F] on F.Cu, length 5.9292 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(116.9390 mm, 73.6310 mm): Via [VCC_MIX] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(119.3317 mm, 72.3700 mm): Track [LNA2_G] on F.Cu, length 1.7954 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(125.2000 mm, 96.0000 mm): Via [LNA1_D] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on In1.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(101.7710 mm, 87.4433 mm): Track [LNA1_G] on In2.Cu, length 3.5877 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1986 mm)
+    Rule: netclass 'Default'; error
+    @(119.2376 mm, 73.6270 mm): Track [VCC_MIX] on F.Cu, length 8.9974 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1986 mm)
+    Rule: netclass 'Default'; error
+    @(101.8990 mm, 79.8110 mm): Track [MIX_IN_N] on F.Cu, length 4.8810 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1150 mm)
+    Rule: netclass 'Default'; error
+    @(95.3261 mm, 80.7791 mm): Via [FIL_OUT] on F.Cu - B.Cu
+    @(97.0134 mm, 79.8208 mm): Track [MIX_IN_N] on B.Cu, length 5.1097 mm
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(78.1138 mm, 74.5928 mm): Track [QWC_CP] on B.Cu, length 28.4818 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1772 mm)
+    Rule: netclass 'Default'; error
+    @(78.1155 mm, 103.0747 mm): Track [QWC_CP] on B.Cu, length 0.0190 mm
+    @(77.6254 mm, 102.8069 mm): Via [LO] on F.Cu - B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(116.9390 mm, 73.6310 mm): Via [VCC_MIX] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on In1.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(120.6290 mm, 71.0610 mm): Track [LNA2_G] on In2.Cu, length 1.8955 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(87.3306 mm, 73.4970 mm): Track [ADC_Q_F] on F.Cu, length 1.5902 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(125.2000 mm, 96.0000 mm): Via [LNA1_D] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(101.7710 mm, 91.0310 mm): Track [LNA1_G] on In2.Cu, length 4.2144 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1985 mm)
+    Rule: netclass 'Default'; error
+    @(98.6790 mm, 94.0000 mm): Track [LNA1_G] on F.Cu, length 0.2230 mm
+    @(100.8300 mm, 94.4900 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1985 mm)
+    Rule: netclass 'Default'; error
+    @(98.9020 mm, 94.0000 mm): Track [LNA1_G] on F.Cu, length 1.4004 mm
+    @(100.8300 mm, 94.4900 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1986 mm)
+    Rule: netclass 'Default'; error
+    @(97.0134 mm, 79.8208 mm): Track [MIX_IN_N] on B.Cu, length 5.1097 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(116.9390 mm, 73.6310 mm): Via [VCC_MIX] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1986 mm)
+    Rule: netclass 'Default'; error
+    @(125.5998 mm, 67.2648 mm): Track [VCC_MIX] on F.Cu, length 6.3374 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(78.1155 mm, 103.0747 mm): Track [QWC_CP] on B.Cu, length 0.0190 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1597 mm)
+    Rule: netclass 'Default'; error
+    @(78.1013 mm, 103.0872 mm): Track [QWC_CP] on B.Cu, length 1.1024 mm
+    @(77.6254 mm, 102.8069 mm): Via [LO] on F.Cu - B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(122.5245 mm, 71.0610 mm): Track [LNA2_G] on In2.Cu, length 0.3528 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(72.0529 mm, 74.0614 mm): Track [LNA1_D] on In1.Cu, length 2.3746 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on In1.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(117.9000 mm, 106.0400 mm): Track [ADC_Q_F] on F.Cu, length 7.0006 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(108.0570 mm, 96.0985 mm): Via [LNA1_D] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(77.3217 mm, 103.8667 mm): Track [QWC_CP] on B.Cu, length 0.0844 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1986 mm)
+    Rule: netclass 'Default'; error
+    @(93.3992 mm, 83.4328 mm): Track [MIX_IN_N] on B.Cu, length 0.1367 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1653 mm)
+    Rule: netclass 'Default'; error
+    @(93.3977 mm, 83.5695 mm): Track [MIX_IN_N] on B.Cu, length 11.8692 mm
+    @(99.1117 mm, 85.8606 mm): Track [VCC_MIX] on B.Cu, length 7.5996 mm
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1653 mm)
+    Rule: netclass 'Default'; error
+    @(93.7380 mm, 91.2343 mm): Track [VCC_MIX] on B.Cu, length 12.0767 mm
+    @(93.3977 mm, 95.4387 mm): Track [MIX_IN_N] on B.Cu, length 14.1331 mm
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1989 mm)
+    Rule: netclass 'Default'; error
+    @(83.5761 mm, 105.6022 mm): Track [MIX_IN_N] on F.Cu, length 0.0039 mm
+    @(85.2072 mm, 106.1050 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1989 mm)
+    Rule: netclass 'Default'; error
+    @(83.5789 mm, 105.6050 mm): Track [MIX_IN_N] on F.Cu, length 1.2461 mm
+    @(85.2072 mm, 106.1050 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1986 mm)
+    Rule: netclass 'Default'; error
+    @(131.9372 mm, 67.2648 mm): Track [VCC_MIX] on F.Cu, length 1.3507 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(118.2405 mm, 73.6270 mm): Via [VCC_MIX] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1150 mm)
+    Rule: netclass 'Default'; error
+    @(107.0180 mm, 82.2299 mm): Via [RF_IN] on F.Cu - B.Cu
+    @(107.5020 mm, 79.7086 mm): Track [VCC_MIX] on F.Cu, length 2.7417 mm
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(107.5020 mm, 79.7086 mm): Track [VCC_MIX] on F.Cu, length 2.7417 mm
+    @(110.4254 mm, 79.2850 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1264 mm)
+    Rule: netclass 'Default'; error
+    @(107.0180 mm, 82.2299 mm): Via [RF_IN] on F.Cu - B.Cu
+    @(107.5085 mm, 82.4503 mm): Track [VCC_MIX] on F.Cu, length 0.7592 mm
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(122.8000 mm, 70.8000 mm): Track [LNA2_G] on F.Cu, length 0.9430 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(73.7320 mm, 75.7406 mm): Track [LNA1_D] on In1.Cu, length 17.7614 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on In1.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(122.8501 mm, 110.9901 mm): Track [ADC_Q_F] on F.Cu, length 10.9990 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(108.0570 mm, 96.0985 mm): Via [LNA1_D] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1414 mm)
+    Rule: netclass 'Default'; error
+    @(129.5379 mm, 73.8165 mm): Track [LO] on In1.Cu, length 44.9247 mm
+    @(108.0570 mm, 96.0985 mm): Via [LNA1_D] on F.Cu - B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(77.2373 mm, 103.8667 mm): Track [QWC_CP] on B.Cu, length 6.3506 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(84.8250 mm, 108.1450 mm): Track [MIX_I2] on F.Cu, length 1.0397 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(118.2405 mm, 73.6270 mm): Via [VCC_MIX] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(107.5085 mm, 82.4503 mm): Track [VCC_MIX] on F.Cu, length 0.7592 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(107.5085 mm, 82.4503 mm): Track [VCC_MIX] on F.Cu, length 0.7592 mm
+    @(110.4254 mm, 79.2850 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(99.8925 mm, 93.0900 mm): Track [LNA1_D] on F.Cu, length 3.3505 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(122.8000 mm, 71.7430 mm): Track [LNA2_G] on F.Cu, length 0.8871 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1150 mm)
+    Rule: netclass 'Default'; error
+    @(108.8287 mm, 94.9020 mm): Track [LNA2_G] on F.Cu, length 0.6776 mm
+    @(109.2786 mm, 95.3482 mm): Via [LNA1_S] on F.Cu - B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(108.8287 mm, 94.9020 mm): Track [LNA2_G] on F.Cu, length 0.6776 mm
+    @(109.5630 mm, 94.5400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1821 mm)
+    Rule: netclass 'Default'; error
+    @(109.5027 mm, 94.8325 mm): Track [LNA2_G] on F.Cu, length 0.1583 mm
+    @(109.2786 mm, 95.3482 mm): Via [LNA1_S] on F.Cu - B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(109.5027 mm, 94.8325 mm): Track [LNA2_G] on F.Cu, length 0.1583 mm
+    @(109.5630 mm, 94.5400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1882 mm)
+    Rule: netclass 'Default'; error
+    @(109.6380 mm, 94.9146 mm): Track [LNA2_G] on F.Cu, length 0.0123 mm
+    @(109.2786 mm, 95.3482 mm): Via [LNA1_S] on F.Cu - B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(122.9116 mm, 122.0500 mm): Track [ADC_Q_F] on In1.Cu, length 2.3133 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on In1.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(108.0570 mm, 96.0985 mm): Via [LNA1_D] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on In1.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(77.2373 mm, 110.2173 mm): Track [QWC_CP] on B.Cu, length 1.1493 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1150 mm)
+    Rule: netclass 'Default'; error
+    @(64.7942 mm, 72.4058 mm): Track [OSC_OUT] on F.Cu, length 2.1499 mm
+    @(66.3500 mm, 72.4000 mm): Pad 2 [<no net>] of C_OSC2 on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(118.2405 mm, 73.6270 mm): Via [VCC_MIX] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on In1.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1150 mm)
+    Rule: netclass 'Default'; error
+    @(118.2405 mm, 73.6270 mm): Via [VCC_MIX] on F.Cu - B.Cu
+    @(117.7503 mm, 68.8390 mm): Track [USB_D_] on In2.Cu, length 26.0927 mm
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(84.8250 mm, 109.1847 mm): Track [MIX_I2] on F.Cu, length 1.2101 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1678 mm)
+    Rule: netclass 'Default'; error
+    @(89.3933 mm, 110.6937 mm): Via [MIX_Q1] on F.Cu - B.Cu
+    @(85.6953 mm, 110.1010 mm): Track [MIX_I2] on In1.Cu, length 5.5168 mm
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(109.7961 mm, 94.9097 mm): Track [LNA2_G] on In2.Cu, length 4.9934 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(122.9110 mm, 124.3633 mm): Track [ADC_Q_F] on In1.Cu, length 0.6851 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on In1.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(123.4473 mm, 124.9627 mm): Track [ADC_Q_F] on F.Cu, length 0.6817 mm
+    @(124.2600 mm, 127.3970 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(123.9340 mm, 125.4400 mm): Track [ADC_Q_F] on F.Cu, length 1.2635 mm
+    @(124.2600 mm, 127.3970 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(106.9681 mm, 82.9836 mm): Track [VCC_MIX] on F.Cu, length 0.4923 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1545 mm)
+    Rule: netclass 'Default'; error
+    @(105.5110 mm, 82.6010 mm): Via [LNA2_S] on F.Cu - B.Cu
+    @(106.3699 mm, 83.1305 mm): Track [VCC_MIX] on In1.Cu, length 4.4699 mm
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(96.5420 mm, 93.0900 mm): Track [LNA1_D] on F.Cu, length 2.1694 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(108.0570 mm, 96.0985 mm): Via [LNA1_D] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(106.4354 mm, 94.3164 mm): Via [LNA1_D] on F.Cu - B.Cu
+    @(108.6900 mm, 94.4900 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(106.4354 mm, 94.3164 mm): Via [LNA1_D] on F.Cu - B.Cu
+    @(106.8636 mm, 95.4900 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(66.4000 mm, 74.0000 mm): Track [OSC_OUT] on In1.Cu, length 3.0325 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on In1.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(118.2405 mm, 73.6270 mm): Via [VCC_MIX] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(85.6953 mm, 110.1010 mm): Track [MIX_I2] on In1.Cu, length 5.5168 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on In1.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(106.3699 mm, 83.1305 mm): Track [VCC_MIX] on In1.Cu, length 4.4699 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on In1.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(113.3270 mm, 91.3788 mm): Track [LNA2_G] on In2.Cu, length 8.5108 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(94.9407 mm, 94.6913 mm): Track [LNA1_D] on In1.Cu, length 1.7829 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on In1.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(106.4354 mm, 94.3164 mm): Via [LNA1_D] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1986 mm)
+    Rule: netclass 'Default'; error
+    @(88.4525 mm, 72.3700 mm): Track [ADC_Q_F] on F.Cu, length 6.6325 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(66.4000 mm, 77.0325 mm): Track [OSC_OUT] on In1.Cu, length 7.4662 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on In1.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(91.2120 mm, 110.1010 mm): Track [MIX_I2] on In1.Cu, length 4.9807 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on In1.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(106.4758 mm, 82.9836 mm): Via [VCC_MIX] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(101.9000 mm, 83.1305 mm): Track [VCC_MIX] on In1.Cu, length 3.7807 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on In1.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1653 mm)
+    Rule: netclass 'Default'; error
+    @(93.7380 mm, 91.2343 mm): Track [VCC_MIX] on B.Cu, length 12.0767 mm
+    @(93.3977 mm, 83.5695 mm): Track [MIX_IN_N] on B.Cu, length 11.8692 mm
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(93.6800 mm, 95.9520 mm): Track [LNA1_D] on In1.Cu, length 11.7160 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on In1.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(106.4354 mm, 94.3164 mm): Via [LNA1_D] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on In1.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(113.3354 mm, 82.8088 mm): Track [LNA2_G] on F.Cu, length 3.0358 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1206 mm)
+    Rule: netclass 'Default'; error
+    @(116.2500 mm, 78.3600 mm): Pad 1 [ADC_I] of C_OPI on F.Cu
+    @(113.3354 mm, 79.7730 mm): Track [LNA2_G] on F.Cu, length 5.7907 mm
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(74.3957 mm, 82.5516 mm): Track [OSC_OUT] on In1.Cu, length 14.0720 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on In1.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1986 mm)
+    Rule: netclass 'Default'; error
+    @(93.1422 mm, 77.0601 mm): Track [ADC_Q_F] on F.Cu, length 2.5376 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(106.4758 mm, 82.9836 mm): Via [VCC_MIX] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(94.7350 mm, 106.5833 mm): Track [MIX_I2] on F.Cu, length 1.1930 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(93.7302 mm, 103.3188 mm): Track [VCC_MIX] on F.Cu, length 1.4372 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(106.4354 mm, 94.3164 mm): Via [LNA1_D] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(106.4354 mm, 94.3164 mm): Via [LNA1_D] on F.Cu - B.Cu
+    @(106.6174 mm, 93.8517 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(95.3261 mm, 80.7791 mm): Via [FIL_OUT] on F.Cu - B.Cu
+    @(106.9826 mm, 86.4754 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(81.9500 mm, 95.8571 mm): Track [LNA1_D] on F.Cu, length 1.4384 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(84.3462 mm, 92.5020 mm): Track [OSC_OUT] on In1.Cu, length 9.6726 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on In1.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(113.3354 mm, 79.7730 mm): Track [LNA2_G] on F.Cu, length 5.7907 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1160 mm)
+    Rule: netclass 'Default'; error
+    @(117.4300 mm, 75.6783 mm): Track [LNA2_G] on F.Cu, length 2.8459 mm
+    @(116.9390 mm, 73.6310 mm): Via [VCC_MIX] on F.Cu - B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1986 mm)
+    Rule: netclass 'Default'; error
+    @(93.3294 mm, 79.7324 mm): Track [ADC_Q_F] on In2.Cu, length 2.3178 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1923 mm)
+    Rule: netclass 'Default'; error
+    @(95.3261 mm, 80.7791 mm): Via [FIL_OUT] on F.Cu - B.Cu
+    @(94.9683 mm, 81.3713 mm): Track [ADC_Q_F] on In2.Cu, length 0.6657 mm
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(106.4758 mm, 82.9836 mm): Via [VCC_MIX] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on In1.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(95.3261 mm, 80.7791 mm): Via [FIL_OUT] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1980 mm)
+    Rule: netclass 'Default'; error
+    @(95.3261 mm, 80.7791 mm): Via [FIL_OUT] on F.Cu - B.Cu
+    @(94.7281 mm, 88.9244 mm): Track [LNA1_S] on In1.Cu, length 13.5973 mm
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(95.9280 mm, 106.5780 mm): Track [MIX_I2] on F.Cu, length 0.4200 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(94.0187 mm, 92.5020 mm): Track [OSC_OUT] on In1.Cu, length 1.2488 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on In1.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(92.7140 mm, 104.3350 mm): Track [VCC_MIX] on F.Cu, length 2.9390 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1218 mm)
+    Rule: netclass 'Default'; error
+    @(89.7000 mm, 133.7400 mm): Track [USB_D_] on In2.Cu, length 3.2218 mm
+    @(92.2000 mm, 130.5400 mm): PTH pad 1 [VIN_5V] of J_USB
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1218 mm)
+    Rule: netclass 'Default'; error
+    @(91.9782 mm, 131.4618 mm): Track [USB_D_] on In2.Cu, length 13.0279 mm
+    @(92.2000 mm, 130.5400 mm): PTH pad 1 [VIN_5V] of J_USB
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1986 mm)
+    Rule: netclass 'Default'; error
+    @(94.9683 mm, 81.3713 mm): Track [ADC_Q_F] on In2.Cu, length 0.6657 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(80.9329 mm, 94.8400 mm): Track [LNA1_D] on F.Cu, length 5.7329 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1782 mm)
+    Rule: netclass 'Default'; error
+    @(106.3180 mm, 93.3459 mm): Via [LNA2_D] on F.Cu - B.Cu
+    @(106.4354 mm, 94.3164 mm): Track [LNA1_D] on F.Cu, length 1.7344 mm
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(106.4354 mm, 94.3164 mm): Track [LNA1_D] on F.Cu, length 1.7344 mm
+    @(106.8150 mm, 93.0210 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(105.2090 mm, 93.0900 mm): Track [LNA1_D] on F.Cu, length 5.3165 mm
+    @(106.8150 mm, 93.0210 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(106.4758 mm, 82.9836 mm): Via [VCC_MIX] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(99.2266 mm, 85.8039 mm): Via [VCC_MIX] on F.Cu - B.Cu
+    @(106.9826 mm, 86.4754 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(117.4300 mm, 75.6783 mm): Track [LNA2_G] on F.Cu, length 2.8459 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(95.3261 mm, 80.7791 mm): Via [FIL_OUT] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on In1.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1986 mm)
+    Rule: netclass 'Default'; error
+    @(105.0061 mm, 131.4618 mm): Track [USB_D_] on In2.Cu, length 0.2678 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(66.2925 mm, 66.4100 mm): Track [MIX_I2] on F.Cu, length 1.1430 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(131.0500 mm, 78.3600 mm): Track [OSC_IN] on F.Cu, length 3.6275 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1986 mm)
+    Rule: netclass 'Default'; error
+    @(95.6340 mm, 81.3713 mm): Track [ADC_Q_F] on In2.Cu, length 0.0603 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(99.2266 mm, 85.8039 mm): Via [VCC_MIX] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(101.4500 mm, 84.3200 mm): Track [FIL_OUT] on F.Cu, length 5.0057 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(117.4300 mm, 72.8325 mm): Track [LNA2_G] on F.Cu, length 0.6540 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1986 mm)
+    Rule: netclass 'Default'; error
+    @(105.2739 mm, 131.4618 mm): Track [USB_D_] on In2.Cu, length 3.4816 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(95.3261 mm, 80.7791 mm): Via [FIL_OUT] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1672 mm)
+    Rule: netclass 'Default'; error
+    @(95.2499 mm, 79.7468 mm): Via [FIL_OUT] on F.Cu - B.Cu
+    @(95.5869 mm, 80.2891 mm): Track [MIX_IN_P] on F.Cu, length 0.4920 mm
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(99.2266 mm, 85.8039 mm): Via [VCC_MIX] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on In1.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1986 mm)
+    Rule: netclass 'Default'; error
+    @(95.6242 mm, 81.3118 mm): Track [ADC_Q_F] on In2.Cu, length 5.7089 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(67.1010 mm, 67.2180 mm): Track [MIX_I2] on F.Cu, length 0.8140 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1599 mm)
+    Rule: netclass 'Default'; error
+    @(63.4436 mm, 79.2091 mm): Track [LO] on In2.Cu, length 20.0586 mm
+    @(67.1247 mm, 68.0580 mm): Track [MIX_I2] on In2.Cu, length 14.3939 mm
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1599 mm)
+    Rule: netclass 'Default'; error
+    @(67.1247 mm, 82.4519 mm): Track [MIX_I2] on In2.Cu, length 11.3586 mm
+    @(63.4436 mm, 79.2091 mm): Track [LO] on In2.Cu, length 20.0586 mm
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1238 mm)
+    Rule: netclass 'Default'; error
+    @(75.1564 mm, 90.4836 mm): Track [MIX_I2] on In2.Cu, length 4.8957 mm
+    @(79.0590 mm, 93.7120 mm): Via [FIL_OUT] on F.Cu - B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1238 mm)
+    Rule: netclass 'Default'; error
+    @(79.0590 mm, 93.7120 mm): Via [FIL_OUT] on F.Cu - B.Cu
+    @(78.6181 mm, 93.9454 mm): Track [MIX_I2] on In2.Cu, length 9.6029 mm
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(128.4850 mm, 80.9250 mm): Track [OSC_IN] on F.Cu, length 8.0540 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(116.9350 mm, 68.0220 mm): Track [USB_D_] on In2.Cu, length 1.1542 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1150 mm)
+    Rule: netclass 'Default'; error
+    @(118.2405 mm, 73.6270 mm): Via [VCC_MIX] on F.Cu - B.Cu
+    @(117.7503 mm, 68.8390 mm): Track [USB_D_] on In2.Cu, length 26.0927 mm
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(107.7525 mm, 94.9900 mm): Track [LNA2_G] on F.Cu, length 1.9833 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(97.9105 mm, 80.7805 mm): Track [FIL_OUT] on F.Cu, length 2.5844 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1164 mm)
+    Rule: netclass 'Default'; error
+    @(106.3501 mm, 96.3924 mm): Track [LNA2_G] on F.Cu, length 8.7715 mm
+    @(101.5650 mm, 95.9010 mm): Via [LNA1_S] on F.Cu - B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1980 mm)
+    Rule: netclass 'Default'; error
+    @(95.2499 mm, 79.7468 mm): Via [FIL_OUT] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(95.2499 mm, 79.7468 mm): Via [FIL_OUT] on F.Cu - B.Cu
+    @(96.0217 mm, 79.4666 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(95.2499 mm, 79.7468 mm): Via [FIL_OUT] on F.Cu - B.Cu
+    @(94.8955 mm, 80.0994 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(99.2266 mm, 85.8039 mm): Via [VCC_MIX] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1986 mm)
+    Rule: netclass 'Default'; error
+    @(99.6611 mm, 85.3486 mm): Track [ADC_Q_F] on In2.Cu, length 0.7630 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1292 mm)
+    Rule: netclass 'Default'; error
+    @(101.7710 mm, 87.4433 mm): Via [LNA1_G] on F.Cu - B.Cu
+    @(100.4241 mm, 85.3486 mm): Track [ADC_Q_F] on In2.Cu, length 9.1053 mm
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(120.3886 mm, 80.9598 mm): Track [OSC_IN] on In1.Cu, length 4.1521 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on In1.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(78.6546 mm, 103.7294 mm): Track [MIX_I2] on F.Cu, length 6.2447 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(117.7503 mm, 68.8390 mm): Track [USB_D_] on In2.Cu, length 26.0927 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(106.3501 mm, 96.3924 mm): Track [LNA2_G] on F.Cu, length 8.7715 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1986 mm)
+    Rule: netclass 'Default'; error
+    @(101.4500 mm, 84.3200 mm): Track [FIL_OUT] on F.Cu, length 1.3198 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1150 mm)
+    Rule: netclass 'Default'; error
+    @(102.3765 mm, 83.3800 mm): Track [FIL_OUT] on F.Cu, length 1.9395 mm
+    @(103.3500 mm, 84.3200 mm): Pad 2 [<no net>] of C_BS2 on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(95.2499 mm, 79.7468 mm): Via [FIL_OUT] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1986 mm)
+    Rule: netclass 'Default'; error
+    @(100.4241 mm, 85.3486 mm): Track [ADC_Q_F] on In2.Cu, length 9.1053 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1149 mm)
+    Rule: netclass 'Default'; error
+    @(106.3180 mm, 93.3459 mm): Via [LNA2_D] on F.Cu - B.Cu
+    @(106.8636 mm, 91.7860 mm): Track [ADC_Q_F] on In2.Cu, length 1.8518 mm
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1217 mm)
+    Rule: netclass 'Default'; error
+    @(95.2499 mm, 79.7468 mm): Via [FIL_OUT] on F.Cu - B.Cu
+    @(94.7281 mm, 88.9244 mm): Track [LNA1_S] on In1.Cu, length 13.5973 mm
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(93.7380 mm, 103.3110 mm): Via [VCC_MIX] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(117.4527 mm, 83.8958 mm): Track [OSC_IN] on In1.Cu, length 0.0958 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on In1.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(117.7516 mm, 94.9318 mm): Track [USB_D_] on In2.Cu, length 6.6008 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1150 mm)
+    Rule: netclass 'Default'; error
+    @(122.4193 mm, 99.5991 mm): Track [USB_D_] on In2.Cu, length 23.6445 mm
+    @(122.9116 mm, 122.0500 mm): Via [ADC_Q_F] on F.Cu - B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(83.0703 mm, 108.1450 mm): Track [MIX_I2] on F.Cu, length 1.7547 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1172 mm)
+    Rule: netclass 'Default'; error
+    @(84.8250 mm, 105.6050 mm): Pad 2 [MIX_IN_N] of U_MIX1 on F.Cu
+    @(84.8250 mm, 106.8750 mm): Track [MIX_I1] on F.Cu, length 1.1011 mm
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1150 mm)
+    Rule: netclass 'Default'; error
+    @(85.6044 mm, 106.0972 mm): Track [MIX_I1] on F.Cu, length 10.0742 mm
+    @(94.7350 mm, 106.5833 mm): Via [MIX_I2] on F.Cu - B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(97.4719 mm, 96.4941 mm): Track [LNA2_G] on B.Cu, length 5.6876 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1512 mm)
+    Rule: netclass 'Default'; error
+    @(97.4719 mm, 102.1817 mm): Track [LNA2_G] on B.Cu, length 7.5614 mm
+    @(95.5072 mm, 103.4023 mm): Via [ADC_I] on F.Cu - B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(95.2499 mm, 79.7468 mm): Via [FIL_OUT] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on In1.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1986 mm)
+    Rule: netclass 'Default'; error
+    @(106.8636 mm, 91.7860 mm): Track [ADC_Q_F] on In2.Cu, length 1.8518 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1986 mm)
+    Rule: netclass 'Default'; error
+    @(102.3765 mm, 83.3800 mm): Track [FIL_OUT] on F.Cu, length 1.9395 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1986 mm)
+    Rule: netclass 'Default'; error
+    @(106.8636 mm, 91.7860 mm): Track [ADC_Q_F] on In2.Cu, length 1.8518 mm
+    @(106.6174 mm, 93.8517 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1868 mm)
+    Rule: netclass 'Default'; error
+    @(106.8274 mm, 93.6374 mm): Track [ADC_Q_F] on In2.Cu, length 9.4543 mm
+    @(106.3180 mm, 93.3459 mm): Via [LNA2_D] on F.Cu - B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(93.7380 mm, 103.3110 mm): Via [VCC_MIX] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(117.3569 mm, 83.8958 mm): Track [OSC_IN] on In1.Cu, length 7.5567 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on In1.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(122.4193 mm, 99.5991 mm): Track [USB_D_] on In2.Cu, length 23.6445 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1150 mm)
+    Rule: netclass 'Default'; error
+    @(122.4218 mm, 123.2435 mm): Track [USB_D_] on In2.Cu, length 5.4302 mm
+    @(123.4473 mm, 124.9627 mm): Via [ADC_Q_F] on F.Cu - B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(64.4675 mm, 66.4100 mm): Track [MIX_I1] on F.Cu, length 2.1382 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1150 mm)
+    Rule: netclass 'Default'; error
+    @(62.9535 mm, 67.9199 mm): Track [MIX_I1] on F.Cu, length 18.1336 mm
+    @(63.4422 mm, 79.0430 mm): Via [LO] on F.Cu - B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(97.4719 mm, 102.1817 mm): Track [LNA2_G] on B.Cu, length 7.5614 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1534 mm)
+    Rule: netclass 'Default'; error
+    @(88.4000 mm, 107.0000 mm): Via [MIX_Q2] on F.Cu - B.Cu
+    @(92.1252 mm, 107.5284 mm): Track [LNA2_G] on B.Cu, length 11.8436 mm
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(95.2499 mm, 79.7468 mm): Via [FIL_OUT] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1986 mm)
+    Rule: netclass 'Default'; error
+    @(106.8274 mm, 93.6374 mm): Track [ADC_Q_F] on In2.Cu, length 9.4543 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1986 mm)
+    Rule: netclass 'Default'; error
+    @(106.8274 mm, 93.6374 mm): Track [ADC_Q_F] on In2.Cu, length 9.4543 mm
+    @(106.6174 mm, 93.8517 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(93.7380 mm, 103.3110 mm): Via [VCC_MIX] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on In1.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(109.8002 mm, 83.8958 mm): Track [OSC_IN] on In1.Cu, length 11.1802 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on In1.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(101.8441 mm, 91.8063 mm): Track [OSC_IN] on F.Cu, length 0.9058 mm
+    @(106.8150 mm, 93.0210 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1182 mm)
+    Rule: netclass 'Default'; error
+    @(101.2036 mm, 92.4468 mm): Track [OSC_IN] on F.Cu, length 8.2801 mm
+    @(93.9000 mm, 93.2400 mm): Pad 3 [OSC_OUT] of Y1 on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(122.4218 mm, 123.2435 mm): Track [USB_D_] on In2.Cu, length 5.4302 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1986 mm)
+    Rule: netclass 'Default'; error
+    @(104.3160 mm, 83.3800 mm): Track [FIL_OUT] on F.Cu, length 12.2972 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1936 mm)
+    Rule: netclass 'Default'; error
+    @(113.0046 mm, 92.0822 mm): Track [FIL_OUT] on F.Cu, length 3.4576 mm
+    @(107.1308 mm, 86.8004 mm): Track [FIL_IN] on F.Cu, length 10.0686 mm
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(62.9535 mm, 67.9199 mm): Track [MIX_I1] on F.Cu, length 18.1336 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1986 mm)
+    Rule: netclass 'Default'; error
+    @(113.5322 mm, 100.3030 mm): Track [ADC_Q_F] on In2.Cu, length 1.3488 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(92.1252 mm, 107.5284 mm): Track [LNA2_G] on B.Cu, length 11.8436 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1159 mm)
+    Rule: netclass 'Default'; error
+    @(80.2816 mm, 107.5284 mm): Track [LNA2_G] on B.Cu, length 3.1560 mm
+    @(78.0500 mm, 108.4900 mm): PTH pad 1 [QWC_IN] of X_QWC1
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(93.7380 mm, 103.3110 mm): Via [VCC_MIX] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(79.0590 mm, 93.7120 mm): Via [FIL_OUT] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(101.2036 mm, 92.4468 mm): Track [OSC_IN] on F.Cu, length 8.2801 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(101.2036 mm, 92.4468 mm): Track [OSC_IN] on F.Cu, length 8.2801 mm
+    @(106.8150 mm, 93.0210 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1986 mm)
+    Rule: netclass 'Default'; error
+    @(113.0046 mm, 92.0822 mm): Track [FIL_OUT] on F.Cu, length 3.4576 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(126.3457 mm, 127.2306 mm): Track [USB_D_] on F.Cu, length 0.7195 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1150 mm)
+    Rule: netclass 'Default'; error
+    @(125.1975 mm, 127.9400 mm): Pad 10 [USB_DP] of U1 on F.Cu
+    @(126.3402 mm, 127.9500 mm): Track [USB_D_] on F.Cu, length 0.5304 mm
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(80.2816 mm, 107.5284 mm): Track [LNA2_G] on B.Cu, length 3.1560 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(62.9514 mm, 86.0535 mm): Track [MIX_I1] on F.Cu, length 13.8076 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1150 mm)
+    Rule: netclass 'Default'; error
+    @(72.7179 mm, 95.8141 mm): Track [MIX_I1] on F.Cu, length 2.6226 mm
+    @(75.1082 mm, 96.3020 mm): Via [QWC_IN] on F.Cu - B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1986 mm)
+    Rule: netclass 'Default'; error
+    @(114.9102 mm, 100.2843 mm): Track [ADC_Q_F] on F.Cu, length 4.2283 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(107.8000 mm, 129.0000 mm): Via [USB_D_] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(79.0590 mm, 93.7120 mm): Via [FIL_OUT] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(92.9234 mm, 92.4468 mm): Track [OSC_IN] on F.Cu, length 1.2697 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1986 mm)
+    Rule: netclass 'Default'; error
+    @(116.4622 mm, 92.0822 mm): Track [FIL_OUT] on F.Cu, length 2.5990 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(94.0500 mm, 78.3600 mm): Track [FIL_OUT] on F.Cu, length 1.1325 mm
+    @(94.8955 mm, 80.0994 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1926 mm)
+    Rule: netclass 'Default'; error
+    @(94.0500 mm, 79.4925 mm): Track [FIL_OUT] on F.Cu, length 0.8362 mm
+    @(93.1425 mm, 79.5977 mm): Via [ADC_Q_F] on F.Cu - B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(94.0500 mm, 79.4925 mm): Track [FIL_OUT] on F.Cu, length 0.8362 mm
+    @(94.8955 mm, 80.0994 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1150 mm)
+    Rule: netclass 'Default'; error
+    @(93.4589 mm, 80.0840 mm): Track [FIL_OUT] on F.Cu, length 0.3759 mm
+    @(93.1425 mm, 79.5977 mm): Via [ADC_Q_F] on F.Cu - B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1193 mm)
+    Rule: netclass 'Default'; error
+    @(93.0830 mm, 80.0884 mm): Track [FIL_OUT] on F.Cu, length 1.8843 mm
+    @(93.1425 mm, 79.5977 mm): Via [ADC_Q_F] on F.Cu - B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(126.3402 mm, 127.9500 mm): Track [USB_D_] on F.Cu, length 0.5304 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1587 mm)
+    Rule: netclass 'Default'; error
+    @(125.1975 mm, 127.9400 mm): Pad 10 [USB_DP] of U1 on F.Cu
+    @(125.9676 mm, 128.3274 mm): Track [USB_D_] on F.Cu, length 0.6532 mm
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(94.0500 mm, 84.3200 mm): Track [LNA2_D] on F.Cu, length 9.8173 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1150 mm)
+    Rule: netclass 'Default'; error
+    @(101.8950 mm, 91.8017 mm): Via [OSC_IN] on F.Cu - B.Cu
+    @(100.9922 mm, 91.2616 mm): Track [LNA2_D] on F.Cu, length 4.9320 mm
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(72.7179 mm, 95.8141 mm): Track [MIX_I1] on F.Cu, length 2.6226 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1370 mm)
+    Rule: netclass 'Default'; error
+    @(75.3404 mm, 95.8118 mm): Track [MIX_I1] on F.Cu, length 0.1286 mm
+    @(75.1082 mm, 96.3020 mm): Via [QWC_IN] on F.Cu - B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1341 mm)
+    Rule: netclass 'Default'; error
+    @(75.1082 mm, 96.3020 mm): Via [QWC_IN] on F.Cu - B.Cu
+    @(75.4301 mm, 95.9040 mm): Track [MIX_I1] on F.Cu, length 7.4381 mm
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(107.8000 mm, 129.0000 mm): Via [USB_D_] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(79.0590 mm, 93.7120 mm): Via [FIL_OUT] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on In1.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1455 mm)
+    Rule: netclass 'Default'; error
+    @(79.6034 mm, 81.7517 mm): Track [MIX_Q1] on In2.Cu, length 19.1530 mm
+    @(79.0590 mm, 93.7120 mm): Via [FIL_OUT] on F.Cu - B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1986 mm)
+    Rule: netclass 'Default'; error
+    @(117.9000 mm, 103.2742 mm): Track [ADC_Q_F] on F.Cu, length 2.7658 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1986 mm)
+    Rule: netclass 'Default'; error
+    @(89.7750 mm, 106.8750 mm): Track [MIX_Q2] on F.Cu, length 0.7388 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1224 mm)
+    Rule: netclass 'Default'; error
+    @(96.2250 mm, 106.8750 mm): Pad 3 [MIX_I2] of U_OP1 on F.Cu
+    @(90.2974 mm, 107.3974 mm): Track [MIX_Q2] on F.Cu, length 10.3443 mm
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(93.0830 mm, 80.0884 mm): Track [FIL_OUT] on F.Cu, length 1.8843 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(125.9676 mm, 128.3274 mm): Track [USB_D_] on F.Cu, length 0.6532 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1587 mm)
+    Rule: netclass 'Default'; error
+    @(125.1975 mm, 127.9400 mm): Pad 10 [USB_DP] of U1 on F.Cu
+    @(125.3143 mm, 128.3237 mm): Track [USB_D_] on F.Cu, length 0.1649 mm
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(107.8000 mm, 129.0000 mm): Via [USB_D_] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on In1.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(79.0590 mm, 93.7120 mm): Via [FIL_OUT] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(87.4037 mm, 71.0522 mm): Track [ADC_Q] on In2.Cu, length 2.3079 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(100.9922 mm, 91.2616 mm): Track [LNA2_D] on F.Cu, length 4.9320 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(75.4301 mm, 95.9040 mm): Track [MIX_I1] on F.Cu, length 7.4381 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1150 mm)
+    Rule: netclass 'Default'; error
+    @(80.6895 mm, 101.1637 mm): Track [MIX_I1] on F.Cu, length 2.5636 mm
+    @(81.1731 mm, 103.5161 mm): Via [LO] on F.Cu - B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1986 mm)
+    Rule: netclass 'Default'; error
+    @(90.2974 mm, 107.3974 mm): Track [MIX_Q2] on F.Cu, length 10.3443 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(107.8000 mm, 129.0000 mm): Via [USB_D_] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(91.7484 mm, 81.4186 mm): Track [FIL_OUT] on F.Cu, length 1.2881 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1796 mm)
+    Rule: netclass 'Default'; error
+    @(88.5500 mm, 84.3200 mm): Pad 2 [<no net>] of C_ANA2 on F.Cu
+    @(91.7484 mm, 82.7067 mm): Track [FIL_OUT] on F.Cu, length 15.5639 mm
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(89.0357 mm, 72.6842 mm): Track [ADC_Q] on In2.Cu, length 1.8810 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1889 mm)
+    Rule: netclass 'Default'; error
+    @(90.9167 mm, 72.6842 mm): Track [ADC_Q] on In2.Cu, length 14.4242 mm
+    @(90.3028 mm, 86.7526 mm): Via [MIX_IN_P] on F.Cu - B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(89.7000 mm, 130.5400 mm): Track [USB_DP] on F.Cu, length 3.6770 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(71.1917 mm, 95.1303 mm): Via [FIL_OUT] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(105.9242 mm, 91.2620 mm): Track [LNA2_D] on F.Cu, length 2.5854 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(80.6895 mm, 101.1637 mm): Track [MIX_I1] on F.Cu, length 2.5636 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1210 mm)
+    Rule: netclass 'Default'; error
+    @(81.1731 mm, 103.5161 mm): Via [LO] on F.Cu - B.Cu
+    @(80.6825 mm, 103.7274 mm): Track [MIX_I1] on F.Cu, length 4.4587 mm
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1986 mm)
+    Rule: netclass 'Default'; error
+    @(100.6417 mm, 107.3974 mm): Track [MIX_Q2] on F.Cu, length 0.0109 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(116.9350 mm, 68.0220 mm): Via [USB_D_] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(90.9167 mm, 72.6842 mm): Track [ADC_Q] on In2.Cu, length 14.4242 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(91.7484 mm, 82.7067 mm): Track [FIL_OUT] on F.Cu, length 15.5639 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(71.1917 mm, 95.1303 mm): Via [FIL_OUT] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(92.3000 mm, 127.9400 mm): Track [USB_DP] on F.Cu, length 32.8975 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(135.4200 mm, 93.9200 mm): Track [LNA2_D] on F.Cu, length 4.7871 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(80.6825 mm, 103.7274 mm): Track [MIX_I1] on F.Cu, length 4.4587 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1986 mm)
+    Rule: netclass 'Default'; error
+    @(100.6526 mm, 107.3974 mm): Track [MIX_Q2] on F.Cu, length 0.7388 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(90.9167 mm, 87.1084 mm): Track [ADC_Q] on In2.Cu, length 0.5854 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(116.9350 mm, 68.0220 mm): Via [USB_D_] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(71.1917 mm, 95.1303 mm): Via [FIL_OUT] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on In1.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(80.7430 mm, 93.7120 mm): Track [FIL_OUT] on F.Cu, length 1.6840 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(108.6275 mm, 66.4100 mm): Track [USB_DP] on F.Cu, length 1.6585 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(132.0350 mm, 97.3050 mm): Track [LNA2_D] on F.Cu, length 1.2128 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1989 mm)
+    Rule: netclass 'Default'; error
+    @(90.6138 mm, 87.6143 mm): Track [ADC_Q] on In1.Cu, length 0.2657 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on In1.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(130.7870 mm, 72.3700 mm): Track [LO_SRC] on F.Cu, length 1.3296 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(116.9350 mm, 68.0220 mm): Via [USB_D_] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on In1.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(71.1917 mm, 95.1303 mm): Via [FIL_OUT] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(73.6525 mm, 66.4100 mm): Track [MIX_Q2] on F.Cu, length 2.8054 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(78.9248 mm, 93.8850 mm): Track [FIL_OUT] on In1.Cu, length 1.7610 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on In1.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(130.7920 mm, 97.3160 mm): Track [LNA2_D] on In2.Cu, length 1.6759 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(109.8000 mm, 67.5830 mm): Track [USB_DP] on F.Cu, length 0.3270 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1989 mm)
+    Rule: netclass 'Default'; error
+    @(90.4259 mm, 87.8022 mm): Track [ADC_Q] on In1.Cu, length 3.6200 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on In1.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(130.7870 mm, 73.6996 mm): Track [LO_SRC] on F.Cu, length 1.3650 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(116.9350 mm, 68.0220 mm): Via [USB_D_] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1272 mm)
+    Rule: netclass 'Default'; error
+    @(131.0500 mm, 84.3200 mm): Pad 1 [LNA1_S] of C_LNA1 on F.Cu
+    @(131.7522 mm, 74.6648 mm): Track [LO_SRC] on F.Cu, length 10.6331 mm
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1873 mm)
+    Rule: netclass 'Default'; error
+    @(126.3457 mm, 127.2306 mm): Via [USB_D_] on F.Cu - B.Cu
+    @(125.8643 mm, 126.9400 mm): Track [LO_SRC] on F.Cu, length 0.6668 mm
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(77.6796 mm, 95.1303 mm): Track [FIL_OUT] on In1.Cu, length 6.4879 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on In1.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(122.9116 mm, 122.0500 mm): Via [ADC_Q_F] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(75.6360 mm, 68.3940 mm): Track [MIX_Q2] on F.Cu, length 2.3850 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(129.1161 mm, 97.3160 mm): Track [LNA2_D] on In2.Cu, length 0.8231 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(109.8876 mm, 68.0063 mm): Track [USB_DP] on In2.Cu, length 7.7456 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(90.5892 mm, 91.5626 mm): Track [ADC_Q] on In2.Cu, length 8.2178 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(126.3457 mm, 127.2306 mm): Via [USB_D_] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(122.9116 mm, 122.0500 mm): Via [ADC_Q_F] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(131.7522 mm, 74.6648 mm): Track [LO_SRC] on F.Cu, length 10.6331 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(71.0778 mm, 95.1349 mm): Track [FIL_OUT] on F.Cu, length 0.4170 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(75.6887 mm, 70.8317 mm): Track [MIX_Q2] on In2.Cu, length 2.4357 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1859 mm)
+    Rule: netclass 'Default'; error
+    @(88.7857 mm, 85.4380 mm): Track [ADC_I] on In2.Cu, length 11.2467 mm
+    @(75.6887 mm, 73.2675 mm): Track [MIX_Q2] on In2.Cu, length 17.9764 mm
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(115.3646 mm, 73.4833 mm): Track [USB_DP] on In2.Cu, length 0.0035 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1150 mm)
+    Rule: netclass 'Default'; error
+    @(114.8808 mm, 100.2820 mm): Via [ADC_Q_F] on F.Cu - B.Cu
+    @(115.3657 mm, 73.4867 mm): Track [USB_DP] on In2.Cu, length 30.9340 mm
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(96.4000 mm, 97.3735 mm): Track [ADC_Q] on In2.Cu, length 11.8715 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(96.3710 mm, 109.0844 mm): Track [ADC_Q] on F.Cu, length 0.2065 mm
+    @(96.0027 mm, 109.5453 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(96.2250 mm, 108.9384 mm): Track [ADC_Q] on F.Cu, length 0.7934 mm
+    @(96.0027 mm, 109.5453 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(128.4030 mm, 98.0100 mm): Track [LNA2_D] on F.Cu, length 14.0999 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(126.3457 mm, 127.2306 mm): Via [USB_D_] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(122.9116 mm, 122.0500 mm): Via [ADC_Q_F] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on In1.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(75.6887 mm, 73.2675 mm): Track [MIX_Q2] on In2.Cu, length 17.9764 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1859 mm)
+    Rule: netclass 'Default'; error
+    @(88.7857 mm, 85.4380 mm): Track [ADC_I] on In2.Cu, length 11.2467 mm
+    @(88.4000 mm, 85.9787 mm): Track [MIX_Q2] on In2.Cu, length 21.0213 mm
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(115.3657 mm, 73.4867 mm): Track [USB_DP] on In2.Cu, length 30.9340 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(131.7522 mm, 85.2980 mm): Track [LO_SRC] on F.Cu, length 2.1072 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1506 mm)
+    Rule: netclass 'Default'; error
+    @(130.2622 mm, 86.7880 mm): Track [LO_SRC] on F.Cu, length 17.6487 mm
+    @(130.7920 mm, 97.3160 mm): Via [LNA2_D] on F.Cu - B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(70.7829 mm, 94.8400 mm): Track [FIL_OUT] on F.Cu, length 4.5829 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(123.6500 mm, 78.3600 mm): Track [ADC_Q] on F.Cu, length 0.6991 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(114.3031 mm, 98.0100 mm): Track [LNA2_D] on F.Cu, length 4.3974 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(126.3457 mm, 127.2306 mm): Via [USB_D_] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on In1.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(122.9116 mm, 122.0500 mm): Via [ADC_Q_F] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(123.4473 mm, 124.9627 mm): Via [ADC_Q_F] on F.Cu - B.Cu
+    @(124.2548 mm, 125.1150 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(123.4473 mm, 124.9627 mm): Via [ADC_Q_F] on F.Cu - B.Cu
+    @(124.2600 mm, 127.3970 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(115.3716 mm, 104.4207 mm): Track [USB_DP] on In2.Cu, length 4.3086 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(89.7750 mm, 108.1450 mm): Track [MIX_Q1] on F.Cu, length 2.4399 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(130.2622 mm, 86.7880 mm): Track [LO_SRC] on F.Cu, length 17.6487 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(122.9509 mm, 78.3600 mm): Track [ADC_Q] on F.Cu, length 2.0508 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(111.0869 mm, 94.8581 mm): Track [LNA2_D] on B.Cu, length 2.3159 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(126.3457 mm, 127.2306 mm): Via [USB_D_] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(123.4473 mm, 124.9627 mm): Via [ADC_Q_F] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(91.5003 mm, 109.8703 mm): Track [MIX_Q1] on F.Cu, length 8.0600 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(118.5393 mm, 107.6574 mm): Track [USB_DP] on F.Cu, length 2.0917 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(130.2692 mm, 104.4367 mm): Track [LO_SRC] on F.Cu, length 5.6401 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1150 mm)
+    Rule: netclass 'Default'; error
+    @(126.2833 mm, 108.4270 mm): Track [LO_SRC] on F.Cu, length 18.1008 mm
+    @(126.6100 mm, 122.0275 mm): Pad 48 [<no net>] of U1 on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(109.4493 mm, 93.2205 mm): Track [LNA2_D] on B.Cu, length 2.9527 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(106.3180 mm, 93.3459 mm): Track [LNA2_D] on F.Cu, length 1.1778 mm
+    @(108.6900 mm, 94.4900 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(107.4958 mm, 93.3462 mm): Track [LNA2_D] on F.Cu, length 0.3627 mm
+    @(108.6900 mm, 94.4900 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(121.4420 mm, 76.8350 mm): Track [ADC_Q] on B.Cu, length 26.9167 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(123.4473 mm, 124.9627 mm): Via [ADC_Q_F] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on In1.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(109.8000 mm, 67.9100 mm): Via [USB_DP] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(99.5603 mm, 109.8703 mm): Track [MIX_Q1] on F.Cu, length 0.1105 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(99.5603 mm, 109.8703 mm): Track [MIX_Q1] on F.Cu, length 0.1105 mm
+    @(100.2154 mm, 108.6450 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(99.5603 mm, 109.7597 mm): Track [MIX_Q1] on F.Cu, length 2.2836 mm
+    @(100.2154 mm, 108.6450 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(120.0184 mm, 109.1364 mm): Track [USB_DP] on F.Cu, length 14.4078 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1475 mm)
+    Rule: netclass 'Default'; error
+    @(120.0184 mm, 123.5442 mm): Track [USB_DP] on F.Cu, length 6.2165 mm
+    @(121.3040 mm, 124.0910 mm): Via [ADC_I_F] on F.Cu - B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(94.5253 mm, 76.8350 mm): Track [ADC_Q] on B.Cu, length 7.9651 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(126.2833 mm, 108.4270 mm): Track [LO_SRC] on F.Cu, length 18.1008 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1181 mm)
+    Rule: netclass 'Default'; error
+    @(125.1975 mm, 126.4400 mm): Pad 7 [<no net>] of U1 on F.Cu
+    @(126.2646 mm, 126.5278 mm): Track [LO_SRC] on F.Cu, length 0.5746 mm
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(131.0500 mm, 84.3200 mm): Track [LNA1_S] on F.Cu, length 0.6569 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(123.4473 mm, 124.9627 mm): Via [ADC_Q_F] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(109.8000 mm, 67.9100 mm): Via [USB_DP] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1986 mm)
+    Rule: netclass 'Default'; error
+    @(71.8275 mm, 66.4100 mm): Track [MIX_Q1] on F.Cu, length 0.9641 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(120.0184 mm, 123.5442 mm): Track [USB_DP] on F.Cu, length 6.2165 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(109.8000 mm, 67.9100 mm): Via [USB_DP] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on In1.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(126.2646 mm, 126.5278 mm): Track [LO_SRC] on F.Cu, length 0.5746 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1873 mm)
+    Rule: netclass 'Default'; error
+    @(126.3457 mm, 127.2306 mm): Via [USB_D_] on F.Cu - B.Cu
+    @(125.8643 mm, 126.9400 mm): Track [LO_SRC] on F.Cu, length 0.6668 mm
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(64.4500 mm, 84.3200 mm): Track [ADC_I_F] on F.Cu, length 7.0985 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1406 mm)
+    Rule: netclass 'Default'; error
+    @(69.4694 mm, 79.3006 mm): Track [ADC_I_F] on F.Cu, length 5.5573 mm
+    @(71.8500 mm, 78.3600 mm): Pad 1 [<no net>] of C_MCU1 on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(130.3931 mm, 84.3200 mm): Track [LNA1_S] on F.Cu, length 2.5930 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(93.1425 mm, 79.5977 mm): Via [ADC_Q_F] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(93.1425 mm, 79.5977 mm): Via [ADC_Q_F] on F.Cu - B.Cu
+    @(93.7750 mm, 79.3787 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1986 mm)
+    Rule: netclass 'Default'; error
+    @(107.0180 mm, 82.2299 mm): Track [RF_IN] on F.Cu, length 4.5076 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1150 mm)
+    Rule: netclass 'Default'; error
+    @(103.1725 mm, 72.3700 mm): Pad 2 [LNA1_G] of R_G1 on F.Cu
+    @(107.0251 mm, 77.7223 mm): Track [RF_IN] on F.Cu, length 6.7397 mm
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1986 mm)
+    Rule: netclass 'Default'; error
+    @(72.5090 mm, 67.0920 mm): Track [MIX_Q1] on F.Cu, length 0.9330 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1184 mm)
+    Rule: netclass 'Default'; error
+    @(72.5184 mm, 68.1171 mm): Track [MIX_Q1] on In2.Cu, length 6.5496 mm
+    @(72.0000 mm, 74.0000 mm): Via [LNA1_D] on F.Cu - B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(109.8000 mm, 67.9100 mm): Via [USB_DP] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(128.4200 mm, 86.2610 mm): Track [LNA1_S] on In1.Cu, length 12.9069 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on In1.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1442 mm)
+    Rule: netclass 'Default'; error
+    @(119.2935 mm, 95.3875 mm): Track [LNA1_S] on In1.Cu, length 9.8380 mm
+    @(109.9372 mm, 94.8683 mm): Via [LNA2_G] on F.Cu - B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(93.1425 mm, 79.5977 mm): Via [ADC_Q_F] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(69.4694 mm, 79.3006 mm): Track [ADC_I_F] on F.Cu, length 5.5573 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(64.4500 mm, 78.3600 mm): Track [LO] on F.Cu, length 0.9659 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1986 mm)
+    Rule: netclass 'Default'; error
+    @(72.5184 mm, 68.1171 mm): Track [MIX_Q1] on In2.Cu, length 6.5496 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1986 mm)
+    Rule: netclass 'Default'; error
+    @(107.0251 mm, 77.7223 mm): Track [RF_IN] on F.Cu, length 6.7397 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(119.2935 mm, 95.3875 mm): Track [LNA1_S] on In1.Cu, length 9.8380 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on In1.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(93.1425 mm, 79.5977 mm): Via [ADC_Q_F] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on In1.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(118.4147 mm, 107.4709 mm): Via [USB_DP] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(75.0268 mm, 79.3006 mm): Track [ADC_I_F] on F.Cu, length 4.1526 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1187 mm)
+    Rule: netclass 'Default'; error
+    @(75.0266 mm, 75.1480 mm): Track [ADC_I_F] on F.Cu, length 5.1705 mm
+    @(79.2675 mm, 72.3700 mm): Pad 1 [ADC_I] of R_AF_I on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(63.7670 mm, 79.0430 mm): Track [LO] on F.Cu, length 0.3248 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1599 mm)
+    Rule: netclass 'Default'; error
+    @(75.1564 mm, 90.4836 mm): Track [MIX_I2] on In2.Cu, length 4.8957 mm
+    @(63.4436 mm, 79.2091 mm): Track [LO] on In2.Cu, length 20.0586 mm
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1599 mm)
+    Rule: netclass 'Default'; error
+    @(75.1564 mm, 90.4836 mm): Track [MIX_I2] on In2.Cu, length 4.8957 mm
+    @(77.6271 mm, 93.3926 mm): Track [LO] on In2.Cu, length 9.4143 mm
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1986 mm)
+    Rule: netclass 'Default'; error
+    @(72.5184 mm, 74.6667 mm): Track [MIX_Q1] on In2.Cu, length 10.0197 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1455 mm)
+    Rule: netclass 'Default'; error
+    @(79.6034 mm, 81.7517 mm): Track [MIX_Q1] on In2.Cu, length 19.1530 mm
+    @(79.0590 mm, 93.7120 mm): Via [FIL_OUT] on F.Cu - B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1986 mm)
+    Rule: netclass 'Default'; error
+    @(102.2505 mm, 72.9655 mm): Track [RF_IN] on F.Cu, length 5.5626 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(109.2786 mm, 95.3482 mm): Track [LNA1_S] on B.Cu, length 5.3389 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(93.1425 mm, 79.5977 mm): Via [ADC_Q_F] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(118.4147 mm, 107.4709 mm): Via [USB_DP] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(77.6950 mm, 102.8491 mm): Track [LO] on In1.Cu, length 2.8001 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on In1.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(75.0266 mm, 75.1480 mm): Track [ADC_I_F] on F.Cu, length 5.1705 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1150 mm)
+    Rule: netclass 'Default'; error
+    @(78.6707 mm, 71.4799 mm): Track [ADC_I_F] on F.Cu, length 1.5463 mm
+    @(79.2675 mm, 72.3700 mm): Pad 1 [ADC_I] of R_AF_I on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1986 mm)
+    Rule: netclass 'Default'; error
+    @(79.6034 mm, 81.7517 mm): Track [MIX_Q1] on In2.Cu, length 19.1530 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1150 mm)
+    Rule: netclass 'Default'; error
+    @(79.6051 mm, 100.9047 mm): Track [MIX_Q1] on In2.Cu, length 13.8432 mm
+    @(83.4041 mm, 105.4323 mm): Via [MIX_IN_N] on F.Cu - B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(103.9402 mm, 95.2772 mm): Track [LNA1_S] on B.Cu, length 1.3758 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(102.9400 mm, 94.2770 mm): Track [LNA1_S] on F.Cu, length 0.9360 mm
+    @(106.8636 mm, 95.4900 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(102.0040 mm, 94.2770 mm): Track [LNA1_S] on F.Cu, length 0.3348 mm
+    @(106.8636 mm, 95.4900 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1986 mm)
+    Rule: netclass 'Default'; error
+    @(102.2600 mm, 67.4030 mm): Track [RF_IN] on F.Cu, length 1.4040 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(118.4147 mm, 107.4709 mm): Via [USB_DP] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on In1.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(80.4952 mm, 102.8491 mm): Track [LO] on In1.Cu, length 0.9510 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on In1.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(81.3808 mm, 103.5402 mm): Track [LO] on F.Cu, length 1.8310 mm
+    @(83.0250 mm, 105.1099 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(82.6756 mm, 104.8349 mm): Track [LO] on F.Cu, length 0.9185 mm
+    @(83.0250 mm, 105.1099 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1249 mm)
+    Rule: netclass 'Default'; error
+    @(83.5941 mm, 104.8349 mm): Track [LO] on F.Cu, length 5.4109 mm
+    @(84.8250 mm, 104.3350 mm): Pad 1 [MIX_IN_P] of U_MIX1 on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1249 mm)
+    Rule: netclass 'Default'; error
+    @(89.7750 mm, 104.3350 mm): Pad 8 [VCC_MIX] of U_MIX1 on F.Cu
+    @(89.0049 mm, 104.8349 mm): Track [LO] on F.Cu, length 1.0890 mm
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(114.8808 mm, 100.2820 mm): Via [ADC_Q_F] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1986 mm)
+    Rule: netclass 'Default'; error
+    @(79.6051 mm, 100.9047 mm): Track [MIX_Q1] on In2.Cu, length 13.8432 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(78.6707 mm, 71.4799 mm): Track [ADC_I_F] on F.Cu, length 1.5463 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1986 mm)
+    Rule: netclass 'Default'; error
+    @(101.5650 mm, 95.8508 mm): Track [LNA1_S] on In1.Cu, length 9.6688 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on In1.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(109.9795 mm, 82.6297 mm): Track [RF_IN] on B.Cu, length 0.7489 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1907 mm)
+    Rule: netclass 'Default'; error
+    @(116.4760 mm, 89.2480 mm): Via [ADC_I] on F.Cu - B.Cu
+    @(110.7284 mm, 82.6297 mm): Track [RF_IN] on B.Cu, length 20.8393 mm
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(131.4886 mm, 73.7114 mm): Track [LO] on In1.Cu, length 0.1487 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on In1.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(118.4147 mm, 107.4709 mm): Via [USB_DP] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(114.8808 mm, 100.2820 mm): Via [ADC_Q_F] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1986 mm)
+    Rule: netclass 'Default'; error
+    @(89.5307 mm, 110.5437 mm): Track [MIX_Q1] on F.Cu, length 0.3455 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1986 mm)
+    Rule: netclass 'Default'; error
+    @(94.7281 mm, 89.0140 mm): Track [LNA1_S] on In1.Cu, length 0.0896 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on In1.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1980 mm)
+    Rule: netclass 'Default'; error
+    @(95.3261 mm, 80.7791 mm): Via [FIL_OUT] on F.Cu - B.Cu
+    @(94.7281 mm, 88.9244 mm): Track [LNA1_S] on In1.Cu, length 13.5973 mm
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(110.7284 mm, 82.6297 mm): Track [RF_IN] on B.Cu, length 20.8393 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(131.3835 mm, 73.8165 mm): Track [LO] on In1.Cu, length 1.8455 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on In1.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1414 mm)
+    Rule: netclass 'Default'; error
+    @(129.5379 mm, 73.8165 mm): Track [LO] on In1.Cu, length 44.9247 mm
+    @(108.0570 mm, 96.0985 mm): Via [LNA1_D] on F.Cu - B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1987 mm)
+    Rule: netclass 'Default'; error
+    @(80.2171 mm, 71.4800 mm): Track [ADC_I_F] on F.Cu, length 1.2484 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(114.8808 mm, 100.2820 mm): Via [ADC_Q_F] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on In1.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(107.9790 mm, 83.0690 mm): Via [RF_IN] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(107.9790 mm, 83.0690 mm): Via [RF_IN] on F.Cu - B.Cu
+    @(110.4254 mm, 79.2850 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1986 mm)
+    Rule: netclass 'Default'; error
+    @(94.7281 mm, 88.9244 mm): Track [LNA1_S] on In1.Cu, length 13.5973 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on In1.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(129.5379 mm, 73.8165 mm): Track [LO] on In1.Cu, length 44.9247 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on In1.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(114.8808 mm, 100.2820 mm): Via [ADC_Q_F] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3] on In2.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1986 mm)
+    Rule: netclass 'Default'; error
+    @(111.0250 mm, 108.3900 mm): Track [ADC_I_F] on In1.Cu, length 5.4230 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on In1.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1984 mm)
+    Rule: netclass 'Default'; error
+    @(125.4640 mm, 97.3653 mm): Track [RF_IN] on B.Cu, length 6.2127 mm
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on B.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1986 mm)
+    Rule: netclass 'Default'; error
+    @(89.7750 mm, 110.2994 mm): Track [MIX_Q1] on F.Cu, length 2.1544 mm
+    @(144.1000 mm, 142.3400 mm): Zone [P3V3_ANA] on F.Cu
+[clearance]: Clearance violation (netclass 'Default' clearance 0.2000 mm; actual 0.1976 mm)
+    Rule: netclass 'Default'; error
+    @(107.9790 mm, 83.0690 mm): Via [RF_IN] on F.Cu - B.Cu
+    @(144.1000 mm, 142.3400 mm): Zone [GND] on B.Cu
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(65.4000 mm, 84.3200 mm): Footprint C_AF_I
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(65.4000 mm, 84.3200 mm): Footprint C_AF_I
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(65.4000 mm, 84.3200 mm): Footprint C_AF_I
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(65.4000 mm, 84.3200 mm): Footprint C_AF_I
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(72.8000 mm, 84.3200 mm): Footprint C_AF_Q
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(72.8000 mm, 84.3200 mm): Footprint C_AF_Q
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(72.8000 mm, 84.3200 mm): Footprint C_AF_Q
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(72.8000 mm, 84.3200 mm): Footprint C_AF_Q
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(80.2000 mm, 84.3200 mm): Footprint C_ANA1
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(80.2000 mm, 84.3200 mm): Footprint C_ANA1
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(80.2000 mm, 84.3200 mm): Footprint C_ANA1
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(80.2000 mm, 84.3200 mm): Footprint C_ANA1
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(87.6000 mm, 84.3200 mm): Footprint C_ANA2
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(87.6000 mm, 84.3200 mm): Footprint C_ANA2
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(87.6000 mm, 84.3200 mm): Footprint C_ANA2
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(87.6000 mm, 84.3200 mm): Footprint C_ANA2
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(95.0000 mm, 84.3200 mm): Footprint C_BS1
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(95.0000 mm, 84.3200 mm): Footprint C_BS1
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(95.0000 mm, 84.3200 mm): Footprint C_BS1
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(95.0000 mm, 84.3200 mm): Footprint C_BS1
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(102.4000 mm, 84.3200 mm): Footprint C_BS2
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(102.4000 mm, 84.3200 mm): Footprint C_BS2
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(102.4000 mm, 84.3200 mm): Footprint C_BS2
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(102.4000 mm, 84.3200 mm): Footprint C_BS2
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(109.8000 mm, 84.3200 mm): Footprint C_IN
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(109.8000 mm, 84.3200 mm): Footprint C_IN
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(109.8000 mm, 84.3200 mm): Footprint C_IN
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(109.8000 mm, 84.3200 mm): Footprint C_IN
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(117.2000 mm, 84.3200 mm): Footprint C_LDO1
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(117.2000 mm, 84.3200 mm): Footprint C_LDO1
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(117.2000 mm, 84.3200 mm): Footprint C_LDO1
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(117.2000 mm, 84.3200 mm): Footprint C_LDO1
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(124.6000 mm, 84.3200 mm): Footprint C_LDO2
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(124.6000 mm, 84.3200 mm): Footprint C_LDO2
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(124.6000 mm, 84.3200 mm): Footprint C_LDO2
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(124.6000 mm, 84.3200 mm): Footprint C_LDO2
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(132.0000 mm, 84.3200 mm): Footprint C_LNA1
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(132.0000 mm, 84.3200 mm): Footprint C_LNA1
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(132.0000 mm, 84.3200 mm): Footprint C_LNA1
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(132.0000 mm, 84.3200 mm): Footprint C_LNA1
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(65.4000 mm, 78.3600 mm): Footprint C_LO
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(65.4000 mm, 78.3600 mm): Footprint C_LO
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(65.4000 mm, 78.3600 mm): Footprint C_LO
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(65.4000 mm, 78.3600 mm): Footprint C_LO
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(72.8000 mm, 78.3600 mm): Footprint C_MCU1
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(72.8000 mm, 78.3600 mm): Footprint C_MCU1
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(72.8000 mm, 78.3600 mm): Footprint C_MCU1
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(72.8000 mm, 78.3600 mm): Footprint C_MCU1
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(80.2000 mm, 78.3600 mm): Footprint C_MCU2
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(80.2000 mm, 78.3600 mm): Footprint C_MCU2
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(80.2000 mm, 78.3600 mm): Footprint C_MCU2
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(80.2000 mm, 78.3600 mm): Footprint C_MCU2
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(87.6000 mm, 78.3600 mm): Footprint C_MCU3
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(87.6000 mm, 78.3600 mm): Footprint C_MCU3
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(87.6000 mm, 78.3600 mm): Footprint C_MCU3
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(87.6000 mm, 78.3600 mm): Footprint C_MCU3
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(95.0000 mm, 78.3600 mm): Footprint C_MIX1
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(95.0000 mm, 78.3600 mm): Footprint C_MIX1
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(95.0000 mm, 78.3600 mm): Footprint C_MIX1
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(95.0000 mm, 78.3600 mm): Footprint C_MIX1
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(102.4000 mm, 78.3600 mm): Footprint C_MIX2
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(102.4000 mm, 78.3600 mm): Footprint C_MIX2
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(102.4000 mm, 78.3600 mm): Footprint C_MIX2
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(102.4000 mm, 78.3600 mm): Footprint C_MIX2
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(109.8000 mm, 78.3600 mm): Footprint C_MIX3
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(109.8000 mm, 78.3600 mm): Footprint C_MIX3
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(109.8000 mm, 78.3600 mm): Footprint C_MIX3
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(109.8000 mm, 78.3600 mm): Footprint C_MIX3
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(117.2000 mm, 78.3600 mm): Footprint C_OPI
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(117.2000 mm, 78.3600 mm): Footprint C_OPI
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(117.2000 mm, 78.3600 mm): Footprint C_OPI
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(117.2000 mm, 78.3600 mm): Footprint C_OPI
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(124.6000 mm, 78.3600 mm): Footprint C_OPQ
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(124.6000 mm, 78.3600 mm): Footprint C_OPQ
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(124.6000 mm, 78.3600 mm): Footprint C_OPQ
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(124.6000 mm, 78.3600 mm): Footprint C_OPQ
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(132.0000 mm, 78.3600 mm): Footprint C_OSC1
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(132.0000 mm, 78.3600 mm): Footprint C_OSC1
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(132.0000 mm, 78.3600 mm): Footprint C_OSC1
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(132.0000 mm, 78.3600 mm): Footprint C_OSC1
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(65.4000 mm, 72.4000 mm): Footprint C_OSC2
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(65.4000 mm, 72.4000 mm): Footprint C_OSC2
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(65.4000 mm, 72.4000 mm): Footprint C_OSC2
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(65.4000 mm, 72.4000 mm): Footprint C_OSC2
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(72.8000 mm, 72.4000 mm): Footprint C_QWC
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(72.8000 mm, 72.4000 mm): Footprint C_QWC
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(72.8000 mm, 72.4000 mm): Footprint C_QWC
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(72.8000 mm, 72.4000 mm): Footprint C_QWC
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(124.3300 mm, 66.3100 mm): Footprint FB1
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(124.3300 mm, 66.3100 mm): Footprint FB1
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(124.3300 mm, 66.3100 mm): Footprint FB1
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(124.3300 mm, 66.3100 mm): Footprint FB1
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(105.7400 mm, 126.6200 mm): Footprint J_ANT
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(105.7400 mm, 126.6200 mm): Footprint J_ANT
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(105.7400 mm, 126.6200 mm): Footprint J_ANT
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(105.7400 mm, 126.6200 mm): Footprint J_ANT
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(105.7400 mm, 126.6200 mm): Footprint J_ANT
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(105.7400 mm, 126.6200 mm): Footprint J_ANT
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(105.7400 mm, 126.6200 mm): Footprint J_ANT
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(105.7400 mm, 126.6200 mm): Footprint J_ANT
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(71.4500 mm, 132.2950 mm): Footprint J_PWR
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(71.4500 mm, 132.2950 mm): Footprint J_PWR
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(71.4500 mm, 132.2950 mm): Footprint J_PWR
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(71.4500 mm, 132.2950 mm): Footprint J_PWR
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(90.9500 mm, 132.2950 mm): Footprint J_USB
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(90.9500 mm, 132.2950 mm): Footprint J_USB
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(90.9500 mm, 132.2950 mm): Footprint J_USB
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(90.9500 mm, 132.2950 mm): Footprint J_USB
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(116.9000 mm, 93.9200 mm): Footprint L_BS1
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(116.9000 mm, 93.9200 mm): Footprint L_BS1
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(116.9000 mm, 93.9200 mm): Footprint L_BS1
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(116.9000 mm, 93.9200 mm): Footprint L_BS1
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(125.4600 mm, 93.9200 mm): Footprint L_LNA1
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(125.4600 mm, 93.9200 mm): Footprint L_LNA1
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(125.4600 mm, 93.9200 mm): Footprint L_LNA1
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(125.4600 mm, 93.9200 mm): Footprint L_LNA1
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(134.0200 mm, 93.9200 mm): Footprint L_LNA2
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(134.0200 mm, 93.9200 mm): Footprint L_LNA2
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(134.0200 mm, 93.9200 mm): Footprint L_LNA2
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(134.0200 mm, 93.9200 mm): Footprint L_LNA2
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(131.8300 mm, 66.3100 mm): Footprint L_MIX
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(131.8300 mm, 66.3100 mm): Footprint L_MIX
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(131.8300 mm, 66.3100 mm): Footprint L_MIX
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(131.8300 mm, 66.3100 mm): Footprint L_MIX
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(100.8300 mm, 94.0400 mm): Footprint Q_LNA1
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(100.8300 mm, 94.0400 mm): Footprint Q_LNA1
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(100.8300 mm, 94.0400 mm): Footprint Q_LNA1
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(100.8300 mm, 94.0400 mm): Footprint Q_LNA1
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(100.8300 mm, 94.0400 mm): Footprint Q_LNA1
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(100.8300 mm, 94.0400 mm): Footprint Q_LNA1
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(100.8300 mm, 94.0400 mm): Footprint Q_LNA1
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(100.8300 mm, 94.0400 mm): Footprint Q_LNA1
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(100.8300 mm, 94.0400 mm): Footprint Q_LNA1
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(100.8300 mm, 94.0400 mm): Footprint Q_LNA1
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(100.8300 mm, 94.0400 mm): Footprint Q_LNA1
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(100.8300 mm, 94.0400 mm): Footprint Q_LNA1
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(108.6900 mm, 94.0400 mm): Footprint Q_LNA2
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(108.6900 mm, 94.0400 mm): Footprint Q_LNA2
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(108.6900 mm, 94.0400 mm): Footprint Q_LNA2
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(108.6900 mm, 94.0400 mm): Footprint Q_LNA2
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(108.6900 mm, 94.0400 mm): Footprint Q_LNA2
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(108.6900 mm, 94.0400 mm): Footprint Q_LNA2
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(108.6900 mm, 94.0400 mm): Footprint Q_LNA2
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(108.6900 mm, 94.0400 mm): Footprint Q_LNA2
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(108.6900 mm, 94.0400 mm): Footprint Q_LNA2
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(108.6900 mm, 94.0400 mm): Footprint Q_LNA2
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(108.6900 mm, 94.0400 mm): Footprint Q_LNA2
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(108.6900 mm, 94.0400 mm): Footprint Q_LNA2
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(80.1800 mm, 72.3700 mm): Footprint R_AF_I
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(80.1800 mm, 72.3700 mm): Footprint R_AF_I
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(80.1800 mm, 72.3700 mm): Footprint R_AF_I
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(80.1800 mm, 72.3700 mm): Footprint R_AF_I
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(87.5400 mm, 72.3700 mm): Footprint R_AF_Q
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(87.5400 mm, 72.3700 mm): Footprint R_AF_Q
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(87.5400 mm, 72.3700 mm): Footprint R_AF_Q
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(87.5400 mm, 72.3700 mm): Footprint R_AF_Q
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(94.9000 mm, 72.3700 mm): Footprint R_BS
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(94.9000 mm, 72.3700 mm): Footprint R_BS
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(94.9000 mm, 72.3700 mm): Footprint R_BS
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(94.9000 mm, 72.3700 mm): Footprint R_BS
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(102.2600 mm, 72.3700 mm): Footprint R_G1
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(102.2600 mm, 72.3700 mm): Footprint R_G1
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(102.2600 mm, 72.3700 mm): Footprint R_G1
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(102.2600 mm, 72.3700 mm): Footprint R_G1
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(109.6200 mm, 72.3700 mm): Footprint R_G2
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(109.6200 mm, 72.3700 mm): Footprint R_G2
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(109.6200 mm, 72.3700 mm): Footprint R_G2
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(109.6200 mm, 72.3700 mm): Footprint R_G2
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(116.9800 mm, 72.3700 mm): Footprint R_G3
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(116.9800 mm, 72.3700 mm): Footprint R_G3
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(116.9800 mm, 72.3700 mm): Footprint R_G3
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(116.9800 mm, 72.3700 mm): Footprint R_G3
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(124.3400 mm, 72.3700 mm): Footprint R_G4
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(124.3400 mm, 72.3700 mm): Footprint R_G4
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(124.3400 mm, 72.3700 mm): Footprint R_G4
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(124.3400 mm, 72.3700 mm): Footprint R_G4
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(131.7000 mm, 72.3700 mm): Footprint R_LO
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(131.7000 mm, 72.3700 mm): Footprint R_LO
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(131.7000 mm, 72.3700 mm): Footprint R_LO
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(131.7000 mm, 72.3700 mm): Footprint R_LO
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(65.3800 mm, 66.4100 mm): Footprint R_OPI
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(65.3800 mm, 66.4100 mm): Footprint R_OPI
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(65.3800 mm, 66.4100 mm): Footprint R_OPI
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(65.3800 mm, 66.4100 mm): Footprint R_OPI
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(72.7400 mm, 66.4100 mm): Footprint R_OPQ
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(72.7400 mm, 66.4100 mm): Footprint R_OPQ
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(72.7400 mm, 66.4100 mm): Footprint R_OPQ
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(72.7400 mm, 66.4100 mm): Footprint R_OPQ
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(80.1000 mm, 66.4100 mm): Footprint R_QWC
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(80.1000 mm, 66.4100 mm): Footprint R_QWC
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(80.1000 mm, 66.4100 mm): Footprint R_QWC
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(80.1000 mm, 66.4100 mm): Footprint R_QWC
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(87.4600 mm, 66.4100 mm): Footprint R_S1
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(87.4600 mm, 66.4100 mm): Footprint R_S1
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(87.4600 mm, 66.4100 mm): Footprint R_S1
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(87.4600 mm, 66.4100 mm): Footprint R_S1
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(94.8200 mm, 66.4100 mm): Footprint R_S2
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(94.8200 mm, 66.4100 mm): Footprint R_S2
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(94.8200 mm, 66.4100 mm): Footprint R_S2
+[malformed_courtyard]: Footprint has malformed courtyard (self-intersecting)
+    Local override; error
+    @(94.8200 mm, 66.4100 mm): Footprint R_S2
+
+** Found 0 unconnected pads **
+
+** Found 0 Footprint errors **
+
+** End of Report **

@@ -530,6 +530,64 @@ See [`AGENT_MAP.md`](AGENT_MAP.md) for the deep functional map and
 [`sim/COSIM_STATUS.md`](sim/COSIM_STATUS.md) for the co-simulation narrative and
 evidence.
 
+## 🤖 LLM Agent Framework (LangGraph)
+
+The project is designed to be orchestrated by an LLM-driven agent using **LangGraph** as the state graph framework. This enables natural-language control of the entire build pipeline.
+
+### Agent Workflow
+
+```
+User request
+    │
+    ▼
+LLM (GPT-4o / Claude / local) ─ determines which sub‑graph to run
+    │
+    ▼
+LangGraph executes nodes (each node = existing Make target or Python script)
+    │
+    ▼
+Artifacts produced in out/ (board.glb, krystal-radio.html, waterfall.png, etc.)
+    │
+    ▼
+Optional: LLM summarizes results, suggests next steps
+```
+
+### Example Commands (via `make agent` or direct LangGraph CLI)
+
+```bash
+# Build the full page via LLM intent
+make agent REQUEST="Generate the single-page HTML report with 3D model, GOST drawings, waterfall, link budget, and direction finding."
+
+# Check thermal compliance
+make agent REQUEST="Run thermal analysis and report if Tj stays below 85°C."
+
+# YOLO signal recognition
+make agent REQUEST="Generate YOLO dataset for signal detection, train a compact model, and show inference on a recorded waterfall PNG."
+```
+
+### LLMs Compatible with this Project
+
+| LLM | Access | Notes |
+|-----|--------|-------|
+| `gpt-4o` | OpenAI API | Best all-rounder; follows tool calls reliably |
+| `claude-3-5-sonnet` | Anthropic API | Strong reasoning, good for complex workflow planning |
+| `deepseek-coder-v2` | Local (Ollama) | Free, good for code‑gen and script orchestration |
+| `llama3.1:70b-instruct` | Local (Ollama) | Large, capable, offline |
+| **Hybrid recommended** | — | Use local LLM for routine tasks; OpenAI/Anthropic for ambiguous or first‑time runs |
+
+### How It Works (technical summary)
+
+1. **AGENT_MAP.md** + **AGENT_PROMPTS.md** define the canonical set of agents and their prompt templates.
+2. Each agent's `make <target>` command is wrapped as a LangGraph **tool** (node).
+3. The **state** carries: `current_step`, `artifacts/` (paths to out/ files), `logs/`, `llm_choice`.
+4. The LLM observes the state and either:
+   - Calls a tool (executes `make link-budget`, `python3 src/gnuradio_krystal/krystal_virtual_rx.py`, etc.)
+   - Returns a natural-language response
+   - Requests more info from the user
+5. **Checkpointing** saves the graph state after each node, enabling `resume` from any failure point.
+
+To get started, run `make agent` (once the LangGraph CLI or wrapper script is added) or invoke the LangGraph workflow programmatically from Python using the project's existing scripts as node functions.
+
 ---
 
 ## License

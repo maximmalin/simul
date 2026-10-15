@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase, SUPABASE_CONFIGURED } from '@/lib/supabase';
 import type { Agent, Project, Task, MessageWithAgents, MessageChannel, TaskStatus, Priority } from '@/lib/supabase';
 import { ZoneHeader } from '@/components/ZoneHeader';
 import { TabNav, type TabKey } from '@/components/TabNav';
@@ -24,26 +24,37 @@ function App() {
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
 
   const fetchAll = useCallback(async () => {
-    const [agentsRes, projectsRes, tasksRes, messagesRes] = await Promise.all([
-      supabase.from('bureau_agents').select('*').order('created_at'),
-      supabase.from('bureau_projects').select('*').order('created_at'),
-      supabase.from('bureau_tasks').select('*').order('sort_order'),
-      supabase
-        .from('bureau_messages')
-        .select(`
-          *,
-          from_agent:bureau_agents!from_agent_id(id, codename, role_key),
-          to_agent:bureau_agents!to_agent_id(id, codename, role_key)
-        `)
-        .order('created_at', { ascending: true })
-        .limit(50),
-    ]);
+    // Supabase может быть не настроен — тогда вкладки бюро пустые,
+    // но локальные (Krystal / агентный мост) продолжают работать.
+    if (!SUPABASE_CONFIGURED) {
+      setLoading(false);
+      return;
+    }
+    try {
+      const [agentsRes, projectsRes, tasksRes, messagesRes] = await Promise.all([
+        supabase.from('bureau_agents').select('*').order('created_at'),
+        supabase.from('bureau_projects').select('*').order('created_at'),
+        supabase.from('bureau_tasks').select('*').order('sort_order'),
+        supabase
+          .from('bureau_messages')
+          .select(`
+            *,
+            from_agent:bureau_agents!from_agent_id(id, codename, role_key),
+            to_agent:bureau_agents!to_agent_id(id, codename, role_key)
+          `)
+          .order('created_at', { ascending: true })
+          .limit(50),
+      ]);
 
-    setAgents(agentsRes.data ?? []);
-    setProjects(projectsRes.data ?? []);
-    setTasks(tasksRes.data ?? []);
-    setMessages((messagesRes.data ?? []) as unknown as MessageWithAgents[]);
-    setLoading(false);
+      setAgents(agentsRes.data ?? []);
+      setProjects(projectsRes.data ?? []);
+      setTasks(tasksRes.data ?? []);
+      setMessages((messagesRes.data ?? []) as unknown as MessageWithAgents[]);
+    } catch (err) {
+      console.warn('Supabase недоступен, бюро-вкладки пустые:', err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -140,6 +151,23 @@ function App() {
       />
 
       <TabNav activeTab={activeTab} onTabChange={setActiveTab} />
+
+      {!SUPABASE_CONFIGURED && (
+        <div className="max-w-7xl mx-auto px-4 md:px-6 pt-4">
+          <div className="flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            <span className="font-mono text-[10px] uppercase tracking-widest mt-0.5 shrink-0">
+              Supabase
+            </span>
+            <span>
+              Не заданы <code className="font-mono">VITE_SUPABASE_URL</code> и{' '}
+              <code className="font-mono">VITE_SUPABASE_ANON_KEY</code> — вкладки
+              бюро (Overview, Personnel, Projects, Comms) останутся пустыми.
+              Вкладка <strong>Krystal</strong> работает от локального агентного
+              моста и доступна полностью.
+            </span>
+          </div>
+        </div>
+      )}
 
       <main className="relative z-10">
         {activeTab === 'overview' && (

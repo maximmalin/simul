@@ -1,9 +1,42 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+/**
+ * Supabase-клиент создаётся ЛЕНИВО.
+ *
+ * Раньше `createClient()` вызывался на уровне модуля и падал с
+ * «supabaseUrl is required», если переменные окружения не заданы — из-за
+ * этого падало всё React-дерево, включая вкладки, работающие от локального
+ * агентного моста (Krystal). Теперь createClient бросает исключение только
+ * в момент обращения, поэтому интерфейс грузится и без Supabase.
+ */
+export const SUPABASE_CONFIGURED = Boolean(supabaseUrl && supabaseAnonKey);
+
+let _client: SupabaseClient | null = null;
+
+export function getSupabase(): SupabaseClient {
+  if (_client) return _client;
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error(
+      'Supabase не настроен: задайте VITE_SUPABASE_URL и VITE_SUPABASE_ANON_KEY',
+    );
+  }
+  _client = createClient(supabaseUrl, supabaseAnonKey);
+  return _client;
+}
+
+/**
+ * Обратно совместимая ссылка: бросает при обращении, если не настроен.
+ * Для явной проверки используйте `SUPABASE_CONFIGURED` / `getSupabase()`.
+ */
+export const supabase = new Proxy({} as SupabaseClient, {
+  get(_t, prop) {
+    const client = getSupabase() as unknown as Record<string | symbol, unknown>;
+    return client[prop];
+  },
+});
 
 export type AgentStatus = 'active' | 'processing' | 'idle' | 'offline';
 export type ProjectStatus = 'planning' | 'active' | 'review' | 'completed';

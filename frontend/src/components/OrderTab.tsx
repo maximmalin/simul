@@ -1,18 +1,27 @@
 /**
- * OrderTab — приём заказа из интерфейса и его мультиагентная обработка.
+ * OrderTab — приём заказа и его агентно-функциональная обработка.
  *
- * Пользователь пишет заказ обычным текстом («собери страницу отчёта»),
- * он уходит в backend по `POST /api/order`, где планировщик раскладывает
- * его на шаги и назначает агента, исполнитель гоняет шаги (независимые —
- * параллельно), а вкладка показывает прогресс по каждому агенту.
+ * Жизненный цикл заказа здесь такой же, как задумано в движке:
  *
- * Данные: агентный мост (backend/orchestrator.py), не Supabase.
+ *   1. оператор пишет заказ;
+ *   2. движок **разбирает** его в цели сборки (`POST /api/order/plan`)
+ *      и показывает план — ничего ещё не выполнено;
+ *   3. оператор подтверждает, и только тогда заказ стартует;
+ *   4. прогресс идёт потоком (`GET /api/order/<id>/stream`), а не опросом:
+ *      журнал и смена статуса шагов приходят сразу;
+ *   5. если граф встал и ждёт человека (`needs_human`), появляется
+ *      вопрос, и ответ продолжает работу с того же места (`resume`).
+ *
+ * Пункт 2 — не украшение. Планировщик может ошибиться, и запускать
+ * сборку по неверному плану дороже, чем спросить заранее.
+ *
+ * Данные: агентный мост (backend/agents/), не Supabase.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  Send, Cpu, CheckCircle2, XCircle, Loader2, Circle, Clock, Sparkles,
-  ListTree, SkipForward,
+  Cpu, CheckCircle2, XCircle, Loader2, Circle, Clock, Sparkles,
+  ListTree, SkipForward, HelpCircle, Play, ScrollText, Ban,
 } from 'lucide-react';
 
 const BASE = (import.meta.env.VITE_BRIDGE_URL as string | undefined) ?? '';
@@ -31,27 +40,43 @@ interface Step {
   started_at: string | null;
   finished_at: string | null;
   job_id: string | null;
+  duration_s?: number;
+  log_tail?: string[];
 }
 
 interface Order {
   id: string;
   text: string;
-  status: 'queued' | 'running' | 'done' | 'failed' | 'partial';
+  status: 'queued' | 'running' | 'done' | 'failed' | 'partial' | 'cancelled';
   intent: string;
-  planner: 'rules' | 'llm';
+  planner: string;
   progress: number;
+  verdict: string;
+  question: string;
+  note: string;
+  engine: string;
   created_at: string;
   finished_at: string | null;
   steps: Step[];
   report: string;
+  logs: string[];
+}
+
+interface Plan {
+  intent: string;
+  targets: string[];
+  planner: string;
+  note: string;
+  available?: string[];
 }
 
 interface Capabilities {
-  planner: 'rules' | 'llm';
-  max_parallel: number;
-  intents: string[];
-  targets: Record<string, string>;
-  suggestions: { text: string; intent: string }[];
+  planner: string;
+  engine: string;
+  agents: { name: string; title: string; kind: string }[];
+  runners: string[];
+  verify: string;
+  suggestions: string[];
 }
 
 const STATUS_ICON: Record<StepStatus, typeof Circle> = {
@@ -79,62 +104,129 @@ async function api<T>(path: string, init?: RequestInit): Promise<T> {
   return (await res.json()) as T;
 }
 
+const TERMINAL = ['done', 'failed', 'partial', 'cancelled'];
+
 export function OrderTab() {
   const [caps, setCaps] = useState<Capabilities | null>(null);
   const [text, setText] = useState('');
+  const [plan, setPlan] = useState<Plan | null>(null);
   const [order, setOrder] = useState<Order | null>(null);
   const [history, setHistory] = useState<Order[]>([]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const timer = useRef<number | null>(null);
+  const [answer, setAnswer] = useState('');
+  const [showLog, setShowLog] = useState(false);
+  const esRef = useRef<EventSource | null>(null);
 
   useEffect(() => {
     api<Capabilities>('/api/order/capabilities')
       .then(setCaps)
-      .catch(() => setErr('оркестратор недоступен — запустите make agent-api'));
+      .catch(() => setErr('движок недоступен — запустите make run'));
     api<{ orders: Order[] }>('/api/orders?limit=10')
       .then((d) => setHistory(d.orders as unknown as Order[]))
       .catch(() => {});
   }, []);
 
-  // опрос активного заказа
-  useEffect(() => {
-    if (!order || order.status === 'done' || order.status === 'failed'
-        || order.status === 'partial') {
-      if (timer.current) window.clearInterval(timer.current);
-      return;
-    }
-    timer.current = window.setInterval(async () => {
-      try {
-        const o = await api<Order>(`/api/order/${order.id}`);
-        setOrder(o);
-        if (o.status !== 'running' && o.status !== 'queued') {
-          window.clearInterval(timer.current!);
-          api<{ orders: Order[] }>('/api/orders?limit=10')
-            .then((d) => setHistory(d.orders as unknown as Order[]))
-            .catch(() => {});
-        }
-      } catch { /* мост мог перезапуститься */ }
-    }, 1200);
-    return () => { if (timer.current) window.clearInterval(timer.current); };
-  }, [order]);
+  const refreshHistory = useCallback(() => {
+    api<{ orders: Order[] }>('/api/orders?limit=10')
+      .then((d) => setHistory(d.orders as unknown as Order[]))
+      .catch(() => {});
+  }, []);
 
-  const submit = useCallback(async (t?: string) => {
+  // ---- поток событий вместо опроса ------------------------------------
+  useEffect(() => {
+    if (!order) return;
+    if (TERMINAL.includes(order.status)) return;
+    if (order.verdict === 'needs_human') return;   // ждём ответа оператора
+
+    const es = new EventSource(`${BASE}/api/order/${order.id}/stream`);
+    esRef.current = es;
+
+    es.addEventListener('state', (ev) => {
+      setOrder(JSON.parse((ev as MessageEvent).data));
+    });
+    es.addEventListener('step', (ev) => {
+      const d = JSON.parse((ev as MessageEvent).data);
+      setOrder((prev) =>
+        prev
+          ? {
+              ...prev,
+              steps: prev.steps.map((s) => {
+                const upd = d.steps?.find((x: Step) => x.id === s.id);
+                return upd ? { ...s, ...upd } : s;
+              }),
+              progress: d.progress ?? prev.progress,
+            }
+          : prev,
+      );
+    });
+    es.addEventListener('log', (ev) => {
+      const d = JSON.parse((ev as MessageEvent).data);
+      setOrder((prev) => (prev ? { ...prev, logs: [...(prev.logs ?? []), d.text] } : prev));
+    });
+    es.addEventListener('done', (ev) => {
+      setOrder(JSON.parse((ev as MessageEvent).data));
+      es.close();
+      refreshHistory();
+    });
+    es.onerror = () => es.close();
+
+    return () => { es.close(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [order?.id, order?.status, order?.verdict, refreshHistory]);
+
+  // ---- шаг 1: разбор заказа в план (ничего не выполняется) ------------
+  const dryRun = useCallback(async (t?: string) => {
     const body = (t ?? text).trim();
     if (!body || busy) return;
-    setBusy(true); setErr(null);
+    setBusy(true); setErr(null); setOrder(null);
     try {
-      setOrder(await api<Order>('/api/order', {
+      setPlan(await api<Plan>('/api/order/plan', {
         method: 'POST',
         body: JSON.stringify({ text: body }),
       }));
-      setText('');
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e));
     } finally {
       setBusy(false);
     }
   }, [text, busy]);
+
+  // ---- шаг 3: подтверждение и запуск -----------------------------------
+  const start = useCallback(async () => {
+    if (!plan || busy) return;
+    setBusy(true); setErr(null);
+    try {
+      setOrder(await api<Order>('/api/order', {
+        method: 'POST',
+        body: JSON.stringify({ text: text.trim() }),
+      }));
+      setPlan(null); setText('');
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  }, [plan, text, busy]);
+
+  // ---- шаг 5: ответ оператора, граф продолжает с места остановки ------
+  const sendAnswer = useCallback(async () => {
+    if (!order || !answer.trim()) return;
+    setBusy(true); setErr(null);
+    try {
+      setOrder(await api<Order>(`/api/order/${order.id}/resume`, {
+        method: 'POST',
+        body: JSON.stringify({ answer: answer.trim() }),
+      }));
+      setAnswer('');
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  }, [order, answer, busy]);
+
+  const waiting = order?.verdict === 'needs_human';
 
   return (
     <div className="max-w-6xl mx-auto px-4 md:px-6 py-6 space-y-6">
@@ -143,9 +235,9 @@ export function OrderTab() {
           ЗАКАЗ
         </h2>
         <p className="font-mono text-[10px] uppercase tracking-widest text-zone-600">
-          мультиагентная обработка · планировщик{' '}
-          {caps?.planner === 'llm' ? 'LLM' : 'правила'} · параллельность{' '}
-          {caps?.max_parallel ?? '—'}
+          движок {caps?.engine ?? '—'} · планировщик{' '}
+          {plan ? plan.planner : caps?.planner === 'llm' ? 'LLM' : 'правила'}
+          {caps?.runners?.length ? ` · сборка: ${caps.runners.join(', ')}` : ''}
         </p>
       </header>
 
@@ -154,19 +246,21 @@ export function OrderTab() {
         <div className="flex gap-2">
           <textarea
             value={text}
-            onChange={(e) => setText(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) submit(); }}
+            onChange={(e) => { setText(e.target.value); setPlan(null); }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) dryRun();
+            }}
             rows={2}
-            placeholder="Опишите задачу: «собери страницу отчёта», «посчитай дальность и пеленгацию», «собери всё и проверь тестами»"
+            placeholder="Опишите задачу: «собери страницу отчёта», «посчитай дальность и пеленгацию»"
             className="flex-1 px-3 py-2 bg-white border border-zone-300 rounded text-sm resize-y"
           />
           <button
-            onClick={() => submit()}
+            onClick={() => dryRun()}
             disabled={busy || !text.trim()}
-            className="px-4 rounded bg-blood-500 text-white text-sm hover:bg-blood-600 disabled:opacity-40 self-end flex items-center gap-2"
+            className="px-4 rounded bg-zone-600 text-white text-sm hover:bg-zone-700 disabled:opacity-40 self-end flex items-center gap-2"
           >
-            {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-            Отправить
+            {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <ListTree className="w-4 h-4" />}
+            Разобрать
           </button>
         </div>
 
@@ -174,11 +268,11 @@ export function OrderTab() {
           <div className="flex flex-wrap gap-1.5">
             {caps.suggestions.map((s) => (
               <button
-                key={s.text}
-                onClick={() => submit(s.text)}
+                key={s}
+                onClick={() => { setText(s); dryRun(s); }}
                 className="px-2.5 py-1 text-[11px] rounded border border-zone-300 text-zone-600 hover:border-zone-500 hover:text-zone-900"
               >
-                {s.text}
+                {s}
               </button>
             ))}
           </div>
@@ -186,12 +280,61 @@ export function OrderTab() {
         {err && <p className="text-xs text-blood-600">{err}</p>}
       </div>
 
+      {/* ---------- план на утверждение ---------- */}
+      {plan && (
+        <section className="border border-zone-400 bg-zone-100 rounded-lg overflow-hidden">
+          <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-zone-300">
+            <div className="flex items-center gap-2 min-w-0">
+              <ListTree className="w-4 h-4 text-zone-700 shrink-0" />
+              <span className="font-medium text-sm text-zone-900">План</span>
+              <span className="font-mono text-[10px] text-zone-600">{plan.intent}</span>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() => setPlan(null)}
+                className="px-2.5 py-1 text-[11px] rounded border border-zone-300 text-zone-600 hover:border-zone-500 flex items-center gap-1"
+              >
+                <Ban className="w-3 h-3" /> отмена
+              </button>
+              <button
+                onClick={start}
+                disabled={busy || plan.targets.length === 0}
+                className="px-3 py-1 text-[11px] rounded bg-blood-500 text-white hover:bg-blood-600 disabled:opacity-40 flex items-center gap-1"
+              >
+                <Play className="w-3 h-3" /> выполнить
+              </button>
+            </div>
+          </div>
+
+          {plan.targets.length === 0 ? (
+            <p className="px-4 py-3 text-sm text-zone-700">
+              Заказ не сопоставлен ни с одной целью. Доступно:{' '}
+              <span className="font-mono text-xs text-zone-900">
+                {(plan.available ?? []).slice(0, 12).join(', ')}
+              </span>
+            </p>
+          ) : (
+            <ol className="divide-y divide-zone-200">
+              {plan.targets.map((t, i) => (
+                <li key={t} className="flex items-center gap-3 px-4 py-2 text-sm">
+                  <span className="font-mono text-[10px] text-zone-500 w-5">{i + 1}</span>
+                  <code className="font-mono text-zone-900">{t}</code>
+                </li>
+              ))}
+            </ol>
+          )}
+          <p className="px-4 py-2 border-t border-zone-300 font-mono text-[10px] text-zone-600">
+            {plan.note} · зависимости подтянет система сборки
+          </p>
+        </section>
+      )}
+
       {/* ---------- текущий заказ ---------- */}
       {order && (
         <section className="border border-zone-300 bg-zone-100 rounded-lg overflow-hidden">
           <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-zone-300">
             <div className="flex items-center gap-2 min-w-0">
-              <ListTree className="w-4 h-4 text-blood-500 shrink-0" />
+              <Cpu className="w-4 h-4 text-blood-500 shrink-0" />
               <span className="font-medium text-sm text-zone-900 truncate">
                 {order.text}
               </span>
@@ -226,35 +369,86 @@ export function OrderTab() {
             {order.steps.map((s) => {
               const Icon = STATUS_ICON[s.status];
               return (
-                <li key={s.id} className="flex items-center gap-3 px-4 py-2.5">
-                  <Icon className={`w-4 h-4 shrink-0 ${STATUS_COLOR[s.status]} ${
-                    s.status === 'running' ? 'animate-spin' : ''}`} />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-zone-900">{s.title}</span>
-                      <code className="font-mono text-[10px] text-zone-500 bg-zone-200 px-1 rounded">
-                        {s.kind === 'make' ? `make ${s.target}` : s.target}
-                      </code>
+                <li key={s.id} className="px-4 py-2.5">
+                  <div className="flex items-center gap-3">
+                    <Icon className={`w-4 h-4 shrink-0 ${STATUS_COLOR[s.status]} ${
+                      s.status === 'running' ? 'animate-spin' : ''}`} />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-zone-900 truncate">{s.title}</span>
+                        <code className="font-mono text-[10px] text-zone-500 bg-zone-200 px-1 rounded shrink-0">
+                          make {s.target}
+                        </code>
+                      </div>
+                      {s.error && (
+                        <p className="text-[11px] text-blood-500 truncate">{s.error}</p>
+                      )}
                     </div>
-                    {s.error && (
-                      <p className="text-[11px] text-blood-500 truncate">{s.error}</p>
+                    <span className="flex items-center gap-1.5 shrink-0">
+                      <Cpu className="w-3.5 h-3.5 text-zone-500" />
+                      <span className="font-mono text-[11px] text-zone-700">
+                        {s.agent_id.replace('agent.', '')}
+                      </span>
+                    </span>
+                    {s.exit_code !== null && (
+                      <span className="font-mono text-[10px] text-zone-500 w-10 text-right shrink-0">
+                        exit {s.exit_code}
+                      </span>
                     )}
                   </div>
-                  <span className="flex items-center gap-1.5 shrink-0">
-                    <Cpu className="w-3.5 h-3.5 text-zone-500" />
-                    <span className="font-mono text-[11px] text-zone-700">
-                      {s.agent_id.replace('AGENT-', '')}
-                    </span>
-                  </span>
-                  {s.exit_code !== null && (
-                    <span className="font-mono text-[10px] text-zone-500 w-10 text-right">
-                      exit {s.exit_code}
-                    </span>
+                  {showLog && s.log_tail && s.log_tail.length > 0 && (
+                    <pre className="mt-2 ml-7 font-mono text-[10px] leading-relaxed text-zone-600 whitespace-pre-wrap max-h-40 overflow-y-auto">
+                      {s.log_tail.slice(-12).join('\n')}
+                    </pre>
                   )}
                 </li>
               );
             })}
           </ol>
+
+          {/* ---------- вопрос оператору: граф прерван ---------- */}
+          {waiting && (
+            <div className="border-t border-amber-300 bg-amber-50 px-4 py-3 space-y-2">
+              <div className="flex items-center gap-1.5 font-mono text-[9px] uppercase text-amber-800">
+                <HelpCircle className="w-3.5 h-3.5" /> граф ждёт ответа
+              </div>
+              <p className="text-sm text-zone-900">{order.question}</p>
+              <div className="flex gap-2">
+                <input
+                  value={answer}
+                  onChange={(e) => setAnswer(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') sendAnswer(); }}
+                  placeholder="Ваш ответ — работа продолжится с этого места"
+                  className="flex-1 px-3 py-1.5 text-sm bg-white border border-amber-300 rounded"
+                />
+                <button
+                  onClick={sendAnswer}
+                  disabled={busy || !answer.trim()}
+                  className="px-3 py-1.5 text-sm rounded bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-40"
+                >
+                  Ответить
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ---------- журнал ---------- */}
+          {order.logs && order.logs.length > 0 && (
+            <div className="border-t border-zone-300">
+              <button
+                onClick={() => setShowLog((v) => !v)}
+                className="w-full flex items-center gap-1.5 px-4 py-2 font-mono text-[9px] uppercase text-zone-600 hover:text-zone-900"
+              >
+                <ScrollText className="w-3 h-3" />
+                журнал ({order.logs.length}) {showLog ? '▾' : '▸'}
+              </button>
+              {showLog && (
+                <pre className="px-4 pb-3 font-mono text-[10px] leading-relaxed text-zone-600 whitespace-pre-wrap max-h-48 overflow-y-auto">
+                  {order.logs.join('\n')}
+                </pre>
+              )}
+            </div>
+          )}
 
           {order.report && (
             <div className="border-t border-zone-300 px-4 py-3">
@@ -279,7 +473,7 @@ export function OrderTab() {
             {history.map((o) => (
               <button
                 key={o.id}
-                onClick={() => setOrder(o)}
+                onClick={() => { setOrder(o); setPlan(null); }}
                 className="w-full flex items-center gap-3 px-3 py-2 rounded border border-zone-300 bg-zone-100 hover:border-zone-500 text-left"
               >
                 <span
@@ -289,31 +483,12 @@ export function OrderTab() {
                     : 'bg-amber-500'}`}
                 />
                 <span className="flex-1 text-sm text-zone-800 truncate">{o.text}</span>
-                <span className="font-mono text-[10px] text-zone-500">
-                  {o.intent}
-                </span>
-                <span className="flex items-center gap-1 font-mono text-[10px] text-zone-600">
+                <span className="font-mono text-[10px] text-zone-500">{o.intent}</span>
+                <span className="flex items-center gap-1 font-mono text-[10px] text-zone-600 shrink-0">
                   <Clock className="w-3 h-3" />
                   {new Date(o.created_at).toLocaleTimeString('ru-RU')}
                 </span>
               </button>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* ---------- возможности ---------- */}
-      {caps && (
-        <section>
-          <h3 className="font-mono text-[11px] uppercase tracking-widest text-zone-600 mb-2">
-            Доступные цели ({Object.keys(caps.targets).length})
-          </h3>
-          <div className="grid sm:grid-cols-2 gap-x-4 gap-y-1">
-            {Object.entries(caps.targets).map(([t, d]) => (
-              <div key={t} className="flex items-baseline gap-2 text-[11px]">
-                <code className="font-mono text-zone-900 w-24 shrink-0">{t}</code>
-                <span className="text-zone-600 truncate">{d}</span>
-              </div>
             ))}
           </div>
         </section>

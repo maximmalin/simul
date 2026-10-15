@@ -127,6 +127,17 @@ PROVIDERS: dict[str, Provider] = {
         "custom", "Произвольный endpoint",
         os.environ.get("KR_LLM_BASE", "http://127.0.0.1:8080/v1"),
         "KR_LLM_API_KEY", False, "local-model", "указывается явно"),
+    # --- Nous Portal: облако с бесплатным тарифом ---
+    # OpenAI-совместимый API с моделями, помеченными суффиксом `:free`.
+    # Ключ бесплатный, карта не нужна. Это единственное облако, которое
+    # здесь реально применимо: локальная 3B модель на CPU отвечает около
+    # минуты на ход, а агентному циклу это не подходит.
+    "nous": Provider(
+        "nous", "Nous Portal (бесплатный тариф)",
+        "https://inference-api.nousresearch.com/v1",
+        "NOUS_PORTAL_API_KEY", True, "stepfun/step-3.7-flash:free",
+        "stepfun/step-3.7-flash:free · poolside/laguna-s-2.1:free · "
+        "meituan/longcat-2.5-preview:free · upstage/solar-mini4:free"),
 }
 
 #: провайдеры без ключа — их имеет смысл пробовать при авто-откате
@@ -203,11 +214,11 @@ def _guess_provider(port: int) -> str:
 # ==========================================================================
 #  Пресеты
 # ==========================================================================
-#: Готовые связки «рантайм + модель» под типовые машины.
-#: Переключаются одной переменной: KR_LLM_PRESET=hermes
+#: Готовые связки «провайдер + модель» под типовые случаи.
+#: Переключаются одной переменной: KR_LLM_PRESET=nous
 # ==========================================================================
 PRESETS: dict[str, dict[str, str]] = {
-    # свободные модели, которые умеют вызывать инструменты
+    # --- локально ---
     "hermes": {"provider": "llamacpp", "model": "hermes3-8b",
                "hint": "Nous Hermes 3 Llama 3.1 8B — нужна видеокарта или много RAM"},
     "qwen": {"provider": "ollama", "model": "qwen2.5:3b-instruct",
@@ -218,6 +229,13 @@ PRESETS: dict[str, dict[str, str]] = {
               "hint": "Gemma 3 4B — хороший вызов инструментов на CPU"},
     "mistral": {"provider": "ollama", "model": "ministral:3b",
                 "hint": "Mistral 3B — очень быстрый на CPU"},
+    # --- облако с бесплатным тарифом (ключ бесплатный, карта не нужна) ---
+    "nous": {"provider": "nous", "model": "stepfun/step-3.7-flash:free",
+             "hint": "Nous Portal, бесплатно. Нужен ключ NOUS_PORTAL_API_KEY"},
+    "nous-laguna": {"provider": "nous", "model": "poolside/laguna-s-2.1:free",
+                     "hint": "Nous Portal, бесплатно. Нужен ключ NOUS_PORTAL_API_KEY"},
+    "nous-longcat": {"provider": "nous", "model": "meituan/longcat-2.5-preview:free",
+                     "hint": "Nous Portal, бесплатно. Нужен ключ NOUS_PORTAL_API_KEY"},
 }
 
 
@@ -822,6 +840,14 @@ def main() -> int:
               "сводки структурные.")
         print("       Включить: KR_LLM_ENABLED=1 и KR_LLM_PROVIDER "
               "с ключом, либо поднимите локальный сервер.")
+
+    if not provider_key("nous"):
+        print("\n  Бесплатное облако без карты — Nous Portal:")
+        print("    1. зарегистрироваться на portal.nousresearch.com")
+        print("    2. создать ключ в разделе API keys")
+        print("    3. export NOUS_PORTAL_API_KEY=<ключ>")
+        print("    4. KR_LLM_PRESET=nous make llm-check")
+        print("    Модели помечены суффиксом :free и не тарифицируются.")
     return 0
 
 

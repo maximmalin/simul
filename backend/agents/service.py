@@ -20,6 +20,7 @@
 from __future__ import annotations
 
 import threading
+import time
 import traceback
 from typing import Any, Callable
 
@@ -246,6 +247,67 @@ def waiting() -> list[dict]:
              "failed": [s["target"] for s in o.get("steps", [])
                         if s.get("status") == "failed"]}
             for o in items]
+
+
+# ==========================================================================
+#  Поток событий
+# ==========================================================================
+#  Без потока интерфейс узнаёт о работе только по завершении заказа:
+#  пользователь смотрит на пустой прогресс минуту, пока считает дальность.
+#  Поток отдаёт те же события по мере их появления.
+# ==========================================================================
+def stream(order_id: str, poll: float = 0.4):
+    """Отдаёт заказ по мере изменений — конечный генератор для SSE.
+
+    События:
+        ``state`` — весь заказ (первое и при существенных изменениях)
+        ``log``   — новая строка журнала графа
+        ``step``  — изменился статус шага
+        ``done``  — заказ завершён, поток закрывается
+    """
+    import json
+    last_log = 0
+    last_steps: dict[str, str] = {}
+    last_status = ""
+    idle = 0
+
+    while True:
+        o = get(order_id)
+        if o is None:
+            yield ("done", {"error": "unknown order", "id": order_id})
+            return
+
+        status = o.get("status", "")
+        if status != last_status:
+            last_status = status
+            idle = 0
+            yield ("state", o)
+        else:
+            idle += poll
+
+        for i, line in enumerate(o.get("logs") or []):
+            if i >= last_log:
+                yield ("log", {"text": line})
+                last_log = i + 1
+
+        steps = {s.get("id", str(i)): s.get("status", "")
+                 for i, s in enumerate(o.get("steps", []))}
+        if steps != last_steps:
+            changed = [s for s in o.get("steps", [])
+                       if last_steps.get(s.get("id", "")) != s.get("status")]
+            last_steps = steps
+            yield ("step", {"steps": changed, "progress": o.get("progress", 0)})
+
+        if status in ("done", "failed", "partial", "cancelled"):
+            yield ("done", o)
+            return
+
+        # заказ завис и ничего не меняется — отдаём последнее известное
+        # и закрываем поток, чтобы вкладка не висела вечно
+        if idle > 900:
+            yield ("done", {**o, "note": "поток закрыт по таймауту ожидания"})
+            return
+        time.sleep(poll)
 
 
 # ==========================================================================

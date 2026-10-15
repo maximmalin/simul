@@ -18,6 +18,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 from typing import Any, Callable
 
@@ -36,8 +37,47 @@ def _schema(props: dict[str, dict], required: list[str]) -> dict:
             "additionalProperties": False}
 
 
-def tool_schemas(project: Project) -> list[dict]:
-    """Объявления инструментов в формате OpenAI."""
+# ==========================================================================
+#  Уровни инструментов
+# ==========================================================================
+#  Заимствовано у WebBrain (браузерный агент) — там это называется
+#  compact / mid / full и решает ту же задачу: слабой локальной модели
+#  нельзя показывать все инструменты сразу. Модель на 3B, увидев шесть
+#  схем, начинает выбирать неверно или вообще не вызывает ничего.
+#
+#  compact — два инструмента, которых хватает для большинства заказов;
+#  mid    — плюс чтение артефактов и уточнение у человека;
+#  full   — всё, включая describe_target.
+# ==========================================================================
+TIERS: dict[str, tuple[str, ...]] = {
+    "compact": ("list_targets", "submit_plan", "run_target"),
+    "mid": ("list_targets", "submit_plan", "run_target",
+            "read_artifacts", "ask_human"),
+    "full": ("list_targets", "describe_target", "submit_plan",
+             "run_target", "read_artifacts", "ask_human"),
+}
+
+#: уровень по умолчанию; переопределяется KR_TOOL_TIER
+DEFAULT_TIER = os.environ.get("KR_TOOL_TIER", "mid").strip().lower()
+if DEFAULT_TIER not in TIERS:
+    DEFAULT_TIER = "mid"
+
+
+def tier_names(tier: str = "") -> tuple[str, ...]:
+    return TIERS.get((tier or DEFAULT_TIER).lower(), TIERS[DEFAULT_TIER])
+
+
+def tool_schemas(project: Project, tier: str = "") -> list[dict]:
+    """Объявления инструментов в формате OpenAI, по уровню.
+
+    Аргументы приходят уже разобранными и проверенными по схеме, поэтому
+    мусор в ответе модели больше не ломает разбор.
+    """
+    return [s for s in _ALL_SCHEMAS(project) if s["function"]["name"] in
+            tier_names(tier)]
+
+
+def _ALL_SCHEMAS(project: Project) -> list[dict]:
     n = len(project.buildable())
     return [
         {
@@ -129,7 +169,7 @@ def tool_schemas(project: Project) -> list[dict]:
 # ==========================================================================
 def make_bindings(project: Project, run_one: Callable[[str], dict],
                   on_plan: Callable[[list[str], str], None] | None = None,
-                  ) -> dict[str, Callable[..., str]]:
+                  tier: str = "") -> dict[str, Callable[..., str]]:
     """Собрать функции инструментов, привязанные к проекту."""
     from .reporter import collect_facts
 

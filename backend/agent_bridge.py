@@ -987,6 +987,33 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json({"error": "agents unavailable"}, 503)
             return self._json({"waiting": svc.waiting()})
 
+        if path.endswith("/stream"):
+            # Поток событий заказа. Опрос каждые 1.2 с дал бы тот же
+            # результат, но с задержкой в цикл и без возможности отдать
+            # журнал построчно.
+            svc = _agents()
+            if not svc:
+                return self._json({"error": "agents unavailable"}, 503)
+            oid = path[len("/api/order/"):-len("/stream")]
+            self.send_response(200)
+            self.send_header("Content-Type", "text/event-stream")
+            self.send_header("Cache-Control", "no-cache")
+            self.send_header("Connection", "keep-alive")
+            self.send_header("X-Accel-Buffering", "no")
+            self.end_headers()
+            try:
+                for event, data in svc.stream(oid):
+                    payload = (json.dumps(data, ensure_ascii=False,
+                                          default=str) + "\n\n")
+                    chunk = f"event: {event}\ndata: {payload}"
+                    self.wfile.write(chunk.encode("utf-8"))
+                    self.wfile.flush()
+                    if event == "done":
+                        break
+            except (BrokenPipeError, ConnectionResetError):
+                pass          # вкладка закрыта — просто перестаём писать
+            return
+
         if path.startswith("/api/order/"):
             svc = _agents()
             if not svc:
@@ -1032,6 +1059,28 @@ class Handler(BaseHTTPRequestHandler):
         return self._json({"error": "not found", "path": path}, 404)
 
     def do_POST(self) -> None:                                  # noqa: N802
+        # MCP живёт вне /api и вне проверки ключа: к нему обращаются
+        # локальные агенты (OpenCode, Claude Code, Codex), у которых
+        # своя авторизация. Мост и так слушает только 127.0.0.1.
+        if urlparse(self.path).path.rstrip("/") in ("/mcp", ""):
+            try:
+                import mcp
+            except ImportError:
+                return self._json({"error": "mcp module unavailable"}, 503)
+            n = int(self.headers.get("Content-Length") or 0)
+            body = self.rfile.read(n) if n else b""
+            status, headers, data = mcp.handle_http(
+                urlparse(self.path).path.rstrip("/") or "/", body,
+                {"post": self.command, "content-type":
+                 self.headers.get("Content-Type", "")})
+            self.send_response(status)
+            for k, v in headers.items():
+                self.send_header(k, v)
+            self.end_headers()
+            if data:
+                self.wfile.write(data)
+            return
+
         if not self._auth_ok():
             return self._json({"error": "unauthorized"}, 401)
         u = urlparse(self.path)

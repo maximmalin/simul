@@ -104,10 +104,18 @@ def _run_target(name: str) -> dict:
     """
     from agents import engine, sandbox
 
+    from agents.types import is_destructive
+
     proj = get_project()
-    if proj.target(name) is None:
+    target = proj.target(name)
+    if target is None:
         return {"status": "failed", "exit_code": -2, "log": [],
                 "error": f"цели «{name}» нет в проекте"}
+    # Наружу разрушающие цели не выставляем вовсе: внешний агент не
+    # должен иметь путь к удалению файлов проекта даже через песочницу
+    if is_destructive(target.name):
+        return {"status": "failed", "exit_code": -3, "log": [],
+                "error": f"цель «{name}» удаляет данные и недоступна агенту"}
 
     # папка на сессию агента: следующий вызов переиспользует её,
     # а не плодит копии исходников на каждый вызов
@@ -138,8 +146,13 @@ def _sandbox_for(proj: Project) -> str | None:
         return str(path)
     try:
         return str(sandbox.create(f"mcp-{_SESSION}", proj.root))
-    except Exception:                                           # noqa: BLE001
-        return None
+    except Exception as exc:                                    # noqa: BLE001
+        # Не откатываемся к корню: внешний агент не должен получать
+        # выполнение команд в проекте, если изоляция не удалась
+        raise RuntimeError(
+            f"песочница не создана ({exc}). Выполнение в корне проекта "
+            f"запрещено: внешний агент не должен иметь доступ к "
+            f"исходникам.") from exc
 
 
 def call_tool(name: str, args: dict) -> dict:

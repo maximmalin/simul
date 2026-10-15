@@ -45,8 +45,8 @@ import llm
 
 from . import planner, reporter, runner as R, tools as T
 from .profile import load as load_profile
-from .types import (GraphState, Project, Step, final_status, new_state,
-                    now_iso, progress_of)
+from .types import (GraphState, Project, Step, final_status, is_destructive,
+                    new_state, now_iso, progress_of)
 
 MAX_PARALLEL = max(1, int(os.environ.get("KR_MAX_PARALLEL", "2")))
 STEP_TIMEOUT = int(os.environ.get("KR_STEP_TIMEOUT", "1800"))
@@ -274,6 +274,19 @@ def _execute_one(proj: Project, s: dict) -> dict:
         s.update(status="failed", exit_code=-2, finished_at=now_iso(),
                  error=f"цели «{s['target']}» нет в проекте")
         return s
+
+    # Запрет разрушающих целей — на уровне команды, а не только плана.
+    # План можно обойти: инструмент run_target вызывается напрямую, и
+    # именно этим путём `distclean` однажды снёс out/, .venv и
+    # node_modules основного проекта. Здесь — единственная точка, где
+    # команда уходит в make, значит и запрет должен быть здесь.
+    if is_destructive(target.name):
+        s.update(status="failed", exit_code=-3, finished_at=now_iso(),
+                 error=f"цель «{target.name}» удаляет данные — "
+                       f"агентам запрещена. Если она нужна вручную, "
+                       f"запустите вне агентного заказа")
+        return s
+
     try:
         cmd = (R.get(target.runner).command(Path(proj.root), target)
                if target.runner else R.get(proj.runner)

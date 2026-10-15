@@ -60,15 +60,32 @@ SKIP_DIRS = {
 #: каталоги, которые заказ создаёт заново
 FRESH_DIRS = ("out", "sim/outputs", "sim/netlists", "sim/nec", "sim/work")
 
-#: что переиспользовать символической ссылкой вместо копии
-LINK_DIRS = (
+#: Каталоги с зависимостями: `.venv` и `node_modules`.
+#:
+#: Три варианта были рассмотрены, и два из них оказались дырой:
+#:
+#: * симлинк — указывает внутрь проекта, `npm install` пишет в оригинал;
+#: * жёсткие ссылки (`cp -al`) — места не занимают, но разделяют inode
+#:   с оригиналом: правка «на месте» в песочнице меняет проект, а
+#:   `chmod` по песочнице меняет права настоящих файлов.
+#:
+#: Остаётся единственное, что действительно изолирует, — настоящая
+#: копия. Она стоит около гигабайта на заказ, поэтому песочницы
+#: подчищаются (KR_KEEP_SANDBOXES), а перед заказом снимается хеш
+#: исходников: даже если что-то пройдёт мимо всех запретов,
+# �� расхождение будет замечено, а не обнаружено через неделю.
+SHARED_DIRS = (
     ".venv",
     "frontend/node_modules",
     "node_modules",
 )
 
-#: файлы крупнее этого копируются как есть (жёсткой ссылки рискованно:
-#: сборка может перезаписать файл, а жёсткая ссылка пишет в оригинал)
+#: жёсткие ссылки можно включить явно — экономит до гигабайта,
+#: но безопасности не даёт (см. выше)
+USE_LINKS = os.environ.get("KR_SANDBOX_LINKS", "0").strip().lower() in (
+    "1", "true", "yes", "on")
+
+#: файлы крупнее этого копируются как есть
 BIG_FILE = 64 * 1024 * 1024
 
 
@@ -81,17 +98,61 @@ def _ignore(_dir: str, names: list[str]) -> set[str]:
 
 
 def _link_into(sandbox: Path, project: Path, rel: str) -> None:
-    """Символическая ссылка на каталог с зависимостями."""
+    """Настоящая копия каталога с зависимостями.
+
+    Копия, а не ссылка: см. объяснение у SHARED_DIRS. Жёсткие ссылки
+    доступны только при явном KR_SANDBOX_LINKS=1 и по умолчанию выключены.
+    """
     src = project / rel
     dst = sandbox / rel
     if not src.is_dir() or dst.exists() or dst.is_symlink():
         return
     dst.parent.mkdir(parents=True, exist_ok=True)
+    flag = "-al" if USE_LINKS else "-a"
     try:
-        dst.symlink_to(os.path.relpath(src, dst.parent))
-    except OSError:
-        pass          # нет прав на symlink — сборка просто не найдёт
-                        # зависимости, но оригинал цел, а это важнее
+        subprocess.run(["cp", flag, str(src), str(dst)],
+                       check=True, capture_output=True, timeout=1800)
+    except (subprocess.SubprocessError, OSError):
+        return
+    if USE_LINKS:
+        return          # права не трогаем: inode общий с оригиналом,
+                        # chmod здесь снял бы запись и с настоящих файлов
+    # в песочнице запись в зависимости запрещаем: инструмент, которому
+    # нужно писать, должен получить отказ, а не тихо изменить песочницу
+    for root, dirs, files in os.walk(dst):
+        for name in files + dirs:
+            p = Path(root) / name
+            if p.is_symlink() or not p.exists():
+                continue
+            try:
+                os.chmod(p, p.stat().st_mode & ~0o222)
+            except OSError:
+                pass
+
+
+def _find_links_into(sandbox: Path, project: Path) -> list[str]:
+    """Симлинки из песочницы в проект — их быть не должно.
+
+    Найденные показываются и удаляются: именно они делают песочницу
+    проницаемой для записи.
+    """
+    bad: list[str] = []
+    project = Path(project)
+    root = project.resolve()
+    for dirpath, _dirs, files in os.walk(sandbox, followlinks=False):
+        for name in files + list(_dirs):
+            p = Path(dirpath) / name
+            if not p.is_symlink():
+                continue
+            try:
+                target = p.resolve()
+            except OSError:
+                continue
+            if str(target).startswith(str(root)) and not str(p.resolve()) \
+                    .startswith(str(sandbox.resolve())):
+                bad.append(str(p.relative_to(sandbox)))
+                p.unlink()
+    return bad
 
 
 def create(order_id: str, project: str | Path) -> Path:
@@ -116,8 +177,12 @@ def create(order_id: str, project: str | Path) -> Path:
             shutil.rmtree(sandbox / rel, ignore_errors=True)
         (sandbox / rel).mkdir(parents=True, exist_ok=True)
 
-    for rel in LINK_DIRS:
+    for rel in SHARED_DIRS:
         _link_into(sandbox, project, rel)
+
+    leaked = _find_links_into(sandbox, project)
+    if leaked:
+        print(f"[sandbox] удалено проницаемых ссылок: {len(leaked)}")
 
     shutil.rmtree(root / order_id if False else sandbox / "work",
                   ignore_errors=True)
@@ -175,6 +240,65 @@ def collect_artifacts(order_id: str, project: str | Path,
     return brought
 
 
+# ==========================================================================
+#  Контроль целостности
+# ==========================================================================
+#  Запретить разрушающие цели — мера предупреждающая. Но «даже случайно»
+#  предупреждением не закрывается: любой инструмент может испортить файл,
+#  не будучи «разрушающей целью». Поэтому источники проекта перед
+#  заказом и после него сверяются по контрольной сумме, и расхождение
+#  показывается явно.
+# ==========================================================================
+def source_manifest(project: str | Path) -> dict[str, str]:
+    """Хеши отслеживаемых файлов — снимок состояния проекта.
+
+    Берутся файлы под контролем git: они и есть опора проекта.
+    """
+    import hashlib
+    import subprocess as sp
+
+    project = Path(project).resolve()
+    try:
+        names = sp.run(["git", "ls-files"], cwd=project, capture_output=True,
+                       text=True, timeout=60).stdout.split("\n")
+    except (sp.SubprocessError, OSError):
+        names = []
+    out: dict[str, str] = {}
+    for name in names:
+        name = name.strip()
+        if not name:
+            continue
+        f = project / name
+        try:
+            if not f.is_file():
+                out[name] = "нет"
+                continue
+            h = hashlib.sha256()
+            with f.open("rb") as fh:
+                for chunk in iter(lambda: fh.read(1 << 20), b""):
+                    h.update(chunk)
+            out[name] = h.hexdigest()[:16]
+        except OSError:
+            out[name] = "недоступен"
+    return out
+
+
+def verify_intact(before: dict[str, str],
+                  project: str | Path) -> dict:
+    """Сравнить снимки и сказать, что именно изменилось."""
+    after = source_manifest(project)
+    changed = [n for n in before
+               if n in after and after[n] != before[n]]
+    gone = [n for n in before if n not in after]
+    added = [n for n in after if n not in before]
+    return {"intact": not (changed or gone),
+            "changed": changed[:20], "removed": gone[:20],
+            "added": added[:20]}
+
+
+# ==========================================================================
+#  Уборка
+# ==========================================================================
 def list_sandboxes(project: str | Path) -> list[dict]:
     """Что накопилось в work/orders — для уборки и разбора."""
     root = Path(project).resolve() / "work" / "orders"

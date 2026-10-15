@@ -36,6 +36,39 @@ _SERVICE_NAMES = frozenset({
     "version", "lint-fix", "fmt", "format", "docs-serve", "preview",
 })
 
+#: Цели, которые удаляют данные. Их нельзя запускать **никогда** — ни
+#: из плана, ни прямым вызовом инструмента.
+#:
+#: Проверено на себе: `distclean`, вызванный из песочницы, снёс `out/`,
+#: `.venv` и `node_modules` основного проекта. Симлинки тут ни при чём —
+#: при неудачном создании песочницы код возвращался к корню проекта, а
+#: разрушающая цель к этому не была готова. Поэтому запрет двойной:
+#: такая цель не запускается вовсе, и если песочница не создалась,
+#: заказ останавливается, а не идёт в проект.
+_DESTRUCTIVE_NAMES = frozenset({
+    "clean", "distclean", "purge", "reset", "wipe", "drop-all", "remove-all",
+    "nuke", "destroy", "clobber", "rm-all",
+})
+
+#: подстроки, по которым цель считается разрушающей
+_DESTRUCTIVE_HINTS = (
+    "clean", "purge", "wipe", "reset-all", "drop-all", "remove-all",
+    "destroy", "nuke", "clobber", "rm-all", "uninstall-all",
+)
+
+
+def is_destructive(name: str) -> bool:
+    """Удаляет ли цель данные.
+
+    Имя — основной признак. Дополнительно смотрится тело цели:
+    команда с `rm -rf` внутри повод отказать, даже если называется
+    безобидно.
+    """
+    base = name.lower()
+    if base in _DESTRUCTIVE_NAMES:
+        return True
+    return any(h in base for h in _DESTRUCTIVE_HINTS)
+
 
 def is_service(name: str) -> bool:
     """Похоже ли имя цели на служебную команду.

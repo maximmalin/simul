@@ -20,7 +20,8 @@ import os
 from pathlib import Path
 
 from .runner import BuildError, autodetect
-from .types import Artifact, Project, Target, is_service
+from .types import (Artifact, Project, Target, is_destructive,
+                      is_service)
 
 #: имена файлов описания, которые ищутся в корне проекта
 PROFILE_NAMES = (
@@ -77,7 +78,11 @@ def load(root: str | Path, name: str = "", profile: str = "",
     # служебные цели: объявленные проектом плюс очевидные по имени
     declared = set(data.get("service", []))
     for t in proj.targets:
-        t.service = t.service or t.name in declared or is_service(t.name)
+        # разрушающая цель помечается служебной и вдобавок исключается
+        # из buildable(): в планы она не попадает, и даже если агент
+        # назовёт её напрямую, исполнение её отклонит
+        t.service = (t.service or t.name in declared
+                     or is_service(t.name) or is_destructive(t.name))
 
     for k, v in overrides.items():
         if v is not None and hasattr(proj, k):

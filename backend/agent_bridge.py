@@ -227,6 +227,58 @@ def save_projects(items: list[dict]) -> None:
     p.write_text(json.dumps(items, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
+
+# ... helpers above ...
+
+def _ensure_current_project(code: str) -> dict:
+    pt = ROOT / ".krystal" / "current_project.json"
+    pt.parent.mkdir(parents=True, exist_ok=True)
+    pt.write_text(json.dumps({"code": code}, ensure_ascii=False), encoding="utf-8")
+    return {"code": code}
+
+def _list_generic_projects() -> list[dict]:
+    base = ROOT / ".krystal" / "projects"
+    if not base.is_dir():
+        return []
+    items = []
+    for child in sorted(base.iterdir()):
+        if not child.is_dir():
+            continue
+        prof = child / "agents.project.yaml"
+        if not prof.is_file():
+            continue
+        try:
+            import yaml
+            data = yaml.safe_load(prof.read_text(encoding="utf-8")) or {}
+        except Exception:                                     # noqa: BLE001
+            data = {}
+        items.append({"code": child.name, "title": data.get("name", child.name),
+                      "objective": data.get("description", ""),
+                      "root": str(child)})
+    return items
+
+def _new_generic_project(code: str, title: str, objective: str):
+    import subprocess
+    code = re.sub(r"[^A-Za-z0-9_-]", "-", code).strip("-") or "project"
+    i = 1
+    safe_code = code
+    out_root = ROOT / ".krystal" / "projects" / safe_code
+    while out_root.exists():
+        safe_code = f"{code}-{i}"
+        out_root = ROOT / ".krystal" / "projects" / safe_code
+        i += 1
+    code = safe_code
+    try:
+        subprocess.run(
+            [sys.executable, str(ROOT / "scripts" / "project_init.py"),
+             "--init", "--code", code, "--title", title,
+             "--objective", objective or title],
+            cwd=str(ROOT), check=True, capture_output=True, text=True, timeout=120)
+    except (subprocess.SubprocessError, FileNotFoundError, ValueError) as exc:
+        return None, str(exc)
+    _ensure_current_project(code)
+    return {"code": code, "title": title, "objective": objective or title}, None
+
 def projects_list() -> dict:
     """Все проекты: из Supabase, если он есть; иначе локально."""
     sys.path.insert(0, str(ROOT / "backend"))
@@ -1064,6 +1116,11 @@ class Handler(BaseHTTPRequestHandler):
                               "POST /api/build {target}",
                               "POST /api/run {script,args}"],
             })
+        if path == "/api/krystal-projects":
+            items = _list_generic_projects()
+            return self._json({"count": len(items), "projects": items,
+                              "current": _current_project_code()})
+
         return self._json({"error": "not found", "path": path}, 404)
 
     def do_POST(self) -> None:                                  # noqa: N802
@@ -1121,6 +1178,27 @@ class Handler(BaseHTTPRequestHandler):
             argv += [str(a) for a in payload.get("args", [])]
             job = spawn_job(rel, argv)
             return self._json(job.as_dict(), 202)
+
+        if path == "/api/krystal-project":
+            code = str(payload.get("code", "")).strip()
+            title = str(payload.get("title", "")).strip()
+            objective = str(payload.get("objective", "")).strip()
+            if not code or not title:
+                return self._json({"error": "code and title are required"}, 400)
+            proj, err = _new_generic_project(code, title, objective)
+            if err:
+                return self._json({"error": err}, 500)
+            return self._json({"ok": True, "source": "generic", "project": proj}, 201)
+        if path == "/api/krystal-project/select":
+            code = str(payload.get("code", "")).strip()
+            if not code:
+                return self._json({"error": "code required"}, 400)
+            prof = ROOT / ".krystal" / "projects" / code / "agents.project.yaml"
+            if not prof.is_file():
+                return self._json({"error": f"unknown generic project: {code}"}, 404)
+            _ensure_current_project(code)
+            return self._json({"ok": True, "current": code,
+                               "root": str(ROOT / ".krystal" / "projects" / code)}, 200)
 
         if path == "/api/projects":
             return self._json(project_create(payload), 201)

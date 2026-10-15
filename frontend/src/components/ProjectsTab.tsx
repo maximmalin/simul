@@ -60,9 +60,21 @@ export function ProjectsTab({
   const [newTaskDirective, setNewTaskDirective] = useState('');
   const [newTaskPriority, setNewTaskPriority] = useState<Priority>('standard');
   const [newTaskAgent, setNewTaskAgent] = useState<string>('');
+  const [genericProjects, setGenericProjects] = useState<any[]>([]);
+  const [currentGenericCode, setCurrentGenericCode] = useState<string | null>(null);
+  const [newProjCode, setNewProjCode] = useState('');
+  const [newProjTitle, setNewProjTitle] = useState('');
+  const [newProjObjective, setNewProjObjective] = useState('');
   const [localOrders, setLocalOrders] = useState<LocalOrder[]>([]);
   const [bridgeArtifacts, setBridgeArtifacts] = useState<BridgeArtifact[]>([]);
   const [orderArchives, setOrderArchives] = useState<Record<string, BridgeArtifact[]>>({});
+
+  useEffect(() => {
+    fetch(`${BASE}/api/krystal-projects`)
+      .then((r) => r.json())
+      .then((d) => { setGenericProjects(d.projects ?? []); setCurrentGenericCode(d.current ?? null); })
+      .catch(() => { setGenericProjects([]); setCurrentGenericCode(null); });
+  }, []);
 
   useEffect(() => {
     fetch(`${BASE}/api/orders`)
@@ -204,6 +216,47 @@ export function ProjectsTab({
           ))}
         </section>
       )}
+
+      {/* Universal project creator */}
+      <section className="mb-6 border border-zone-300 bg-zone-50 rounded-lg p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <FolderKanban className="w-4 h-4 text-blood-500" />
+          <h3 className="font-display text-sm uppercase tracking-wide text-zone-900">Universal Projects (от запроса)</h3>
+          <span className="font-mono text-[10px] text-zone-600">текущий: {currentGenericCode ?? '— krystal'}</span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-2 mb-3">
+          <input value={newProjCode} onChange={(e) => setNewProjCode(e.target.value)} placeholder="CODE (flashlight)" className="px-3 py-2 text-sm border border-zone-300 rounded bg-white" />
+          <input value={newProjTitle} onChange={(e) => setNewProjTitle(e.target.value)} placeholder="Title" className="px-3 py-2 text-sm border border-zone-300 rounded bg-white" />
+          <input value={newProjObjective} onChange={(e) => setNewProjObjective(e.target.value)} placeholder="Objective" className="px-3 py-2 text-sm border border-zone-300 rounded bg-white" />
+          <button onClick={async () => {
+              if (!newProjCode.trim() || !newProjTitle.trim()) return;
+              await fetch(`${BASE}/api/krystal-project`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code: newProjCode, title: newProjTitle, objective: newProjObjective })
+              });
+              setNewProjCode(''); setNewProjTitle(''); setNewProjObjective('');
+              fetch(`${BASE}/api/krystal-projects`).then((r) => r.json()).then((d) => { setGenericProjects(d.projects ?? []); setCurrentGenericCode(d.current ?? null); });
+            }} className="px-3 py-2 rounded bg-blood-500 text-white text-sm hover:bg-blood-600">Создать проект</button>
+        </div>
+
+        <div className="flex flex-wrap gap-2 mb-3">
+          {genericProjects.map((p) => (
+            <button key={p.code} onClick={async () => {
+              await fetch(`${BASE}/api/krystal-project/select`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code: p.code })
+              });
+              fetch(`${BASE}/api/krystal-projects`).then((r) => r.json()).then((d) => { setGenericProjects(d.projects ?? []); setCurrentGenericCode(d.current ?? null); });
+            }} className={`px-3 py-1 text-xs font-mono rounded border ${currentGenericCode === p.code ? 'bg-blood-500 text-white border-blood-500' : 'border-zone-300 text-zone-600 hover:border-zone-500'}`}>
+              {p.code}
+            </button>
+          ))}
+        </div>
+        <p className="font-mono text-[10px] text-zone-600">После выбора проекта заказы в «Order» выполняются только в нём (полностью отличной структурой и артефактами).</p>
+      </section>
 
       <div className="space-y-3">
         {projects.map((project, pIdx) => {

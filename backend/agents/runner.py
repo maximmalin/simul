@@ -90,7 +90,8 @@ def get(name: str) -> type:
 #  Запуск
 # ==========================================================================
 def run(root: Path, command: str, *, timeout: int = 1800,
-        jobs: int = 1, env: dict | None = None) -> tuple[int, list[str], float]:
+        jobs: int = 1, env: dict | None = None,
+        on_line: Any = None) -> tuple[int, list[str], float]:
     """Выполнить команду в корне проекта.
 
     Возвращает (код возврата, вывод, секунды). Команда выполняется в
@@ -110,6 +111,11 @@ def run(root: Path, command: str, *, timeout: int = 1800,
         assert p.stdout is not None
         for line in p.stdout:
             lines.append(line.rstrip("\n"))
+            if on_line is not None:
+                try:
+                    on_line(lines[-1])
+                except Exception:                            # noqa: BLE001
+                    pass
             if len(lines) > 600:        # лог не должен расти без границ
                 del lines[:300]
         p.wait(timeout=timeout)

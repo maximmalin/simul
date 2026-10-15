@@ -76,6 +76,10 @@ def _step_view(s: Any) -> dict:
     d["kind"] = "make"
     d.setdefault("title", d.get("target", ""))
     d.setdefault("job_id", None)
+    if d.get("log_tail") is None:
+        d["log_tail"] = d.get("log") or []
+    if isinstance(d.get("log_tail"), str):
+        d["log_tail"] = d["log_tail"].splitlines()
     return d
 
 

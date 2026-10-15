@@ -344,11 +344,17 @@ def fn_tools(state: GraphState) -> GraphState:
     ask: str | None = None
 
     for cid, call in zip(ids, calls):
-        out = T.invoke(bindings, call.name, call.args)
+        if isinstance(call, dict):
+            name = call.get("name")
+            args = call.get("args") or {}
+        else:
+            name = getattr(call, "name", None)
+            args = getattr(call, "args", {}) or {}
+        out = T.invoke(bindings, name, args)
         question = T.is_ask_human(out)
         if question:
             ask = question
-        results.append({"id": cid, "name": call.name, "content": out[:1500]})
+        results.append({"id": cid, "name": name, "content": out[:1500]})
 
     history = list(state.get("history", []))
     for r in results:

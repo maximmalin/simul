@@ -247,6 +247,14 @@ def _run(order_id: str, proj: Project) -> None:
         return
     order["status"] = "running"
 
+    # До создания песочницы гарантируем, что проект не висит залоченным
+    # (например, после падения предыдущего заказа) — иначе cp -a упрётся
+    # в каталоги без права записи.
+    try:
+        sandbox.restore_if_locked(proj.root)
+    except Exception:                                    # noqa: BLE001
+        pass
+
     box = None
     if USE_SANDBOX:
         try:

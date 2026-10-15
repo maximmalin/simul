@@ -85,6 +85,27 @@ class Provider:
     models_hint: str = ""      # подсказка, что обычно доступно
 
 
+#: Суффикс `:free` в каталоге не гарантия: проверено обращением к API —
+#: часть моделей возвращает 429 по fair-share лимиту, а одна заявленная
+#: бесплатной отвечает «no longer free». Поэтому откат идёт и по моделям,
+#: и список ниже задан порядком проверки, а не алфавитом.
+NOUS_FREE_DEFAULT = "poolside/laguna-xs-2.1:free"
+
+#: резервные бесплатные модели: если основная занята или исчезла,
+#: берётся следующая. Порядок — по результатам проверки живости.
+NOUS_FREE_FALLBACKS = (
+    "upstage/solar-mini4:free",
+    "stepfun/step-5-preview:free",
+    "meituan/longcat-2.5-preview:free",
+    "poolside/laguna-s-2.1:free",
+    "stepfun/step-3.7-flash:free",
+)
+
+
+def _model_dead_key(pk: str, model: str) -> str:
+    return f"{pk}/{model}"
+
+
 PROVIDERS: dict[str, Provider] = {
     "openai": Provider(
         "openai", "OpenAI", "https://api.openai.com/v1",
@@ -135,13 +156,14 @@ PROVIDERS: dict[str, Provider] = {
     "nous": Provider(
         "nous", "Nous Portal (бесплатный тариф)",
         "https://inference-api.nousresearch.com/v1",
-        "NOUS_PORTAL_API_KEY", True, "stepfun/step-3.7-flash:free",
+        "NOUS_PORTAL_API_KEY", True, NOUS_FREE_DEFAULT,
         "stepfun/step-3.7-flash:free · poolside/laguna-s-2.1:free · "
         "meituan/longcat-2.5-preview:free · upstage/solar-mini4:free"),
 }
 
 #: провайдеры без ключа — их имеет смысл пробовать при авто-откате
 LOCAL_KEYS = tuple(k for k, p in PROVIDERS.items() if not p.key_required)
+
 
 # ==========================================================================
 #  Автоопределение локального сервера
@@ -385,6 +407,18 @@ def routes() -> list[tuple[str, str]]:
         else PROVIDERS["ollama"]).default_model
     out.append((main_pk, _resolve_model(main_pk, main_model)))
 
+    # запасные модели того же провайдера: KR_LLM_MODELS=a,b,c.
+    # Суффикс :free не гарантирует доступность — модель может быть
+    # занята по fair-share лимиту, пока соседняя отвечает.
+    extra = [m.strip() for m in _env("KR_LLM_MODELS").split(",") if m.strip()]
+    if not extra and main_pk == "nous":
+        # у Nous бесплатные модели делят один канал с лимитом по
+        # fair-share: в момент пика половина списка отдаёт 429, поэтому
+        # откат по моделям здесь не запасной вариант, а основной
+        extra = [m for m in NOUS_FREE_FALLBACKS if m != main_model]
+    for m in extra:
+        out.append((main_pk, _resolve_model(main_pk, m)))
+
     fast_pk = _env("KR_LLM_FAST_PROVIDER")
     fast_model = _env("KR_LLM_MODEL_FAST")
     if fast_pk or fast_model:
@@ -462,22 +496,24 @@ _DEAD_UNTIL: dict[str, float] = {}
 _DEAD_REASON: dict[str, str] = {}
 
 
-def _is_dead(pk: str) -> bool:
-    """Провайдер не отвечает и ещё не вышел из паузы."""
-    until = _DEAD_UNTIL.get(pk, 0.0)
-    return time.monotonic() < until
+def _is_dead(pk: str, model: str = "") -> bool:
+    """Маршрут не отвечает и ещё не вышел из паузы."""
+    key = _model_dead_key(pk, model) if model else pk
+    return time.monotonic() < _DEAD_UNTIL.get(key, 0.0)
 
 
-def _mark_dead(pk: str, reason: str) -> None:
+def _mark_dead(pk: str, reason: str, model: str = "") -> None:
+    key = _model_dead_key(pk, model) if model else pk
     with _LOCK:
-        _DEAD_UNTIL[pk] = time.monotonic() + _COOLDOWN_S
-        _DEAD_REASON[pk] = reason[:160]
+        _DEAD_UNTIL[key] = time.monotonic() + _COOLDOWN_S
+        _DEAD_REASON[key] = reason[:160]
 
 
-def _mark_alive(pk: str) -> None:
+def _mark_alive(pk: str, model: str = "") -> None:
+    key = _model_dead_key(pk, model) if model else pk
     with _LOCK:
-        _DEAD_UNTIL.pop(pk, None)
-        _DEAD_REASON.pop(pk, None)
+        _DEAD_UNTIL.pop(key, None)
+        _DEAD_REASON.pop(key, None)
 
 
 def _post(base: str, path: str, payload: dict, headers: dict,
@@ -580,8 +616,9 @@ def chat(messages: list[dict], *, tools: list[dict] | None = None,
                 provider_key(pk) or (pk == "nous" and _hermes_credential())):
             errors.append(f"{pk}: нет ключа")
             continue
-        if _is_dead(pk):
-            errors.append(f"{pk}: {_DEAD_REASON.get(pk, 'недоступен')} "
+        if _is_dead(pk, model):
+            errors.append(f"{pk}/{model}: "
+                          f"{_DEAD_REASON.get(_model_dead_key(pk, model), 'недоступно')} "
                           f"(пауза {_COOLDOWN_S}s)")
             continue
 
@@ -596,10 +633,10 @@ def chat(messages: list[dict], *, tools: list[dict] | None = None,
         try:
             data = _post(PROVIDERS[pk].base, "/chat/completions",
                          payload, _headers(pk), timeout)
-            _mark_alive(pk)
+            _mark_alive(pk, model)
             with _LOCK:
-                _LAST_OK[pk] = time.time()
-                _LAST_ERR.pop(pk, None)
+                _LAST_OK[_model_dead_key(pk, model)] = time.time()
+                _LAST_ERR.pop(_model_dead_key(pk, model), None)
             return Turn(**_parse_turn(data, pk, model))
         except Exception as exc:                                # noqa: BLE001
             msg = f"{pk}/{model}: {exc}"[:200]
@@ -610,7 +647,7 @@ def chat(messages: list[dict], *, tools: list[dict] | None = None,
             if any(x in low for x in ("connection refused", "no route to host",
                                       "name or service not known",
                                       "failed to establish")):
-                _mark_dead(pk, low)
+                _mark_dead(pk, low, model)
 
     if errors and not all("пауза" in e for e in errors):
         print(f"[llm] все маршруты не сработали -> {errors[-1]}")
@@ -695,8 +732,9 @@ def complete(user: str, context: str = "", *, fast: bool = False,
                 provider_key(pk) or (pk == "nous" and _hermes_credential())):
             errors.append(f"{pk}: нет ключа")
             continue
-        if _is_dead(pk):
-            errors.append(f"{pk}: {_DEAD_REASON.get(pk, 'недоступен')} "
+        if _is_dead(pk, model):
+            errors.append(f"{pk}/{model}: "
+                          f"{_DEAD_REASON.get(_model_dead_key(pk, model), 'недоступно')} "
                           f"(пауза {_COOLDOWN_S}s)")
             continue
         msgs = [{"role": "system", "content": system or _DEFAULT_SYSTEM}]

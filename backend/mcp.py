@@ -64,6 +64,9 @@ def project_root() -> str:
 
 _CACHE: dict[str, Project] = {}
 
+#: папка песочницы на сессию агента: переиспользуется между вызовами
+_SESSION = uuid.uuid4().hex[:8]
+
 
 def get_project() -> Project:
     """Описание проекта перечитывается при изменении mtime профиля.
@@ -92,17 +95,51 @@ def get_project() -> Project:
 #  Исполнение инструментов
 # ==========================================================================
 def _run_target(name: str) -> dict:
-    """Собрать одну цель тем же способом, что и внутренний граф."""
-    from agents import engine
+    """Собрать одну цель тем же способом, что и внутренний граф.
+
+    В песочнице. Внешний агент — OpenCode, Codex — получает ровно те же
+    ограничения, что и внутренний: он выбирает из объявленных целей и не
+    пишет в исходники проекта. Иначе MCP стал бы обходным путём к
+    файловой системе мимо всех задуманных границ.
+    """
+    from agents import engine, sandbox
 
     proj = get_project()
     if proj.target(name) is None:
         return {"status": "failed", "exit_code": -2, "log": [],
                 "error": f"цели «{name}» нет в проекте"}
-    step = {"id": "mcp", "target": name,
-            "title": proj.target(name).title or name,
-            "agent": proj.agent_owner.get(name, "agent.build")}
-    return engine._execute_one(proj, step)
+
+    # папка на сессию агента: следующий вызов переиспользует её,
+    # а не плодит копии исходников на каждый вызов
+    box = _sandbox_for(proj)
+    engine.set_workdir(box)
+    try:
+        step = {"id": "mcp", "target": name,
+                "title": proj.target(name).title or name,
+                "agent": proj.agent_owner.get(name, "agent.build")}
+        res = engine._execute_one(proj, step)
+    finally:
+        engine.set_workdir(None)
+
+    if box:
+        try:
+            sandbox.collect_artifacts(f"mcp-{_SESSION}", proj.root)
+        except Exception:                                       # noqa: BLE001
+            pass
+    return res
+
+
+def _sandbox_for(proj: Project) -> str | None:
+    """Песочница сессии агента; создаётся при первом вызове."""
+    from agents import sandbox
+
+    path = Path(proj.root).resolve() / "work" / "orders" / f"mcp-{_SESSION}"
+    if path.is_dir():
+        return str(path)
+    try:
+        return str(sandbox.create(f"mcp-{_SESSION}", proj.root))
+    except Exception:                                           # noqa: BLE001
+        return None
 
 
 def call_tool(name: str, args: dict) -> dict:

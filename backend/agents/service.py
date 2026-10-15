@@ -19,16 +19,30 @@
 
 from __future__ import annotations
 
+import os
 import threading
 import time
 import traceback
 from typing import Any, Callable
 
-from . import engine
+from . import engine, sandbox
 from .runner import available as runners_available
 from .profile import load as load_project
 from .engine import have_langgraph
 from .types import Project, new_state, now_iso, progress_of
+
+#: работать в песочнице или прямо в проекте.
+#: По умолчанию — в песочнице: исходники проекта являются опорой работы
+#: агентов, и заказ не должен иметь возможности их переписать.
+USE_SANDBOX = os.environ.get("KR_SANDBOX", "1").strip().lower() not in (
+    "0", "false", "no", "off")
+
+#: забирать ли результаты из песочницы в основной out/
+TAKE_ARTIFACTS = os.environ.get("KR_TAKE_ARTIFACTS", "1").strip().lower() not in (
+    "0", "false", "no", "off")
+
+#: сколько песочниц хранить, прежде чем убрать старые
+KEEP_SANDBOXES = int(os.environ.get("KR_KEEP_SANDBOXES", "10"))
 
 #: заказы в памяти; сколько хранить
 ORDERS: dict[str, dict] = {}
@@ -75,6 +89,8 @@ def _order_view(o: dict) -> dict:
         "report": o.get("report", ""),
         "logs": o.get("logs", []),
         "engine": "langgraph" if have_langgraph() else "plain",
+        "sandbox": o.get("sandbox"),
+        "sandboxed": bool(o.get("sandbox")),
     }
 
 
@@ -141,20 +157,40 @@ def submit(text: str, root: str = ".", profile: str = "",
 
 
 def _run(order_id: str, proj: Project) -> None:
-    """Прогнать заказ и записать результат обратно в хранилище."""
+    """Прогнать заказ и записать результат обратно в хранилище.
+
+    Заказ выполняется в собственной песочнице: проект — опора работы
+    агентов, и он не должен быть переписан тем, что в нём исполняется.
+    """
     with _LOCK:
         order = ORDERS.get(order_id)
     if order is None:
         return
     order["status"] = "running"
+
+    box = None
+    if USE_SANDBOX:
+        try:
+            box = str(sandbox.create(order_id, proj.root))
+            order["sandbox"] = box
+        except Exception as exc:                                # noqa: BLE001
+            order["log"] = (order.get("log") or []) + [
+                f"песочница не создана ({exc}) — выполняю в корне проекта"]
+            box = None
+
+    engine.set_workdir(box)
     try:
         res = (engine.run(order["text"], proj, order_id) if have_langgraph()
                else engine.run_plain(order["text"], proj, order_id))
     except Exception as exc:                                    # noqa: BLE001
         order["status"] = "failed"
-        order["report"] = f"Заказ не выполнен: {exc}\n\n{traceback.format_exc()[-600:]}"
+        order["report"] = (f"Заказ не выполнен: {exc}\n\n"
+                           f"{traceback.format_exc()[-600:]}")
         order["finished_at"] = now_iso()
+        engine.set_workdir(None)
         return
+    finally:
+        engine.set_workdir(None)
 
     with _LOCK:
         order.update({
@@ -167,9 +203,21 @@ def _run(order_id: str, proj: Project) -> None:
             "note": res.get("note", ""),
             "steps": res.get("steps", []),
             "report": res.get("report", ""),
-            "logs": res.get("log", []),
+            "logs": list(order.get("log") or []) + list(res.get("log", [])),
             "finished_at": res.get("finished_at") or now_iso(),
         })
+
+    # Артефакты забираются наружу только при успехе: неудачный заказ
+    # мог оставить в out/ обрывки, и молчаливый перенос испортил бы
+    # отчётность предыдущих сборок.
+    if box and order["status"] in ("done", "partial") and TAKE_ARTIFACTS:
+        try:
+            brought = sandbox.collect_artifacts(order_id, proj.root)
+            if brought:
+                order["logs"].append(
+                    f"взято артефактов из песочницы: {len(brought)}")
+        except Exception as exc:                                # noqa: BLE001
+            order["logs"].append(f"артефакты не перенесены: {exc}")
 
 
 def cancel(order_id: str) -> bool:
@@ -214,10 +262,15 @@ def resume(order_id: str, answer: str, root: str = ".") -> dict:
     if o is None:
         return {"error": "unknown order", "id": order_id}
 
+    box = _existing_sandbox(order_id, o, root)
+    engine.set_workdir(box)
     try:
         res = engine.resume(order_id, answer, root=root)
     except Exception as exc:                                    # noqa: BLE001
+        engine.set_workdir(None)
         return {"error": f"возобновление не удалось: {exc}"}
+    finally:
+        engine.set_workdir(None)
 
     with _LOCK:
         o.update({
@@ -233,6 +286,22 @@ def resume(order_id: str, answer: str, root: str = ".") -> dict:
             "finished_at": res.get("finished_at") or now_iso(),
         })
     return _order_view(o)
+
+
+def _existing_sandbox(order_id: str, order: dict, root: str) -> str | None:
+    """Песочница заказа, если она есть.
+
+    Возобновление обязано продолжить работу в той же папке: чекпоинт
+    графа лежит по идентификатору заказа, а результаты прежних шагов
+    остались именно там.
+    """
+    if not USE_SANDBOX:
+        return None
+    recorded = order.get("sandbox")
+    if recorded and Path(recorded).is_dir():
+        return recorded
+    candidate = Path(root).resolve() / "work" / "orders" / order_id
+    return str(candidate) if candidate.is_dir() else None
 
 
 def waiting() -> list[dict]:
@@ -327,6 +396,13 @@ def capabilities(root: str = ".", profile: str = "") -> dict:
         "verify": proj.verify,
         "suggestions": [t.name for t in tops],
         "llm": llm.status(),
+        "sandbox": {
+            "enabled": USE_SANDBOX,
+            "take_artifacts": TAKE_ARTIFACTS,
+            "keep": KEEP_SANDBOXES,
+            "root": str(Path(proj.root) / "work" / "orders"),
+            "existing": sandbox.list_sandboxes(proj.root),
+        },
     }
 
 

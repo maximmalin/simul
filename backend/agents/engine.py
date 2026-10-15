@@ -106,6 +106,8 @@ def graph_shape() -> list[dict]:
 # ==========================================================================
 class _Ctx(threading.local):
     project: Project | None = None
+    #: рабочий каталог заказа (песочница). None — работаем в корне.
+    workdir: str | None = None
 
 
 _CTX = _Ctx()
@@ -119,6 +121,20 @@ def current_project() -> Project:
 
 def set_project(proj: Project) -> None:
     _CTX.project = proj
+
+
+def set_workdir(path: str | Path | None) -> None:
+    """Задать каталог исполнения заказа.
+
+    Пусто — команды идут в корень проекта. Так остаются прямые вызовы
+    из командной строки, где заказа как такового нет и песочница
+    не нужна.
+    """
+    _CTX.workdir = str(Path(path).resolve()) if path else None
+
+
+def current_workdir() -> str | None:
+    return _CTX.workdir
 
 
 # ==========================================================================
@@ -246,6 +262,13 @@ def _run_single(state: GraphState, proj: Project, name: str) -> dict:
 
 
 def _execute_one(proj: Project, s: dict) -> dict:
+    """Собрать одну цель.
+
+    Команда выполняется в **рабочем каталоге заказа** (песочнице), а не в
+    корне проекта: исходники проекта — опора работы агентов, и заказ не
+    должен иметь возможности их переписать. Команда при этом собирается
+    по описанию настоящего проекта — она одинакова в обоих местах.
+    """
     target = proj.target(s["target"])
     if target is None:
         s.update(status="failed", exit_code=-2, finished_at=now_iso(),
@@ -259,9 +282,13 @@ def _execute_one(proj: Project, s: dict) -> dict:
         s.update(status="failed", exit_code=-2, finished_at=now_iso(),
                  error=str(exc))
         return s
+
+    cwd = _workdir(proj)
     s.update(status="running", started_at=now_iso(), command=cmd,
              attempt=s.get("attempt", 0) + 1)
-    rc, out, dur = R.run(Path(proj.root), cmd, timeout=STEP_TIMEOUT,
+    if cwd != Path(proj.root):
+        s["sandbox"] = str(cwd)
+    rc, out, dur = R.run(cwd, cmd, timeout=STEP_TIMEOUT,
                          jobs=MAX_PARALLEL)
     s.update(status="done" if rc == 0 else "failed", exit_code=rc,
              duration_s=round(dur, 2), finished_at=now_iso(), log=out[-80:])
@@ -269,6 +296,17 @@ def _execute_one(proj: Project, s: dict) -> dict:
         tail = [ln for ln in out[-6:] if ln.strip()]
         s["error"] = "; ".join(tail)[:400] or f"код возврата {rc}"
     return s
+
+
+def _workdir(proj: Project) -> Path:
+    """Где выполнять команды заказа.
+
+    По умолчанию — корень проекта: без заказа и без песочницы так
+    верно, и это же поведение у прямых вызовов из CLI. Когда заказ
+    идёт через сервис, тот создаёт песочницу и кладёт путь сюда.
+    """
+    wd = _CTX.workdir
+    return Path(wd) if wd else Path(proj.root)
 
 
 # ==========================================================================

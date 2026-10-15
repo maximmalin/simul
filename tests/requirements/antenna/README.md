@@ -12,4 +12,4 @@
 .venv/bin/pytest tests/requirements/antenna/ -v
 
 ## Источник
-requirements/blocks/req_antenna_system.md
+requirements/antenna/REQ-ANT-01_channel_a.md

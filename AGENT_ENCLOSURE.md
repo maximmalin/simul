@@ -5,17 +5,17 @@
 ## Цель: Создать 3D-модель корпуса в FreeCAD, соответствующую всем электромагнитным, тепловым и безопасностным требованиям, с готовой файловой структурой для производства.
 
 ## Ключевые файлы
-- `requirements/blocks/req_21.md` — Экранирование корпуса (SE ≥ 40 дБ, skin depth δ ≈ 2.6 мкм@1 ГГц)
-- `requirements/blocks/req_22.md` — Иммунитет к внешним полям (3 В/м, IEC 61000-4-3 ур.2, SE 40–60 дБ, прокладки ≤10 мОм)
-- `requirements/blocks/req_23.md` — Уровень радиопомех (CISPR 22 Class B, Wi-Fi ESP30, стабили LM7812/7805, keram. конденсаторы 0.1 мкФ)
-- `requirements/blocks/req_23.md` — Энергопередача (линейные стабилизаторы вместо импульсных)
-- `requirements/blocks/req_24.md` — Фильтры питания (ferrite beads R≈100 Ом@100 МГц, ker. конденсаторы на землю)
-- `requirements/blocks/req_25.md` — Зонирование экранирования (3 зоны: ВЧ/оптика/цифра; галиваническая изоляция)
-- `requirements/blocks/req_26.md` — Алюминиевый корпус: MTBF ≈ 50 000 ч (нет коррозии)
-- `requirements/blocks/req_27.md` — Изоляция (3000 В между сетью 230В и низковольтными секциями)
-- `requirements/blocks/req_29.md` — Заземление (screw ГОСТ 14192-96, утечка тока ≤ 0.5 mA)
-- `requirements/blocks/req_30.md` — Консервация (силикагель ГОСТ 3956-76 тип V, 5–10 г при V ≈ 500 см³, срок 3 года)
-- `requirements/blocks/req_block_06_10.md` — Корпус должен предотвращать проникновение наводок Wi-Fi ESP32 в приемный тракт
+- `requirements/emc/REQ-EMC-01_shielding.md` — Экранирование корпуса (SE ≥ 40 дБ, skin depth δ ≈ 2.6 мкм@1 ГГц)
+- `requirements/emc/REQ-EMC-02_immunity.md` — Иммунитет к внешним полям (3 В/м, IEC 61000-4-3 ур.2, SE 40–60 дБ, прокладки ≤10 мОм)
+- `requirements/emc/REQ-EMC-03_emission.md` — Уровень радиопомех (CISPR 22 Class B, Wi-Fi ESP30, стабили LM7812/7805, keram. конденсаторы 0.1 мкФ)
+- `requirements/emc/REQ-EMC-03_emission.md` — Энергопередача (линейные стабилизаторы вместо импульсных)
+- `requirements/emc/REQ-EMC-04_supply_filters.md` — Фильтры питания (ferrite beads R≈100 Ом@100 МГц, ker. конденсаторы на землю)
+- `requirements/mechanics/REQ-MECH-02_zoning.md` — Зонирование экранирования (3 зоны: ВЧ/оптика/цифра; галиваническая изоляция)
+- `requirements/reliability/REQ-REL-01_mtbf.md` — Алюминиевый корпус: MTBF ≈ 50 000 ч (нет коррозии)
+- `requirements/safety/REQ-SAFE-01_electrical.md` — Изоляция (3000 В между сетью 230В и низковольтными секциями)
+- `requirements/safety/REQ-SAFE-01_electrical.md` — Заземление (screw ГОСТ 14192-96, утечка тока ≤ 0.5 mA)
+- `requirements/environment/REQ-ENV-02_humidity_vibration.md` — Консервация (силикагель ГОСТ 3956-76 тип V, 5–10 г при V ≈ 500 см³, срок 3 года)
+- `requirements/ (снято)` — Корпус должен предотвращать проникновение наводок Wi-Fi ESP32 в приемный тракт
 
 ##Константы и материалы
 - **Material**: Al Mg3 (алюминий марки Mg3) или Al 6061-T6 — легкий, buona machinability, good EMI shielding (σ ≈ 3.5×10⁷ См⁻¹).
@@ -92,7 +92,7 @@ FC.document.saveAs("hardware/enclosure/krystal-case.FCStd")
 ```
 
 ## Чек-лист готовности (Completion Checklist)
-- [ ] Спецификация корпуса задокументирована в `requirements/blocks/req_21..29` заполнена.
+- [ ] Спецификация корпуса задокументирована в `requirements/mechanics/, requirements/emc/` заполнена.
 - [ ] 3D-модель FreeCAD сохранена как `.FCStd` и `.step`.
 - [ ] R_{contact} ≤ 10 мОм для RFI-прокладок рассчитано/измерено.
 - [ ] Orifice для silica gel добавлен (Ø 3 мм + сетка).

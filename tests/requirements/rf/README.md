@@ -14,5 +14,5 @@
 .venv/bin/pytest tests/requirements/rf/ -v
 
 ## Источник
-requirements/blocks/req_01.md, req_03.md, req_04.md, req_05.md, req_06.md, req_36.md, req_37.md
+requirements/rf/, requirements/performance/
 

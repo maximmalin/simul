@@ -18,4 +18,4 @@
 .venv/bin/pytest tests/requirements/emc/ -v
 
 ## Источник
-requirements/blocks/req_21.md … req_25.md
+requirements/emc/REQ-EMC-01_shielding.md … req_25.md

@@ -18,5 +18,5 @@
 .venv/bin/pytest tests/requirements/reception/ -v
 
 ## Источник
-requirements/blocks/req_04.md, req_36.md, req_37.md, req_antenna_system.md;
+requirements/rf/, requirements/performance/, requirements/antenna/;
 AntennaSim (EA1FUO) / NEC-2.

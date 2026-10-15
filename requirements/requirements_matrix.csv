@@ -1,38 +1,30 @@
-Requirement_ID,Section,Requirement_Text,Standard_Reference,Priority,Status,Notes,Reception_Distance_m
-REQ-01,1,Product must exceed HackRF One in instantaneous bandwidth by at least 25x,Project Goal,High,Active,Target: ≥500 MHz real-time BW,982100;124900;105300
-REQ-02,1,Product must exceed HackRF One in dynamic range by at least 30 dB,Project Goal,High,Active,Target: ≥75-80 dB SFDR,982100;124900;105300
-REQ-03,2,RF input impedance must be 50 Ohm with SMA connector,GOST 20275-91/IEC 60169-15,High,Active,Standard RF interface,982100;124900;105300
-REQ-04,2,Noise figure of input path must not exceed 3.5 dB,IEEE Std 145,High,Active,Critical for sensitivity,982100;124900;105300
-REQ-05,2,RF path must have switched preselectors and overload protection up to +20 dBm,Project Requirement,High,Active,Protection for Bragg cell,982100;124900;105300
-REQ-06,2,RF output driver: linear amplifier up to 1.5 W for max diffraction efficiency,Project Requirement,Medium,Active,Power for optical transducer,982100;124900;105300
-REQ-07,3,Laser diode wavelength λ = 650 nm (or 532 nm),Project Requirement,High,Active,Optical source specification,982100;124900;105300
-REQ-08,3,Laser optical power stability not worse than 0.5%,Project Requirement,Medium,Active,Power stability requirement,982100;124900;105300
-REQ-09,3,Automatic power regulation circuit (ARM) must be present,IEC 60825-1 Class 3B,High,Active,Safety and stability,982100;124900;105300
-REQ-10,3,Bragg cell: TeO₂ crystal, slow wave optimization,Project Requirement,High,Active,982100;124900;105300
-REQ-11,3,Bragg cell end faces: dielectric coating R < 0.2%,GOST ISO 9211-1,High,Active,Reducing reflections,982100;124900;105300
-REQ-12,3,Optical scheme: telescope-colllimator and Fourier lens with spherical aberration compensation,GOST ISO 10110,High,Active,Optical performance,982100;124900;105300
-REQ-13,3,CMOS array: minimum 2048 pixels, EMVA 1288 Standard,Project Requirement,High,Active,982100;124900;105300
-REQ-14,3,CMOS pixel dynamic range: not less than 72 dB,EMVA 1288,Medium,Active,Sensor performance,982100;124900;105300
-REQ-15,3,CMOS line readout frequency: not less than 50 kHz,EMVA 1288,Medium,Active,Sensor readout speed,982100;124900;105300
-REQ-16,4,Operating temperature range: +15°C to +30°C,GOST 15150-69/ISO 554,High,Active,Climate specification,982100;124900;105300
-REQ-17,4,Storage temperature range: -40°C to +50°C,GOST 15150-69,Medium,Active,Extended operating range,982100;124900;105300
-REQ-18,4,Relative humidity: not more than 80% at +25°C,GOST 15150-69,Medium,Active,Climate tolerance,982100;124900;105300
-REQ-19,4,Active thermal stabilization: ±0.1°C accuracy using Peltier elements,Project Requirement,High,Active,Temperature stability,982100;124900;105300
-REQ-20,4,Vibration resistance: 10-55 Hz, amplitude 0.15 mm,GOST 30631-99/IEC 60068-2-6,High,Active,982100;124900;105300
-REQ-21,4,Optical base: D16T alloy (Al 2024-T3),ISO 209,Medium,Active,Material specification,982100;124900;105300
-REQ-22,4,Optical axis drift: not more than 0.5 μm at max temp,Project Requirement,High,Active,Precision mounting,982100;124900;105300
-REQ-23,5,Emission level: not exceed CISPR 22-2012 Class B,Project Requirement,High,Active,EMC compliance,9821;1249;1053
-REQ-24,5,Immunity: IEC 61000-4-3, level 2, 2-3 V/m,GOST 30804.4.3-2013,High,9821;1249;1053
-REQ-25,5,Shielding: Al alloy case, 3 isolated sections, MIL-DTL-83528,Project Requirement,High,9821;1249;1053
-REQ-26,6,MTBF: not less than 10,000 hours,GOST 27.002-2015,High,Active,982100;124900;105300
-REQ-27,6,Electrical safety: GOST IEC 60950-1-2014/IEC 62368-1,High,Active,Safety standard,,982100;124900;105300
-REQ-28,7,Preservation: VZ-10 variant,GOST 9.014-78,Medium,Active,Long-term storage,n/a
-REQ-29,7,Conservation: silica gel per GOST 3956-76,ISO 11623,Medium,Active,Moisture protection,n/a
-REQ-30,7,Case: hard polypropylene, reinforced,STANAG 4280/DEF STAN 81-41,High,Active,n/a
-REQ-31,7,Foam insert: chemically neutral PU, ISO 1856,Limit overload ≤15g,MIL-STD-810G,High,n/a
-REQ-32,7,Package marking: GOST 14192-96/ISO 780:2015,Medium,Active,Handling signs,,n/a
-REQ-33,8,Low-level software: cross-platform C/C++ driver,ISO/IEC 25010,High,Active,Driver development,n/a
-REQ-34,8,Upper-level software: GNU Radio open module Source block,Project Requirement,High,Active,Integration capability,n/a
-REQ-35,8,USB 3.0 continuous capture without drops,Project Requirement,High,Active,Data integrity,n/a
-REQ-36,2,Signal-to-noise ratio of the receive path must be at least 60 dB,IEEE Std 1057,High,Active,SNR ≥60 dB in 2.7 kHz at -60 dBm; ≥10 dB at MDS,982100;124900;105300
-REQ-37,2,Receiver noise floor must not exceed -120 dBm in 2.7 kHz bandwidth,ITU-R SM.326,High,Active,MDS ≤ -110 dBm; consistent with NF REQ-04,982100;124900;105300
+Requirement_ID,Subsystem,Section,Requirement_Text,Standard_Reference,Priority,Status,Reception_Distance_m
+REQ-RF-01,rf,ВЧ-тракт,"Вход SMA, 50 ± 2 Ом, 0–7 ГГц",ГОСТ 20275-91; IEC 61169-4-17,High,Active,n/a
+REQ-RF-02,rf,ВЧ-тракт,NF ≤ 3.5 дБ; усиление ≥ 15 дБ,IEEE Std 145,Critical,Active,n/a
+REQ-RF-03,rf,ВЧ-тракт,Полосовой фильтр: разброс зеркала ≥ 40 дБ,—,High,Active,n/a
+REQ-RF-04,rf,ВЧ-тракт,"Смеситель zero-IF: NF ≤ 8 дБ, усиление ≥ +3 дБ",—,Critical,Active,n/a
+REQ-BB-01,baseband,Полоса ПЧ,Дифференциальные буферы I/Q; полоса ПЧ 2.7 кГц,—,High,Active,n/a
+REQ-BB-02,baseband,Оцифровка,"АЦП 12 бит, ≤ 1 MSPS; контракт PA0/PA1/PA6/PA7",DS5319,Critical,Limited,n/a
+REQ-ANT-01,antenna,Антенна,"Канал A 0–900 МГц, 50 ± 10 Ом, КНД ≥ 5 дБи @433 МГц",—,High,Active,982100
+REQ-ANT-02,antenna,Антенна,"Канал Б 1.2–3.0 ГГц, резонанс 2.45 ГГц, КНД ≥ 8 дБи",—,High,Active,124900
+REQ-ANT-03,antenna,Антенна,"Канал В 4.0–7.0 ГГц, резонанс 5.8 ГГц, КНД ≥ 12 дБи",—,High,Active,105300
+REQ-IO-01,host,Интерфейс,"USB CDC, терминация 22 Ом",USB 2.0,High,Limited,n/a
+REQ-IO-02,host,Интерфейс,"Модуль GNU Radio, headless ко-симуляция, водопад",GNU Radio 3.10,High,Active,n/a
+REQ-PWR-01,power,Питание,"Линейное 5 → 3.3 В (AMS1117-3.3), развязка",—,Critical,Active,n/a
+REQ-PWR-02,power,Питание,Феррит 600 Ом@100 МГц на аналоговой шине,—,High,Active,n/a
+REQ-MECH-01,mechanics,Механика,"Корпус Al ≥ 0.5 мм, прокладки ≤ 10 мОм",MIL-DTL-83528,High,Planned,n/a
+REQ-MECH-02,mechanics,Механика,"Три секции, «земля» звездой, R_общ < 40 мОм",—,High,Planned,n/a
+REQ-EMC-01,emc,ЭМС,"Экранирование; δ(Al,1 ГГц) = 2.59 мкм; SE ≥ 40 дБ",ГОСТ CISPR 22-2012; MIL-DTL-83528,Critical,Active,n/a
+REQ-EMC-02,emc,ЭМС,"Иммунитет 3 В/м, 80–2700 МГц (критерий функционирования)",ГОСТ 30804.4.3-2013; IEC 61000-4-3,Critical,Active,n/a
+REQ-EMC-03,emc,ЭМС,"Эмиссия Класс Б: 40 дБмкВ/м (30–1000 МГц), 47 (0.5–5 ГГц)",ГОСТ CISPR 22-2012,Critical,Active,n/a
+REQ-EMC-04,emc,ЭМС,Фильтры питания; f_c = 159 кГц; FB1 600 Ом@100 МГц,IPC-2221,High,Active,n/a
+REQ-ENV-01,environment,Климат,Рабочий +15…+30 °C; хранение −40…+50 °C,ГОСТ 15150-69 (УХЛ4),High,Active,n/a
+REQ-ENV-02,environment,Климат,RH ≤ 80 %; вибрация 10–55 Гц / 0.15 мм; консервация ВЗ-10,ГОСТ 9.014-78; MIL-STD-810G,Medium,Active,n/a
+REQ-REL-01,reliability,Надёжность,MTBF ≥ 10 000 ч,—,Critical,Active,n/a
+REQ-SAFE-01,safety,Безопасность,Класс II (USB); утечка ≤ 0.5 мА; заземление М3,IEC 60950-1; ГОСТ 14192-96,Critical,Active,n/a
+REQ-PERF-01,performance,Характеристики,Мгновенная полоса ≥ 500 МГц; вход 50 Ом,—,Critical,NotMet,982100;124900;105300
+REQ-PERF-02,performance,Характеристики,NF ≤ 3.5 дБ; шум −136.2 дБм; MDS −126.2 дБм,IEEE Std 145,Critical,Active,982100;124900;105300
+REQ-PERF-03,performance,Характеристики,SFDR ≥ 75–80 дБ,—,High,Active,n/a
+REQ-ANA-01,analysis,Расчёт,Дальность приёма A/B/C по Фриису (982/125/105 км),—,High,Active,982100;124900;105300
+REQ-ANA-02,analysis,Расчёт,"Пеленг: σ_θ ≈ 3.9°, FOV ±90°, экспорт NEC-2",—,Medium,Active,n/a
+REQ-ANA-03,analysis,Расчёт,Распознавание модуляции YOLO: cw/am/fm/noise,—,Medium,Active,n/a

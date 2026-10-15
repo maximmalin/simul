@@ -1,28 +1,30 @@
-req_id,title,block,threshold,test_file,status,ref_file
-REQ-A1,Антенна Канал А (0–900 МГц) — печатная змейка,Антенна,диапазон 0–900 МГц, SWR≤2.0, импеданс 50±10 Ом, КНД≥5 дБи на 433 МГц,тесты/requirements/antenna/test_antenna.py#test_req_a1_*,requirements/blocks/req_antenna_system.md#REQ-A1
-REQ-B1,Антенна Канал Б (1.2–3.0 ГГц) — матрица 2×2,Антенна,резонанс 2.45±0.02 ГГц, импеданс 50±5 Ом, КНД≥8 дБи, SWR≤1.5, шаг 91.7 мм,тесты/requirements/antenna/test_antenna.py#test_req_b1_*,requirements/blocks/req_antenna_system.md#REQ-B1
-REQ-C1,Антенна Канал В (4.0–7.0 ГГц) — матрица 4×4,Антенна,резонанс 5.8±0.05 ГГц, импеданс 50±5 Ом, КНД≥12 дБи, SWR≤2.0, боковые лепестки ≤-15 дБ, экранирование≥1.5 мм,тесты/requirements/antenna/test_antenna.py#test_req_c1_*,requirements/blocks/req_antenna_system.md#REQ-C1
-REQ-SW1,Переключатель СВЧ-каналов (PIN-ключи),Антенна,изоляция ≥40 дБ, время ≤1 мкс, TTL от ESP32, коммутация 3→1,тесты/requirements/antenna/test_antenna.py#test_req_sw1_*,requirements/blocks/req_antenna_system.md#REQ-SW1
-REQ-ANT-ALL,Антенная система (комплекс),Антенна,покрытие 0–7 ГГц без пропусков, панель 150×150 мм FR-4 0.8 мм, переключение без потери КНД,тесты/requirements/antenna/test_antenna.py#test_req_ant_all_*,requirements/blocks/req_antenna_system.md#REQ-ANT-ALL
-REQ-01,Мгновенная полоса частот (Instantaneous Bandwidth),RF,БПЧ ≥500 МГц (целевая 1000 МГц), ≥25× шире HackRF (20 МГц), покрытие 0–7 ГГц,тесты/requirements/rf/test_rf.py#test_req_01_*,requirements/blocks/req_01.md
-REQ-03,Входное сопротивление и разъём (Input Impedance),RF,импеданс 50 Ом (SMA, ГОСТ 20275-91), VSWR<1.5 в диапазоне 0–7 ГГц,тесты/requirements/rf/test_rf.py#test_req_03_*,requirements/blocks/req_03.md
-REQ-04,Коэффициент шума входного тракта (Noise Figure),RF,NF ≤3.5 дБ (IEEE Std 145), чувствительность -110 дБм, итоговый NF≈3.53 дБ,тесты/requirements/rf/test_rf.py#test_req_04_*,requirements/blocks/req_04.md
-REQ-05,Защита от перегрузки (Overload Protection),RF,защита до +20 дБм, преселекторы, малошумящий усилитель, класс лазера 3B,тесты/requirements/rf/test_rf.py#test_req_05_*,requirements/blocks/req_05.md
-REQ-06,Выходной ВЧ-драйвер (RF Output Driver),RF,линейный усилитель до 1.5 Вт, P_rf_out = 3.1 мВт (+4.9 дБм), I_ac ≤18.6 Вт/м²,тесты/requirements/rf/test_rf.py#test_req_06_*,requirements/blocks/req_06.md
-REQ-07,Длина волны лазера (Laser Diode Wavelength),АО-процессор,λ = 650 нм (или 532 нм),тесты/requirements/ao/test_ao.py#test_req_07_*,requirements/blocks/req_07.md
-REQ-08,Стабильность оптической мощности (Optical Power Stability),АО-процессор,стабильность ≤0.5%, тесты/requirements/ao/test_ao.py#test_req_08_*,requirements/blocks/req_08.md
-REQ-09,Автоматическое регулирование мощности (Automatic Power Regulation),АО-процессор,наличие АРМ, класс лазера 3B (ГОСТ IEC 60825-1-2013),тесты/requirements/ao/test_ao.py#test_req_09_*,requirements/blocks/req_09.md
-REQ-11,Акустооптическая ячейка Брэгга (Bragg Cell),АО-процессор,кристалл TeO₂, медленная сдвиговая волна, Δn≈1.51×10⁻⁵,тесты/requirements/ao/test_ao.py#test_req_11_*,requirements/blocks/req_11.md
-REQ-13,Регистратор: CMOS-матрица (CMOS Array),АО-процессор,КМОП≥2048 пикселей, ДДП≥72 дБ, частота считывания≥50 кГц (EMVA 1288),тесты/requirements/ao/test_ao.py#test_req_13_*,requirements/blocks/req_13.md
-REQ-14,Динамический диапазон пикселя (Pixel Dynamic Range),АО-процессор,ДДП≥72 дБ, тесты/requirements/ao/test_ao.py#test_req_14_*,requirements/blocks/req_14.md
-REQ-15,Частота считывания строк (Line Readout Frequency),АО-процессор,частота считывания≥50 кГц, тесты/requirements/ao/test_ao.py#test_req_15_*,requirements/blocks/req_15.md
-REQ-01 (покрытие),Покрытие диапазона 0–7 ГГц,Система,покрытие 0–7000 МГц без пропусков, три канала (А/Б/В), тесты/requirements/system/test_system.py#test_antenna_coverage*,requirements/blocks/req_01.md + req_antenna_system.md
-REQ-36,Отношение сигнал/шум (Signal-to-Noise Ratio),RF,SNR ≥60 дБ в полосе 2.7 кГц при -60 дБм; S+N/N ≥10 дБ на MDS,тесты/requirements/rf/test_rf.py#test_req_36_*,implemented,requirements/blocks/req_36.md
-REQ-37,Уровень собственного шума (Noise Floor / MDS),RF,≤-120 дБм в полосе 2.7 кГц; MDS ≤-110 дБм,тесты/requirements/rf/test_rf.py#test_req_37_*,implemented,requirements/blocks/req_37.md
-REQ-21,Экранирование корпуса (Case Shielding),ЭМС,SE≥40 дБ; δ=2.59 мкм при 1 ГГц (исправлено, было 0.025 мм); стенка Al 0.5 мм; прокладки ≤10 мОм; 0–7 ГГц,тесты/requirements/emc/test_emc.py#test_req_21_*,implemented,requirements/blocks/req_21.md
-REQ-22,Иммунитет к внешним ЭМ-полям,ЭМС,IEC 61000-4-3 ур.2 = 3 В/м (80–2700 МГц); критерий функционирования (нет насыщения); экранирование 40-60 дБ + избирательность ПЧ 55.7 дБ,тесты/requirements/emc/test_emc.py#test_req_22_*,implemented,requirements/blocks/req_22.md
-REQ-23,Уровень радиопомех (эмиссия),ЭМС,ГОСТ CISPR 22-2012 Класс Б (40 дБмкВ/м 30-1000 МГц, 47 дБмкВ/м 0.5-5 ГГц); источники — STM32 72 МГц, USB CDC, AMS1117 (без Wi-Fi),тесты/requirements/emc/test_emc.py#test_req_23_*,implemented,requirements/blocks/req_23.md
-REQ-24,Фильтры питания,ЭМС,fc=1/(2π√(LC)) = 159 кГц при L=10 мкГн C=100 нФ (исправлено, было 16 кГц); FB1 600 Ом@100 МГц; AMS1117-3.3 + 100мкФ/100нФ,тесты/requirements/emc/test_emc.py#test_req_24_*,implemented,requirements/blocks/req_24.md
-REQ-25,Зонирование экранирования,ЭМС,3 зоны (ВЧ-аналог / цифровая / питание); перегородки Al + RFI-прокладки ≤10 мОм (без оптической зоны и Wi-Fi),тесты/requirements/emc/test_emc.py#test_req_25_*,implemented,requirements/blocks/req_25.md
-REQ-RX,Дальность приёма (reception distance),Система,Friis + шумовая дорожка; каналы A/B/C; внешняя помеха 40–60 дБ,тесты/requirements/reception/test_reception.py#test_*,implemented,requirements/reception_range.md
-REQ-DF,Пеленгация (direction finding),Система,θ=asin(λΔφ/2πd); зона однозначности; NEC-2/AntennaSim,тесты/requirements/reception/test_reception.py#test_doa_*,implemented,requirements/reception_range.md
+req_id,title,subsystem,threshold,test_file,status,ref_file
+REQ-RF-01,Вход SMA 50 Ом,rf,"50 ± 2 Ом, 0–7 ГГц",tests/requirements/rf/test_rf.py#test_rf_01_*,implemented,requirements/rf/REQ-RF-01_input.md
+REQ-RF-02,Малошумящие усилители,rf,"NF ≤ 3.5 дБ, усиление ≥ 15 дБ",tests/requirements/rf/test_rf.py#test_rf_02_*,implemented,requirements/rf/REQ-RF-02_lna.md
+REQ-RF-03,Полосовой фильтр,rf,разброс зеркала ≥ 40 дБ,tests/requirements/rf/test_rf.py#test_rf_03_*,implemented,requirements/rf/REQ-RF-03_filter.md
+REQ-RF-04,Смеситель zero-IF,rf,"NF ≤ 8 дБ, усиление ≥ +3 дБ",tests/requirements/rf/test_rf.py#test_rf_04_*,implemented,requirements/rf/REQ-RF-04_mixer.md
+REQ-BB-01,Буферы ПЧ,baseband,полоса ПЧ 2.7 кГц,tests/requirements/rf/test_rf.py#test_bb_01_*,implemented,requirements/baseband/REQ-BB-01_buffers.md
+REQ-BB-02,Оцифровка I/Q,baseband,"12 бит, ≤ 1 MSPS, контракт PA0/PA1/PA6/PA7",sim/scripts/verify_pin_contract.py,implemented,requirements/baseband/REQ-BB-02_adc.md
+REQ-ANT-01,Антенна канал A,antenna,"0–900 МГц, КНД ≥ 5 дБи @433 МГц",tests/requirements/antenna/test_antenna.py#test_ant_a_*,implemented,requirements/antenna/REQ-ANT-01_channel_a.md
+REQ-ANT-02,Антенна канал Б,antenna,"1.2–3.0 ГГц, 2.45 ГГц, КНД ≥ 8 дБи",tests/requirements/antenna/test_antenna.py#test_ant_b_*,implemented,requirements/antenna/REQ-ANT-02_channel_b.md
+REQ-ANT-03,Антенна канал В,antenna,"4.0–7.0 ГГц, 5.8 ГГц, КНД ≥ 12 дБи",tests/requirements/antenna/test_antenna.py#test_ant_c_*,implemented,requirements/antenna/REQ-ANT-03_channel_c.md
+REQ-IO-01,Передача по USB,host,"CDC, 22 Ом терминация",tests/requirements/gnuradio/test_virtual_iq.py,implemented,requirements/host/REQ-IO-01_usb.md
+REQ-IO-02,Модуль GNU Radio,host,"headless ко-симуляция, водопад",tests/requirements/gnuradio/,implemented,requirements/host/REQ-IO-02_gnuradio.md
+REQ-PWR-01,Цепь питания,power,"5 → 3.3 В AMS1117-3.3, развязка",tests/requirements/emc/test_emc.py#test_req_24_*,implemented,requirements/power/REQ-PWR-01_supply.md
+REQ-PWR-02,Аналоговая шина,power,FB1 600 Ом@100 МГц,tests/requirements/emc/test_emc.py#test_req_24_ferrite_isolation,implemented,requirements/power/REQ-PWR-02_analog_rail.md
+REQ-MECH-01,Корпус и экранирование,mechanics,"Al ≥ 0.5 мм, прокладки ≤ 10 мОм",tests/requirements/emc/test_emc.py#test_req_21_*,planned,requirements/mechanics/REQ-MECH-01_enclosure.md
+REQ-MECH-02,Зонирование корпуса,mechanics,"3 секции, R_общ < 40 мОм",tests/requirements/emc/test_emc.py#test_req_25_*,planned,requirements/mechanics/REQ-MECH-02_zoning.md
+REQ-EMC-01,Экранирование,emc,"δ(Al,1 ГГц) = 2.59 мкм; SE ≥ 40 дБ",tests/requirements/emc/test_emc.py#test_req_21_*,implemented,requirements/emc/REQ-EMC-01_shielding.md
+REQ-EMC-02,Иммунитет к ЭМ-полям,emc,"3 В/м, 80–2700 МГц",tests/requirements/emc/test_emc.py#test_req_22_*,implemented,requirements/emc/REQ-EMC-02_immunity.md
+REQ-EMC-03,Уровень эмиссии,emc,CISPR 22 Класс Б: 40 / 47 дБмкВ/м,tests/requirements/emc/test_emc.py#test_req_23_*,implemented,requirements/emc/REQ-EMC-03_emission.md
+REQ-EMC-04,Фильтры питания,emc,f_c = 159 кГц; FB1 600 Ом@100 МГц,tests/requirements/emc/test_emc.py#test_req_24_*,implemented,requirements/emc/REQ-EMC-04_supply_filters.md
+REQ-ENV-01,Температурные режимы,environment,+15…+30 °C / −40…+50 °C,tests/requirements/thermal/test_thermal.py,implemented,requirements/environment/REQ-ENV-01_temperature.md
+REQ-ENV-02,"Влажность, вибрация, консервация",environment,RH ≤ 80 %; 10–55 Гц; ВЗ-10,tests/requirements/,implemented,requirements/environment/REQ-ENV-02_humidity_vibration.md
+REQ-REL-01,Надёжность,reliability,MTBF ≥ 10 000 ч,tests/requirements/reliability/test_reliability.py,implemented,requirements/reliability/REQ-REL-01_mtbf.md
+REQ-SAFE-01,Электробезопасность,safety,Класс II; утечка ≤ 0.5 мА,tests/requirements/emc/test_emc.py,implemented,requirements/safety/REQ-SAFE-01_electrical.md
+REQ-PERF-01,Полоса и точность,performance,≥ 500 МГц — не выполнено (см. REQ-BB-02),tests/requirements/rf/test_rf.py#test_perf_01_*,not-met,requirements/performance/REQ-PERF-01_bandwidth.md
+REQ-PERF-02,Чувствительность,performance,NF ≤ 3.5 дБ; −136.2 / −126.2 дБм,tests/requirements/reception/test_reception.py#test_reception_*,implemented,requirements/performance/REQ-PERF-02_snr_noise.md
+REQ-PERF-03,SFDR,performance,≥ 75–80 дБ,tests/requirements/rf/test_rf.py#test_perf_03_*,implemented,requirements/performance/REQ-PERF-03_sfdr.md
+REQ-ANA-01,Дальность приёма,analysis,982 / 125 / 105 км,tests/requirements/reception/test_reception.py#test_link_budget_*,implemented,requirements/analysis/REQ-ANA-01_reception_range.md
+REQ-ANA-02,Пеленгование,analysis,"σ_θ ≈ 3.9°, FOV ±90°, NEC-2",tests/requirements/reception/test_reception.py#test_doa_*,implemented,requirements/analysis/REQ-ANA-02_direction_finding.md
+REQ-ANA-03,Распознавание YOLO,analysis,4 класса: cw/am/fm/noise,tests/requirements/ml/,partial,requirements/analysis/REQ-ANA-03_ml_recognition.md

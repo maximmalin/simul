@@ -139,8 +139,8 @@ print('detected:', [d.cls for d in detected]); print('peak:', peak)
 
 - **ID**: `AGENT-KICAD-04`
 - **Название**: Создать TZ-документацию (техническое задание) по антенной системе
-- **Цель**: Написать/обновить `requirements/blocks/req_antenna_system.md` и `hardware/antenna/` набор задач на проектирование 3-х антенных каналов (змейка 0-0.9 ГГц, патч 1.2-3 ГГц, матрица 4×4 4-7 ГГц).
-- **Ключевые файлы**: `requirements/blocks/req_antenna_system.md`, `hardware/antenna/band_a/task.md`, `hardware/antenna/band_b/task.md`, `hardware/antenna/band_c/task.md`
+- **Цель**: Написать/обновить `requirements/antenna/REQ-ANT-*.md` и `hardware/antenna/` набор задач на проектирование 3-х антенных каналов (змейка 0-0.9 ГГц, патч 1.2-3 ГГц, матрица 4×4 4-7 ГГц).
+- **Ключевые файлы**: `requirements/antenna/REQ-ANT-*.md`, `hardware/antenna/band_a/task.md`, `hardware/antenna/band_b/task.md`, `hardware/antenna/band_c/task.md`
 - **Команда**: `cd /mnt/ext4data/kristall-radio && ls hardware/antenna/band_*/task.md && head -10 hardware/antenna/band_a/task.md`
 
 ## 8. Git & Release

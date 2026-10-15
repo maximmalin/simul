@@ -2,7 +2,7 @@
 Автоматические тесты Brig Receiver по матрице требований.
 
 ## Цель
-Автоматические тесты (pytest) и чек-лист (checklist.csv) покрывают все требования из папки `requirements/blocks/req_*.md`, не затрагивая расчёты (calculations/, math/).
+Автоматические тесты (pytest) и чек-лист (checklist.csv) покрывают все требования из папки `requirements/*/REQ-*.md`, не затрагивая расчёты (calculations/, math/).
 
 ## Структура
 - `tests/` — корень тестов

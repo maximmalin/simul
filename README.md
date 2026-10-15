@@ -266,7 +266,7 @@ patch antenna. Kept as the reproducible evidence trail, not scratch.
   superseded by the tscircuit emitter.
 * **Reliability** — `sim/octave/reliability_model.m` (Octave) reads datasheet
   parameters from `sim/octave/reliability_parts.tsv` (base FIT, Ea, T_ref/T_use,
-  π_Q) and computes system MTBF as parts-count + Arrhenius. Requirement **REQ-26**
+  π_Q) and computes system MTBF as parts-count + Arrhenius. Requirement **REQ-REL-01**
   (MTBF ≥ 10 000 ч). Run `make reliability` → `out/reliability.json`;
   tests in `tests/requirements/reliability/`.
 * **Thermal** — `sim/scripts/thermal_pcb.py` couples **ngspice** (DC operating
@@ -275,7 +275,7 @@ patch antenna. Kept as the reproducible evidence trail, not scratch.
   of heat conduction/spreading over the board. Run `make thermal` →
   `out/thermal_{fast,fem}.json`; tests in `tests/requirements/thermal/`.
 * **Reception distance (link budget)** — `sim/scripts/link_budget.py` computes the
-  receiver noise floor (REQ-37), MDS (REQ-36/37) and the Friis range per antenna
+  receiver noise floor (REQ-PERF-02), MDS (REQ-PERF-02) and the Friis range per antenna
   channel (A/B/C). Run `make link-budget` → `out/link_budget.{json,svg}`;
   «дальность приёма» сводится по разделам в `requirements/reception_range.md`
   (и столбец `Reception_Distance_m` в `requirements_matrix.csv`).
@@ -285,7 +285,7 @@ patch antenna. Kept as the reproducible evidence trail, not scratch.
   [EA1FUO/AntennaSim](https://github.com/EA1FUO/AntennaSim)
   (`--antennasim-url` posts to its `/api/v1/simulate`). Run `make direction` →
   `out/direction_finding.{json,svg}`.
-* **EMC** — `tests/requirements/emc/` verifies REQ-21…REQ-25: skin depth and
+* **EMC** — `tests/requirements/emc/` verifies REQ-EMC-01…04: skin depth and
   shielding effectiveness, immunity to 3 V/m (IEC 61000-4-3 level 2), CISPR 22
   Class B emission, supply filters and enclosure zoning.
 * `tools/spec.py`, `tools/blocks.py` — the project spec (6 blocks, 24 parts) used
@@ -330,8 +330,8 @@ The acousto-optic branch is kept as a toolbox, **not** part of the SDR signal pa
 
 ### 3.16 Requirements, plan, tests & CI
 * **Requirements matrix** — `requirements/requirements_matrix.csv` (37 requirements + header) and
-  per-block `requirements/blocks/req_*.md`; SNR and noise floor are project-wide
-  requirements **REQ-36** (SNR) and **REQ-37** (noise/MDS).
+  per-subsystem `requirements/*/REQ-*.md`; SNR and noise floor are project-wide
+  requirements **REQ-PERF-02** (SNR, noise floor, MDS).
 * **Plan** — `plan/plan.md`, `plan/blocks.md`, `plan/README.md`, `plan/checks.py`.
 * **Technical task** — `technical_task.md` (RU), `technical_task_en.md` (EN),
   `technical_task_ua.md` (UA), plus per-block TZ in `work/tz-{a..e}/`.
@@ -400,7 +400,7 @@ node scripts/download-datasheets.js           # fetch MPN datasheets
 python3 gost_pipeline.py                       # STEP → cleaned → GOST drawing
 
 # --- Reliability / thermal ---
-make reliability                              # Octave parts-count MTBF (REQ-26)
+make reliability                              # Octave parts-count MTBF (REQ-REL-01)
 make thermal                                  # fast θ_JA + 2D FEM (PCB CAD + ngspice)
 
 # --- Reception distance / direction finding / EMC ---

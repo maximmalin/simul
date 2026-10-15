@@ -45,7 +45,7 @@
       <mxGeometry x="70" y="450" width="160" height="70" as="geometry" />
     </mxCell>
 
-    <mxCell id="adc" value="📈 U1 АЦП&#10;STM32F103C8T6&#10;PA0/PA1 = ADC_I/ADC_Q, DMA" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#c5f6fa;strokeColor=#0c8599;fontSize=11;fontStyle=1" vertex="1" parent="1">
+    <mxCell id="adc" value="📈 U1 АЦП&#10;STM32F103C8T6&#10;PA0/PA1 = ADC_I/ADC_Q, DMA ≤1 MSPS" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#c5f6fa;strokeColor=#0c8599;fontSize=11;fontStyle=1" vertex="1" parent="1">
       <mxGeometry x="280" y="440" width="190" height="90" as="geometry" />
     </mxCell>
 
@@ -97,7 +97,7 @@
       <mxGeometry x="40" y="615" width="1090" height="45" as="geometry" />
     </mxCell>
 
-    <mxCell id="legend" value="Ключевые параметры: NF ≤ 3.5 дБ (REQ-04) · полоса ПЧ 2.7 кГц · 12-разрядный АЦП 4 MSPS · Tj ≤ 85 °C · REQ-21/25 — экран Al 0.5 мм, прокладки ≤ 10 мОм, 3 зоны" style="text;html=1;align=center;fontSize=11;fontColor=#495057;" vertex="1" parent="1">
+    <mxCell id="legend" value="Ключевые параметры: NF ≤ 3.5 дБ (REQ-04) · полоса ПЧ 2.7 кГц · 12-разрядный АЦП ≤1 MSPS (ограничение F103) · Tj ≤ 85 °C · REQ-21/25 — экран Al 0.5 мм, прокладки ≤ 10 мОм, 3 зоны" style="text;html=1;align=center;fontSize=11;fontColor=#495057;" vertex="1" parent="1">
       <mxGeometry x="40" y="670" width="1090" height="40" as="geometry" />
     </mxCell>
 

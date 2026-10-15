@@ -20,5 +20,5 @@
 - `tests/requirements/checklist/README.md` — описание чек-листа
 
 ## Источник
-- requirements/blocks/req_*.md
+- requirements/*/REQ-*.md
 - tests/README.md

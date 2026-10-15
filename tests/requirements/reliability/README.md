@@ -31,5 +31,5 @@ make reliability          # → out/reliability.json
 ```
 
 ## Источник
-* `requirements/blocks/req_26.md`
+* `requirements/reliability/REQ-REL-01_mtbf.md`
 * `sim/octave/reliability_model.m`, `sim/octave/reliability_parts.tsv`

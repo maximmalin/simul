@@ -1,9 +1,8 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import {
   Workflow, Plus, X, Save, Loader2, Trash2, Play, Pause,
-  ArrowRight, GitBranch, Circle, CheckCircle2, Clock, SkipForward,
-  Skull, Brain, DraftingCompass, ScanLine, FlaskRound, Gauge,
-  type LucideIcon,
+  ArrowRight, GitBranch, CheckCircle2, Clock, SkipForward,
+  ScanLine, type LucideIcon,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import type {
@@ -59,18 +58,6 @@ export function FlowEditorTab({ agents, projects }: FlowEditorTabProps) {
     agent_id: '',
   });
 
-  const fetchWorkflows = useCallback(async () => {
-    const { data } = await supabase
-      .from('flow_workflows')
-      .select('*')
-      .order('created_at', { ascending: false });
-    setWorkflows((data ?? []) as FlowWorkflow[]);
-    if (data && data.length > 0 && !selectedWorkflow) {
-      await loadWorkflow(data[0].id);
-    }
-    setLoading(false);
-  }, [selectedWorkflow]);
-
   const loadWorkflow = useCallback(async (id: string) => {
     const { data: wf } = await supabase
       .from('flow_workflows')
@@ -104,6 +91,19 @@ export function FlowEditorTab({ agents, projects }: FlowEditorTabProps) {
       connections: (conns ?? []) as FlowConnection[],
     });
   }, []);
+
+  const fetchWorkflows = useCallback(async () => {
+    const { data } = await supabase
+      .from('flow_workflows')
+      .select('*')
+      .order('created_at', { ascending: false });
+    setWorkflows((data ?? []) as FlowWorkflow[]);
+    if (data && data.length > 0 && !selectedWorkflow) {
+      await loadWorkflow(data[0].id);
+    }
+    setLoading(false);
+  }, [selectedWorkflow, loadWorkflow]);
+
 
   useEffect(() => {
     fetchWorkflows();

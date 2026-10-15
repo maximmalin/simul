@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { Send, Radio, ArrowRight, Skull } from 'lucide-react';
+import { Send, Radio, ArrowRight } from 'lucide-react';
 import type { MessageWithAgents, Agent, MessageChannel } from '@/lib/supabase';
 import { CHANNEL_CONFIG, ROLE_ICONS } from '@/lib/constants';
 

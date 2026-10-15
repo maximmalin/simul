@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { Send, Radio, ArrowRight, Skull, Brain, DraftingCompass, ScanLine, FlaskRound, Gauge, Loader2, CheckCircle2, FolderKanban, type LucideIcon } from 'lucide-react';
+import { Send, Radio, Skull, Brain, DraftingCompass, ScanLine, FlaskRound, Gauge, Loader2, CheckCircle2, FolderKanban, type LucideIcon } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import type { Agent, Project, ChatRequestWithAgent } from '@/lib/supabase';
-import { ROLE_ICONS } from '@/lib/constants';
 
 interface ChatTabProps {
   agents: Agent[];
@@ -29,7 +28,9 @@ const ROLE_ICON_FALLBACK: Record<string, LucideIcon> = {
   optimizer: Gauge,
 };
 
-export function ChatTab({ agents, projects }: ChatTabProps) {
+// `agents` остаётся в ChatTabProps (App его передаёт), но пока не используется
+// внутри: ответы приходят из edge-функции вместе с данными агента.
+export function ChatTab({ projects }: ChatTabProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [selectedProject, setSelectedProject] = useState('');

@@ -1,9 +1,8 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
-  Code2, GitBranch, GitCommit, FileCode, Terminal,
+  Code2, GitBranch, GitCommit,
   Plus, X, Save, Loader2, Trash2, Edit3,
-  Skull, Brain, DraftingCompass, ScanLine, FlaskRound, Gauge, Cpu,
-  CheckCircle2, AlertCircle, type LucideIcon,
+  CheckCircle2, AlertCircle,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import type { DevAgent, DevAgentStatus } from '@/lib/supabase';

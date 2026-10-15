@@ -1,6 +1,6 @@
-import { Skull, Brain, DraftingCompass, ScanLine, FlaskRound, Gauge, ChevronRight, Package, Settings2, Cpu } from 'lucide-react';
+import { Skull, Brain, DraftingCompass, ScanLine, FlaskRound, Gauge, ChevronRight, Package, Settings2 } from 'lucide-react';
 import type { Agent, Project, Task } from '@/lib/supabase';
-import { ROLE_ICONS, PROJECT_STATUS_CONFIG, PRIORITY_CONFIG } from '@/lib/constants';
+import { PROJECT_STATUS_CONFIG, PRIORITY_CONFIG } from '@/lib/constants';
 
 interface PipelineChainProps {
   agents: Agent[];

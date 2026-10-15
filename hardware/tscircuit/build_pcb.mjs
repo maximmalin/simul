@@ -71,6 +71,14 @@ const BOARD_H = process.env.BOARD_H ?? "130"
 // circuit-json, и kicad-cli находит сверло/кольцо меньше нормы
 // (via_diameter, drill_out_of_range, annular_width). Явные допуски
 // снимают эти замечания ещё до autoroute.
+//
+// Ранее при 0.20 мм экспорт падал (0/10 файлов), что выглядело как
+// «авроутер не выдерживает». Причина была не в допусках, а в рассинхроне
+// версий circuit-json (см. overrides в package.json): @tscircuit/cli тянет
+// circuit-json@^0.0.525, а ставилась 0.0.515 — tsci падал на импорте.
+// После фикса tsci экспортирует 10/10 и при исходных 0.20/0.30 мм.
+// Оставшиеся 4 замечания pad_pad_clearance (0.115–0.167 мм) — зазоры
+// переходных отверстий у выводов U1/Y1; они не блокируют экспорт.
 const DESIGN_RULES = {
   thickness: "1.6mm",
   minTraceWidth: "0.15mm",

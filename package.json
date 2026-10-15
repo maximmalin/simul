@@ -1,11 +1,13 @@
 {
   "name": "crystal-radio-sdr",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Zero-IF SDR direct-conversion receiver with STM32 Blue Pill",
   "main": "hardware/tscircuit/build_pcb.mjs",
   "scripts": {
     "build": "node hardware/tscircuit/build_pcb.mjs",
-    "generate-pcb": "node hardware/tscircuit/build_pcb.mjs"
+    "generate-pcb": "node hardware/tscircuit/build_pcb.mjs",
+    "viewer": "rollup -c hardware/tscircuit/viewer/rollup.config.mjs",
+    "test": "pytest tests/requirements -q"
   },
   "keywords": [
     "sdr",
@@ -17,6 +19,18 @@
   "author": "Maximalin",
   "license": "MIT",
   "dependencies": {
-    "kicad": "^4.0.0"
+    "kicad-component-converter": "^0.1.41",
+    "kicad-to-circuit-json": "^0.0.129",
+    "kicadts": "^0.0.58",
+    "tscircuit": "^0.0.2744"
+  },
+  "overrides": {
+    "circuit-json": "^0.0.528"
+  },
+  "devDependencies": {
+    "@rollup/plugin-node-resolve": "^16.0.3",
+    "rollup": "^4.64.0",
+    "rollup-plugin-dts": "^6.5.1",
+    "three": "^0.179.1"
   }
 }

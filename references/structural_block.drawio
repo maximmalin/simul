@@ -1,312 +1,104 @@
-<mxGraphModel dx="1406" dy="795" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+<mxGraphModel dx="1600" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="826" math="0" shadow="0">
   <root>
     <mxCell id="0" />
     <mxCell id="1" parent="0" />
 
-    <!-- ==================================================== -->
-    <!-- CHAMBER 1: MICROWAVE DOWNCONVERTER &amp; SELECTION      -->
-    <!-- ==================================================== -->
-    <mxCell id="chamber_1" value="🛡️ CHAMBER 1: MICROWAVE DOWNCONVERTER &amp; SELECTION (Isolation &gt;= 80 dB)" style="swimlane;whiteSpace=wrap;html=1;fillColor=#fff5f5;strokeColor=#c92a2a;strokeWidth=2;dashed=1;dashPattern=6 4;fontStyle=1" vertex="1" parent="1">
-      <mxGeometry x="40" y="40" width="360" height="420" as="geometry" />
+    <mxCell id="title" value="KRYSTAL RADIO — zero-IF SDR, прямое преобразование&#10;STM32F103C8T6 · USB CDC · без Wi-Fi, без ПЛИС, без оптического блока" style="text;html=1;align=center;verticalAlign=middle;fontSize=20;fontStyle=1;fontColor=#1a1b1e;" vertex="1" parent="1">
+      <mxGeometry x="40" y="10" width="1090" height="60" as="geometry" />
     </mxCell>
 
-    <!-- CHAMBER 2: ACOUSTO-OPTIC CORE                         -->
-    <mxCell id="chamber_2" value="🔮 CHAMBER 2: ACOUSTO-OPTIC CORE CELL (Bragg Interaction Q = 10.88)" style="swimlane;whiteSpace=wrap;html=1;fillColor=#f8f9fa;strokeColor=#212529;strokeWidth=2;fontStyle=1" vertex="1" parent="1">
-      <mxGeometry x="440" y="40" width="360" height="420" as="geometry" />
+    <!-- ============ ЗОНА 1: ВЧ-АНАЛОГ (REQ-25) ============ -->
+    <mxCell id="zone_rf" value="🛡️ ЗОНА 1 — ВЧ-АНАЛОГОВАЯ (аналоговая «земля» звездой)" style="swimlane;whiteSpace=wrap;html=1;fillColor=#fff5f5;strokeColor=#c92a2a;strokeWidth=2;dashed=1;dashPattern=6 4;fontStyle=1;startSize=30" vertex="1" parent="1">
+      <mxGeometry x="40" y="90" width="1090" height="260" as="geometry" />
     </mxCell>
 
-    <!-- CHAMBER 3: ANALOG FPAA + STM32                        -->
-    <mxCell id="chamber_3" value="🤖 CHAMBER 3: ANALOG FPAA &amp; DIGITAL CO-PROCESSOR (STM32)" style="swimlane;whiteSpace=wrap;html=1;fillColor=#e8f5e9;strokeColor=#2b8a3e;strokeWidth=2;fontStyle=1" vertex="1" parent="1">
-      <mxGeometry x="440" y="500" width="360" height="260" as="geometry" />
+    <mxCell id="ant" value="📡 J_ANT&#10;SMA_EDGE, 50 Ом" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f3f0ff;strokeColor=#6741d9;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="70" y="160" width="120" height="60" as="geometry" />
     </mxCell>
 
-    <!-- CHAMBER 4: ISOLATED HORN + ESP32                      -->
-    <mxCell id="chamber_4" value="📶 CHAMBER 4: ISOLATED WAVEGUIDE HORN &amp; DIGITAL BRIDGE (ESP32)" style="swimlane;whiteSpace=wrap;html=1;fillColor=#fff3bf;strokeColor=#e67e22;strokeWidth=2;fontStyle=1" vertex="1" parent="1">
-      <mxGeometry x="40" y="500" width="360" height="260" as="geometry" />
+    <mxCell id="lna1" value="⚡ Q_LNA1&#10;2N7002, общий затвор&#10;LNA 1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff9db;strokeColor=#f59f00;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="230" y="160" width="130" height="60" as="geometry" />
     </mxCell>
 
-    <!-- POWER MATRIX                                          -->
-    <mxCell id="power_bus" value="🔌 CENTRAL 5V POWER DISTRIBUTION MATRIX (Star Ground / Noise Shielded)" style="swimlane;whiteSpace=wrap;html=1;fillColor=#fff9db;strokeColor=#f59f00;strokeWidth=2;fontStyle=1" vertex="1" parent="1">
-      <mxGeometry x="40" y="800" width="760" height="160" as="geometry" />
+    <mxCell id="qwc" value="🔷 X_QWC1&#10;LPJ-1 четвертьволновый&#10;делитель / фильтр" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff9db;strokeColor=#f59f00;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="400" y="160" width="150" height="60" as="geometry" />
     </mxCell>
 
-    <!-- ==================================================== -->
-    <!-- TRIPLE-BAND MICROSTRIP ANTENNA PANEL (FACE)           -->
-    <!-- ==================================================== -->
-    <mxCell id="ant_panel" value="📡 TRIPLE-BAND MICROSTRIP PATCH ANTENNA ARRAY (150x150 mm, Face Side)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f3f0ff;strokeColor=#6741d9;strokeWidth=2;fontStyle=1" vertex="1" parent="1">
-      <mxGeometry x="40" y="-80" width="360" height="80" as="geometry" />
+    <mxCell id="lna2" value="⚡ Q_LNA2&#10;2N7002&#10;LNA 2" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff9db;strokeColor=#f59f00;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="590" y="160" width="130" height="60" as="geometry" />
     </mxCell>
 
-    <!-- Subantennas -->
-    <mxCell id="ant_a" value="[KA] Printed Dipole<br>0 – 900 MHz<br>(Рации, служебные)" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="ant_panel">
-      <mxGeometry x="20" y="10" width="100" height="50" as="geometry" />
-    </mxCell>
-    <mxCell id="ant_b" value="[KB] Microstrip 2×2 Patch<br>1.2 – 3.0 GHz<br>(БПЛА, Wi-Fi 2.4)" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="ant_panel">
-      <mxGeometry x="120" y="10" width="110" height="50" as="geometry" />
-    </mxCell>
-    <mxCell id="ant_c" value="[KC] Microstrip 4×4 Patch<br>4.0 – 7.0 GHz<br>(СВЧ-РЭБ, Wi-Fi 5.8)" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="ant_panel">
-      <mxGeometry x="230" y="10" width="110" height="50" as="geometry" />
+    <mxCell id="bpf" value="🔻 Полосовой&#10;LC-режектор (связь MIX_IN_P/N)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff9db;strokeColor=#f59f00;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="760" y="160" width="150" height="60" as="geometry" />
     </mxCell>
 
-    <!-- ==================================================== -->
-    <!-- CHAMBER 1 NODES                                       -->
-    <!-- ==================================================== -->
-    <mxCell id="st1_1" value="[1.1] PIN Diode Switches<br>(KА507, RF input selection)" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="chamber_1">
-      <mxGeometry x="20" y="40" width="140" height="60" as="geometry" />
+    <mxCell id="mix" value="🔀 U_MIX1&#10;LT5560, zero-IF&#10;I/Q на выходе" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f5e9;strokeColor=#2b8a3e;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="950" y="160" width="150" height="70" as="geometry" />
     </mxCell>
 
-    <mxCell id="st1_2" value="[1.2] Mixer Bridge 1<br>(3А112А, LO 2.0 GHz)" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="chamber_1">
-      <mxGeometry x="180" y="40" width="160" height="60" as="geometry" />
+    <!-- ============ ЗОНА 2: ЦИФРОВАЯ ============ -->
+    <mxCell id="zone_dig" value="🤖 ЗОНА 2 — ЦИФРОВАЯ (STM32F103C8T6, такт 72 МГц)" style="swimlane;whiteSpace=wrap;html=1;fillColor=#e8f5e9;strokeColor=#2b8a3e;strokeWidth=2;fontStyle=1;startSize=30" vertex="1" parent="1">
+      <mxGeometry x="40" y="370" width="780" height="220" as="geometry" />
     </mxCell>
 
-    <mxCell id="st1_3" value="[1.3] Mixer Bridge 2<br>(3А112А, LO 5.15 GHz)" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="chamber_1">
-      <mxGeometry x="180" y="115" width="160" height="60" as="geometry" />
+    <mxCell id="opamp" value="🔊 U_OP1&#10;OPA2134&#10;буферы ПЧ + антиалиасинг" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f3f0ff;strokeColor=#6741d9;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="70" y="450" width="160" height="70" as="geometry" />
     </mxCell>
 
-    <mxCell id="st1_4" value="[1.4] TV Tuner Selector<br>(KS-H-132, IF 38 MHz, NF = 4 dB)" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="chamber_1">
-      <mxGeometry x="20" y="210" width="320" height="60" as="geometry" />
+    <mxCell id="adc" value="📈 U1 АЦП&#10;STM32F103C8T6&#10;PA0/PA1 = ADC_I/ADC_Q, DMA" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#c5f6fa;strokeColor=#0c8599;fontSize=11;fontStyle=1" vertex="1" parent="1">
+      <mxGeometry x="280" y="440" width="190" height="90" as="geometry" />
     </mxCell>
 
-    <mxCell id="st1_5" value="[1.5] LNA Buffer KT368A<br>(Ic = 5 mA, Rₑ = 100 Ω, S₁₁ ≤ -18 dB)" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="chamber_1">
-      <mxGeometry x="20" y="300" width="140" height="60" as="geometry" />
+    <mxCell id="xtal" value="⏱ Y1&#10;XTAL 8 МГц" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#c5f6fa;strokeColor=#0c8599;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="290" y="545" width="160" height="35" as="geometry" />
     </mxCell>
 
-    <mxCell id="st1_6" value="[1.6] Safety Diode Clamp<br>(KД522 / 1N4148, Upp ≤ 0.63 V)" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="chamber_1">
-      <mxGeometry x="180" y="300" width="160" height="60" as="geometry" />
+    <mxCell id="usb" value="🔌 J_USB&#10;USB-C, CDC&#10;I/Q на ПК" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff4e6;strokeColor=#e67e22;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="520" y="440" width="160" height="70" as="geometry" />
     </mxCell>
 
-    <!-- ==================================================== -->
-    <!-- CHAMBER 2 NODES                                       -->
-    <!-- ==================================================== -->
-    <mxCell id="st2_1" value="[2.1] Uncapped Quartz<br>(38 MHz resonator)" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="chamber_2">
-      <mxGeometry x="20" y="40" width="130" height="60" as="geometry" />
+    <mxCell id="fw" value="🧠 Прошивка&#10;DMA → USB CDC → GNU Radio&#10;make gnuradio" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8f9fa;strokeColor=#868e96;fontSize=11;dashed=1;" vertex="1" parent="1">
+      <mxGeometry x="520" y="525" width="240" height="50" as="geometry" />
     </mxCell>
 
-    <mxCell id="st2_2" value="[2.2] PMMA Core Block<br>(ТОСП, 20×30×5 mm, Λ = 71.05 µm)" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="chamber_2">
-      <mxGeometry x="165" y="40" width="160" height="100" as="geometry" />
+    <!-- ============ ЗОНА 3: ПИТАНИЕ ============ -->
+    <mxCell id="zone_pwr" value="🔌 ЗОНА 3 — ПИТАНИЕ (линейное, без ШИМ)" style="swimlane;whiteSpace=wrap;html=1;fillColor=#fff9db;strokeColor=#f59f00;strokeWidth=2;fontStyle=1;startSize=30" vertex="1" parent="1">
+      <mxGeometry x="840" y="370" width="290" height="220" as="geometry" />
     </mxCell>
 
-    <mxCell id="st2_3" value="[2.3] DVD Laser 650 nm<br>(когерентный зонд)" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="chamber_2">
-      <mxGeometry x="20" y="120" width="130" height="60" as="geometry" />
+    <mxCell id="jpow" value="🔋 J_PWR&#10;USB-B 5V" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff4e6;strokeColor=#e67e22;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="870" y="430" width="110" height="50" as="geometry" />
     </mxCell>
 
-    <mxCell id="st2_4" value="[2.4] Current Regulator<br>(K140УД7, 45 mA stabilised)" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="chamber_2">
-      <mxGeometry x="20" y="195" width="130" height="60" as="geometry" />
+    <mxCell id="ldo" value="⚙ U_LDO&#10;AMS1117-3.3&#10;C 100мкФ + 100нФ" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff4e6;strokeColor=#e67e22;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="1000" y="430" width="110" height="60" as="geometry" />
     </mxCell>
 
-    <mxCell id="st2_5" value="[2.5] Foucault Knife<br>(M3×0.25, 50 % cut)" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="chamber_2">
-      <mxGeometry x="165" y="150" width="160" height="60" as="geometry" />
+    <mxCell id="fb" value="🧲 FB1&#10;600 Ом @100 МГц&#10;+3V3 → +3V3_ANA&#10;C 10мкФ + 100нФ" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f3f0ff;strokeColor=#6741d9;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="930" y="510" width="150" height="65" as="geometry" />
     </mxCell>
 
-    <mxCell id="st2_6" value="[2.6] Photodiode Array<br>(BPW34, pitch 0.915 mm)" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="chamber_2">
-      <mxGeometry x="165" y="230" width="160" height="60" as="geometry" />
+    <!-- ============ СВЯЗИ ВЧ ============ -->
+    <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#c92a2a;strokeWidth=2;" edge="1" parent="1" source="ant" target="lna1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#c92a2a;strokeWidth=2;" edge="1" parent="1" source="lna1" target="qwc"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#c92a2a;strokeWidth=2;" edge="1" parent="1" source="qwc" target="lna2"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#c92a2a;strokeWidth=2;" edge="1" parent="1" source="lna2" target="bpf"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#c92a2a;strokeWidth=2;" edge="1" parent="1" source="bpf" target="mix"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e6" value="ADC_I / ADC_Q" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#6741d9;strokeWidth=2;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="1" source="mix" target="opamp"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#2b8a3e;strokeWidth=2;" edge="1" parent="1" source="opamp" target="adc"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#2b8a3e;strokeWidth=2;" edge="1" parent="1" source="xtal" target="adc"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e9" value="USB_DP / USB_D-" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#0c8599;strokeWidth=2;" edge="1" parent="1" source="adc" target="usb"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#e67e22;strokeWidth=2;" edge="1" parent="1" source="jpow" target="ldo"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e11" value="+3V3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#f59f00;strokeWidth=2;" edge="1" parent="1" source="ldo" target="adc"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e12" value="+3V3_ANA" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#f59f00;strokeWidth=2;" edge="1" parent="1" source="fb" target="mix"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+    <!-- ============ БЛОК ТЕСТОВЫХ ТОЧЕК ============ -->
+    <mxCell id="tp" value="🔬 Контрольные точки: TP_ANT · TP_LNA1_D · TP_LNA2_D · TP_ADC_I · TP_ADC_Q" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8f9fa;strokeColor=#868e96;dashed=1;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="40" y="615" width="1090" height="45" as="geometry" />
     </mxCell>
 
-    <!-- ==================================================== -->
-    <!-- CHAMBER 3 NODES                                       -->
-    <!-- ==================================================== -->
-    <mxCell id="st3_1" value="[3.1] TIA Stage<br>(K140УД7, I→V)" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="chamber_3">
-      <mxGeometry x="20" y="40" width="150" height="60" as="geometry" />
-    </mxCell>
-
-    <mxCell id="st3_2" value="[3.2] Offset Subtractor<br>(K140УД8, 1 mA nulling)" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="chamber_3">
-      <mxGeometry x="20" y="115" width="150" height="60" as="geometry" />
-    </mxCell>
-
-    <mxCell id="st3_3" value="[3.3] ADC Matrix STM32<br>(F103C8T6, PA0/PA1, DMA, 4 MSPS)" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="chamber_3">
-      <mxGeometry x="190" y="40" width="150" height="60" as="geometry" />
-    </mxCell>
-
-    <mxCell id="st3_4" value="[3.4] TinyML Core<br>(Noise/RЭБ suppression, int8 TF)" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="chamber_3">
-      <mxGeometry x="190" y="115" width="150" height="60" as="geometry" />
-    </mxCell>
-
-    <!-- ==================================================== -->
-    <!-- CHAMBER 4 NODES                                       -->
-    <!-- ==================================================== -->
-    <mxCell id="st4_1" value="[4.1] SPI DMA Engine<br>(Core 0, 4.0 MSPS capture)" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="chamber_4">
-      <mxGeometry x="20" y="40" width="150" height="60" as="geometry" />
-    </mxCell>
-
-    <mxCell id="st4_2" value="[4.2] Deep Ring Buffer<br>(Async RAM cache)" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="chamber_4">
-      <mxGeometry x="190" y="40" width="150" height="60" as="geometry" />
-    </mxCell>
-
-    <mxCell id="st4_3" value="[4.3] PCB Antenna<br>(internal, faced BACKWARD)" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="chamber_4">
-      <mxGeometry x="190" y="120" width="150" height="60" as="geometry" />
-    </mxCell>
-
-    <mxCell id="st4_4" value="[4.4] Plastic RF Window<br>(выход Wi-Fi назад, 0° orientation)" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="chamber_4">
-      <mxGeometry x="190" y="195" width="150" height="50" as="geometry" />
-    </mxCell>
-
-    <!-- ==================================================== -->
-    <!-- POWER NODES                                           -->
-    <!-- ==================================================== -->
-    <mxCell id="pw1" value="[5.1] Li-Po Battery<br>(2S/3S, pure chemical DC)" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="power_bus">
-      <mxGeometry x="20" y="60" width="160" height="60" as="geometry" />
-    </mxCell>
-
-    <mxCell id="pw2" value="[5.2] Buck Converter<br>(digital rail, 1000 µF)" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="power_bus">
-      <mxGeometry x="200" y="60" width="150" height="60" as="geometry" />
-    </mxCell>
-
-    <mxCell id="pw3" value="[5.3] Ultra-Low-Noise LDO<br>(LT1763/LM7805, analog rail)" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="power_bus">
-      <mxGeometry x="370" y="60" width="170" height="60" as="geometry" />
-    </mxCell>
-
-    <mxCell id="pw4" value="[5.4] Ferrite Bead BLM18<br>+ C 10 nF/33 pF<br>(2.4 GHz RF filter on power)" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="power_bus">
-      <mxGeometry x="560" y="60" width="180" height="60" as="geometry" />
-    </mxCell>
-
-    <!-- ==================================================== -->
-    <!-- CONNECTIONS                                           -->
-    <!-- ==================================================== -->
-
-    <!-- Antenna → PIN switches (GCPW 50 Ω lines) -->
-    <mxCell id="c_ant_to_pin"
-      style="endArrow=classic;startArrow=none;dashed=0;html=1;rounded=0;jettySize=auto;orthogonalLoop=1;"
-      edge="1" parent="1" source="ant_panel" target="st1_1">
-      <mxGeometry as="geometry" />
-    </mxCell>
-
-    <!-- PIN → Mixers -->
-    <mxCell id="c_pin_to_mix1" style="endArrow=classic;html=1;" edge="1" parent="1" source="st1_1" target="st1_2">
-      <mxGeometry as="geometry" />
-    </mxCell>
-    <mxCell id="c_pin_to_mix2" style="endArrow=classic;html=1;" edge="1" parent="1" source="st1_1" target="st1_3">
-      <mxGeometry as="geometry" />
-    </mxCell>
-    <mxCell id="c_pin_to_tuner" style="endArrow=classic;html=1;" edge="1" parent="1" source="st1_1" target="st1_4">
-      <mxGeometry as="geometry" />
-    </mxCell>
-
-    <!-- Mixers → TV TUNER -->
-    <mxCell id="c_mix1_to_tuner" style="endArrow=classic;html=1;" edge="1" parent="1" source="st1_2" target="st1_4">
-      <mxGeometry as="geometry" />
-    </mxCell>
-    <mxCell id="c_mix2_to_tuner" style="endArrow=classic;html=1;" edge="1" parent="1" source="st1_3" target="st1_4">
-      <mxGeometry as="geometry" />
-    </mxCell>
-
-    <!-- Tuner → KT368A -->
-    <mxCell id="c_tuner_to_kt" style="endArrow=classic;html=1;" edge="1" parent="1" source="st1_4" target="st1_5">
-      <mxGeometry as="geometry" />
-    </mxCell>
-
-    <!-- KT368A → Diode Clamp -->
-    <mxCell id="c_kt_to_clamp" style="endArrow=classic;html=1;" edge="1" parent="1" source="st1_5" target="st1_6">
-      <mxGeometry as="geometry" />
-    </mxCell>
-
-    <!-- Diode Clamp → Quartz (KT-1) -->
-    <mxCell id="c_clamp_to_quartz" style="endArrow=classic;html=1;" edge="1" parent="1" source="st1_6" target="st2_1">
-      <mxGeometry as="geometry" />
-    </mxCell>
-
-    <!-- Quartz → PMMA -->
-    <mxCell id="c_quartz_to_pmma" style="endArrow=classic;html=1;" edge="1" parent="1" source="st2_1" target="st2_2">
-      <mxGeometry as="geometry" />
-    </mxCell>
-
-    <!-- Laser → PMMA -->
-    <mxCell id="c_laser_to_pmma" style="endArrow=classic;html=1;" edge="1" parent="1" source="st2_3" target="st2_2">
-      <mxGeometry as="geometry" />
-    </mxCell>
-
-    <!-- Laser power from K140УД7 -->
-    <mxCell id="c_ud7_to_laser" style="endArrow=classic;html=1;" edge="1" parent="1" source="st2_4" target="st2_3">
-      <mxGeometry as="geometry" />
-    </mxCell>
-
-    <!-- PMMA → Knife -->
-    <mxCell id="c_pmma_to_knife" style="endArrow=classic;html=1;" edge="1" parent="1" source="st2_2" target="st2_5">
-      <mxGeometry as="geometry" />
-    </mxCell>
-
-    <!-- Knife → Photodiodes -->
-    <mxCell id="c_knife_to_pd" style="endArrow=classic;html=1;" edge="1" parent="1" source="st2_5" target="st2_6">
-      <mxGeometry as="geometry" />
-    </mxCell>
-
-    <!-- PD → TIA -->
-    <mxCell id="c_pd_to_tia" style="endArrow=classic;html=1;" edge="1" parent="1" source="st2_6" target="st3_1">
-      <mxGeometry as="geometry" />
-    </mxCell>
-
-    <!-- TIA → Subtractor -->
-    <mxCell id="c_tia_to_sub" style="endArrow=classic;html=1;" edge="1" parent="1" source="st3_1" target="st3_2">
-      <mxGeometry as="geometry" />
-    </mxCell>
-
-    <!-- Subtractor → STM32 ADC -->
-    <mxCell id="c_sub_to_adc" style="endArrow=classic;html=1;" edge="1" parent="1" source="st3_2" target="st3_3">
-      <mxGeometry as="geometry" />
-    </mxCell>
-
-    <!-- STM32 ADC → TinyML -->
-    <mxCell id="c_adc_to_ml" style="endArrow=classic;html=1;" edge="1" parent="1" source="st3_3" target="st3_4">
-      <mxGeometry as="geometry" />
-    </mxCell>
-
-    <!-- STM32 → ESP32 DMA (SPI 18 MHz) -->
-    <mxCell id="c_ml_to_espdma" style="endArrow=classic;html=1;" edge="1" parent="1" source="st3_4" target="st4_1">
-      <mxGeometry as="geometry" />
-    </mxCell>
-
-    <!-- ESP32 DMA → Buffer -->
-    <mxCell id="c_dma_to_buf" style="endArrow=classic;html=1;" edge="1" parent="1" source="st4_1" target="st4_2">
-      <mxGeometry as="geometry" />
-    </mxCell>
-
-    <!-- Buffer → WiFi TX -->
-    <mxCell id="c_buf_to_wifi" style="endArrow=classic;html=1;" edge="1" parent="1" source="st4_2" target="st4_3">
-      <mxGeometry as="geometry" />
-    </mxCell>
-
-    <!-- WiFi out through plastic window to PC -->
-    <mxCell id="c_wifi_to_pc" style="endArrow=classic;html=1;" edge="1" parent="1" source="st4_3" target="pc_terminal">
-      <mxGeometry as="geometry" />
-    </mxCell>
-
-    <!-- Power: battery -> buck/LDO -->
-    <mxCell id="c_batt_to_buck" style="endArrow=classic;html=1;" edge="1" parent="1" source="pw1" target="pw2">
-      <mxGeometry as="geometry" />
-    </mxCell>
-    <mxCell id="c_batt_to_ldo" style="endArrow=classic;html=1;" edge="1" parent="1" source="pw1" target="pw3">
-      <mxGeometry as="geometry" />
-    </mxCell>
-
-    <!-- Buck → ESP32 -->
-    <mxCell id="c_buck_to_esp" style="endArrow=classic;html=1;" edge="1" parent="1" source="pw2" target="st4_1">
-      <mxGeometry as="geometry" />
-    </mxCell>
-
-    <!-- LDO → analog components -->
-    <mxCell id="c_ldo_to_ud7" style="endArrow=classic;html=1;" edge="1" parent="1" source="pw3" target="st2_4">
-      <mxGeometry as="geometry" />
-    </mxCell>
-    <mxCell id="c_ldo_to_mixers" style="endArrow=classic;html=1;" edge="1" parent="1" source="pw3" target="st1_2">
-      <mxGeometry as="geometry" />
-    </mxCell>
-    <mxCell id="c_ldo_to_fpga" style="endArrow=classic;html=1;" edge="1" parent="1" source="pw3" target="st3_1">
-      <mxGeometry as="geometry" />
-    </mxCell>
-    <mxCell id="c_ldo_to_stm32" style="endArrow=classic;html=1;" edge="1" parent="1" source="pw3" target="st3_3">
-      <mxGeometry as="geometry" />
-    </mxCell>
-
-    <!-- Ferrite bead on ESP32 rail -->
-    <mxCell id="c_esp_to_fb" style="endArrow=classic;html=1;" edge="1" parent="1" source="st4_1" target="pw4">
-      <mxGeometry as="geometry" />
-    </mxCell>
-
-    <!-- External PC terminal -->
-    <mxCell id="pc_terminal" value="💻 PC Operator (SDR++, GNU Radio, Wi-Fi burst or wired BT/Wi-Fi bridge)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f3f0ff;strokeColor=#6741d9;strokeWidth=2;" vertex="1" parent="1">
-      <mxGeometry x="420" y="800" width="200" height="60" as="geometry" />
-    </mxCell>
-    <mxCell id="c_pc_link" style="endArrow=classic;html=1;" edge="1" parent="1" source="st4_3" target="pc_terminal">
-      <mxGeometry as="geometry" />
+    <mxCell id="legend" value="Ключевые параметры: NF ≤ 3.5 дБ (REQ-04) · полоса ПЧ 2.7 кГц · 12-разрядный АЦП 4 MSPS · Tj ≤ 85 °C · REQ-21/25 — экран Al 0.5 мм, прокладки ≤ 10 мОм, 3 зоны" style="text;html=1;align=center;fontSize=11;fontColor=#495057;" vertex="1" parent="1">
+      <mxGeometry x="40" y="670" width="1090" height="40" as="geometry" />
     </mxCell>
 
   </root>

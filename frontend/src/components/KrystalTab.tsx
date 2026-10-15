@@ -19,8 +19,7 @@ import {
 } from 'lucide-react';
 import {
   getChain, getProjects, createProject, runAsAgent, watchJob, getMetrics,
-  artifactUrl,
-  type Chain, type ChainStage, type KrProject, type Metrics, type Job,
+  type Chain, type ChainStage, type KrProject, type Metrics,
 } from '@/lib/bridge';
 
 const STATE_STYLE: Record<string, { icon: typeof CheckCircle2; cls: string; label: string }> = {

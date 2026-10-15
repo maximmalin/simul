@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FolderKanban, Plus, X, AlertCircle, ChevronDown, Skull } from 'lucide-react';
+import { FolderKanban, Plus, X, AlertCircle, ChevronDown } from 'lucide-react';
 import type { Project, Task, Agent, TaskStatus, Priority } from '@/lib/supabase';
 import {
   PROJECT_STATUS_CONFIG,

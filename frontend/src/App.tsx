@@ -5,6 +5,7 @@ import { ZoneHeader } from '@/components/ZoneHeader';
 import { TabNav, type TabKey } from '@/components/TabNav';
 import { OverviewTab } from '@/components/OverviewTab';
 import { KrystalTab } from '@/components/KrystalTab';
+import { OrderTab } from '@/components/OrderTab';
 import { PersonnelTab } from '@/components/PersonnelTab';
 import { ProjectsTab } from '@/components/ProjectsTab';
 import { CommsTab } from '@/components/CommsTab';
@@ -172,6 +173,10 @@ function App() {
       <main className="relative z-10">
         {activeTab === 'overview' && (
           <OverviewTab agents={agents} projects={projects} tasks={tasks} />
+        )}
+
+        {activeTab === 'order' && (
+          <OrderTab />
         )}
 
         {activeTab === 'krystal' && (

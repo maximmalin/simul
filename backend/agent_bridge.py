@@ -366,6 +366,14 @@ def _runtime_context() -> str:
     return rt._project_context() if rt else ""
 
 
+def _orch():
+    try:
+        import orchestrator
+        return orchestrator
+    except Exception:                                           # noqa: BLE001
+        return None
+
+
 def _cfg():
     """krconfig — словари предметной области для интерфейса."""
     try:
@@ -379,6 +387,18 @@ def _zone(health: dict) -> dict:
     import krconfig
     return krconfig.zone_telemetry(health, chain_status(), _last_tests(),
                                    collect_metrics())
+
+
+def _order_logs(order) -> dict:
+    """Лог каждого шага заказа — из джоб моста."""
+    out = {}
+    for st in order.steps:
+        if not st.job_id:
+            continue
+        job = JOBS.get(st.job_id)
+        if job:
+            out[st.id] = {"status": job.status, "log": job.log[-40:]}
+    return out
 
 
 def _spec_for(code: str):
@@ -902,6 +922,33 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/projects":
             return self._json(projects_list())
 
+        if path == "/api/order/capabilities":
+            o = _orch()
+            if not o:
+                return self._json({"error": "orchestrator unavailable"}, 503)
+            return self._json({**o.capabilities(),
+                               "suggestions": o.SUGGESTIONS})
+
+        if path == "/api/orders":
+            o = _orch()
+            if not o:
+                return self._json({"error": "orchestrator unavailable"}, 503)
+            return self._json({"orders": o.list_orders(
+                int(q.get("limit", ["20"])[0]))})
+
+        if path.startswith("/api/order/"):
+            o = _orch()
+            if not o:
+                return self._json({"error": "orchestrator unavailable"}, 503)
+            oid = path[len("/api/order/"):]
+            order = o.get(oid)
+            if order is None:
+                return self._json({"error": "unknown order", "id": oid}, 404)
+            d = order.as_dict()
+            if q.get("log", ["0"])[0] == "1":
+                d["logs"] = _order_logs(order)
+            return self._json(d)
+
         if path == "/api/tests":
             return self._json(_last_tests(force=True))
 
@@ -970,6 +1017,16 @@ class Handler(BaseHTTPRequestHandler):
 
         if path == "/api/projects":
             return self._json(project_create(payload), 201)
+
+        if path == "/api/order":
+            text = str(payload.get("text", "")).strip()
+            if not text:
+                return self._json({"error": "text required"}, 400)
+            o = _orch()
+            if not o:
+                return self._json({"error": "orchestrator unavailable"}, 503)
+            order = o.submit(text, payload.get("project_id"))
+            return self._json(order.as_dict(), 202)
 
         if path == "/api/agent/run":
             aid = str(payload.get("agent_id", "")).strip()

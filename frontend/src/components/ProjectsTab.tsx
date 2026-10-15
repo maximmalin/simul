@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { FolderKanban, Plus, X, AlertCircle, ChevronDown } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { FolderKanban, Plus, X, AlertCircle, ChevronDown, Download, Eye } from 'lucide-react';
 import type { Project, Task, Agent, TaskStatus, Priority } from '@/lib/supabase';
 import {
   PROJECT_STATUS_CONFIG,
@@ -7,6 +7,26 @@ import {
   PRIORITY_CONFIG,
   TASK_STATUSES,
 } from '@/lib/constants';
+
+const BASE = (import.meta.env.VITE_BRIDGE_URL as string | undefined) ?? '';
+
+interface LocalOrder {
+  id: string;
+  text: string;
+  status: string;
+  intent?: string;
+  progress?: number;
+  steps?: { id: string; target: string; title: string; agent_id?: string; status?: string; exit_code?: number | null; log_tail?: string[] }[];
+}
+
+interface BridgeArtifact {
+  name: string;
+  path: string;
+  size_h?: string;
+  ext: string;
+  url: string;
+  modified?: string;
+}
 
 interface ProjectsTabProps {
   projects: Project[];
@@ -39,6 +59,19 @@ export function ProjectsTab({
   const [newTaskDirective, setNewTaskDirective] = useState('');
   const [newTaskPriority, setNewTaskPriority] = useState<Priority>('standard');
   const [newTaskAgent, setNewTaskAgent] = useState<string>('');
+  const [localOrders, setLocalOrders] = useState<LocalOrder[]>([]);
+  const [bridgeArtifacts, setBridgeArtifacts] = useState<BridgeArtifact[]>([]);
+
+  useEffect(() => {
+    fetch(`${BASE}/api/orders`)
+      .then((r) => r.json())
+      .then((d) => setLocalOrders(Array.isArray(d?.orders) ? d.orders : []))
+      .catch(() => setLocalOrders([]));
+    fetch(`${BASE}/api/artifacts`)
+      .then((r) => r.json())
+      .then((d) => setBridgeArtifacts(Array.isArray(d?.artifacts) ? d.artifacts : []))
+      .catch(() => setBridgeArtifacts([]));
+  }, []);
 
   const projectTasks = (projectId: string) =>
     tasks.filter((t) => t.project_id === projectId).sort((a, b) => a.sort_order - b.sort_order);
@@ -76,6 +109,64 @@ export function ProjectsTab({
           </p>
         </div>
       </div>
+
+      {/* bridge/public orders + 3D/rendered artifacts */}
+      {localOrders.length > 0 && (
+        <section className="mb-6 border border-zone-300 bg-zone-50 rounded-lg p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <FolderKanban className="w-4 h-4 text-blood-500" />
+            <h3 className="font-display text-sm uppercase tracking-wide text-zone-900">Публичные заказы Krystal · Public Orders</h3>
+            <span className="font-mono text-[10px] text-zone-600">{localOrders.length} заказов · артефактов {bridgeArtifacts.length}</span>
+          </div>
+          {localOrders.map((o) => (
+            <div key={o.id} className="mb-4 border border-zone-200 rounded bg-white p-3">
+              <div className="flex items-center flex-wrap gap-2 mb-2">
+                <code className="font-mono text-[11px] text-zone-800 bg-zone-200 px-2 py-0.5 rounded">{o.id}</code>
+                <span className="text-sm text-zone-900 font-medium truncate">{o.text}</span>
+                <span className="ml-auto font-mono text-[10px] uppercase text-zone-600">{o.status} · {o.progress ?? 0}%</span>
+              </div>
+              {(o.steps && o.steps.length > 0) && (
+                <div className="mb-2 flex flex-wrap gap-1">
+                  {o.steps.map((s) => (
+                    <span key={s.id} className="font-mono text-[9px] text-zone-600 bg-zone-100 px-2 py-0.5 rounded border border-zone-300">
+                      {s.target}: {s.status}{s.exit_code !== null ? ` (exit ${s.exit_code})` : ''}
+                    </span>
+                  ))}
+                </div>
+              )}
+              {bridgeArtifacts.length > 0 && (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
+                    {bridgeArtifacts.map((a) => (
+                      <a key={a.url + a.name} href={`${BASE}${a.url}`} target="_blank" rel="noreferrer" className="group flex items-center gap-2 px-3 py-2 rounded border border-zone-300 bg-zone-50 hover:border-blood-500 transition">
+                        <span className={`w-2 h-2 rounded-full ${a.ext === '.glb' ? 'bg-red-500' : a.ext === '.svg' ? 'bg-blue-500' : 'bg-slate-400'}`} />
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm truncate font-mono">{a.name}</div>
+                          <div className="font-mono text-[9px] text-zone-500 uppercase">{a.size_h ?? ''}</div>
+                        </div>
+                        <div className="flex gap-1 opacity-70 group-hover:opacity-100">
+                          {a.ext === '.svg' || a.ext === '.png' || a.ext === '.jpg' ? (
+                            <a href={`${BASE}${a.url}`} target="_blank" rel="noreferrer" className="p-1 rounded hover:bg-white"><Eye className="w-3 h-3 text-blue-600" /></a>
+                          ) : null}
+                          <a href={`${BASE}${a.url}`} target="_blank" rel="noreferrer" className="p-1 rounded hover:bg-white"><Download className="w-3 h-3 text-blood-500" /></a>
+                        </div>
+                      </a>
+                    ))}
+                  </div>
+                  {/* SVG rendering mini-batch */}
+                  <div className="flex flex-wrap gap-2">
+                    {bridgeArtifacts.filter((a) => a.ext === '.svg').map((a) => (
+                      <div key={`preview-${a.url}`} className="rounded border border-zone-200 overflow-hidden bg-white">
+                        <img src={`${BASE}${a.url}`} alt={a.name} className="h-20 w-auto" />
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          ))}
+        </section>
+      )}
 
       <div className="space-y-3">
         {projects.map((project, pIdx) => {

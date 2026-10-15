@@ -444,9 +444,32 @@ def _llm():
         return None
 
 
+def _current_project_code() -> str | None:
+    p = ROOT / ".krystal" / "current_project.json"
+    if not p.is_file():
+        return None
+    try:
+        code = json.loads(p.read_text(encoding="utf-8")).get("code")
+    except (json.JSONDecodeError, OSError):
+        return None
+    if not code or not (ROOT / ".krystal" / "projects" / code / "agents.project.yaml").is_file():
+        return None
+    return code
+
+
 def _project_root() -> str:
-    """Корень проекта, которым управляет граф."""
-    return os.environ.get("KR_PROJECT_ROOT", str(ROOT))
+    """Корень проекта, которым управляет граф.
+
+    Без активного проекта — глобальный репозиторий, как раньше.
+    С активным — только проектный каталог (полная изоляция от Krystal).
+    """
+    env = os.environ.get("KR_PROJECT_ROOT")
+    if env:
+        return env
+    code = _current_project_code()
+    if code:
+        return str((ROOT / ".krystal" / "projects" / code).resolve())
+    return str(ROOT)
 
 
 def _cfg():

@@ -96,3 +96,7 @@ backend/.run/
 # Локальные учётные данные. Без этой строки ключ Nous Portal,
 # который oc.py кладёт в .env, попал бы в репозиторий.
 .env
+skidl_REPL.erc
+skidl_REPL.log
+technical_task.docx
+technical_task.html

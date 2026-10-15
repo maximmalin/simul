@@ -21,7 +21,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Cpu, CheckCircle2, XCircle, Loader2, Circle, Clock, Sparkles,
-  ListTree, SkipForward, HelpCircle, Play, ScrollText, Ban,
+  ListTree, SkipForward, HelpCircle, Play, ScrollText, Ban, Download, Package,
 } from 'lucide-react';
 
 const BASE = (import.meta.env.VITE_BRIDGE_URL as string | undefined) ?? '';
@@ -42,6 +42,16 @@ interface Step {
   job_id: string | null;
   duration_s?: number;
   log_tail?: string[];
+}
+
+interface ArtifactItem {
+  name: string;
+  path: string;
+  size_h: string;
+  ext: string;
+  mime: string;
+  url: string;
+  modified: string;
 }
 
 interface Order {
@@ -116,6 +126,7 @@ export function OrderTab() {
   const [err, setErr] = useState<string | null>(null);
   const [answer, setAnswer] = useState('');
   const [showLog, setShowLog] = useState(false);
+  const [artifacts, setArtifacts] = useState<ArtifactItem[] | null>(null);
   const esRef = useRef<EventSource | null>(null);
 
   useEffect(() => {
@@ -134,6 +145,13 @@ export function OrderTab() {
   }, []);
 
   // ---- поток событий вместо опроса ------------------------------------
+  useEffect(() => {
+    if (!order || order.status !== 'done') { setArtifacts(null); return; }
+    api<{ count: number; artifacts: ArtifactItem[] }>('/api/artifacts')
+      .then((d) => setArtifacts(d.artifacts))
+      .catch(() => setArtifacts(null));
+  }, [order?.id, order?.status]);
+
   useEffect(() => {
     if (!order) return;
     if (TERMINAL.includes(order.status)) return;
@@ -232,7 +250,7 @@ export function OrderTab() {
     <div className="max-w-6xl mx-auto px-4 md:px-6 py-6 space-y-6">
       <header>
         <h2 className="font-display text-xl tracking-wide text-zone-900">
-          ЗАКАЗ
+          ДОСЬЕ ЗАКАЗА · ORDER DOSSIER
         </h2>
         <p className="font-mono text-[10px] uppercase tracking-widest text-zone-600">
           движок {caps?.engine ?? '—'} · планировщик{' '}
@@ -447,6 +465,48 @@ export function OrderTab() {
                   {order.logs.join('\n')}
                 </pre>
               )}
+            </div>
+          )}
+
+          {/* ---------- сданный проект: файлы (все агенты) ---------- */}
+          {order.status === 'done' && artifacts && artifacts.length > 0 && (
+            <div className="border-t border-zone-300 px-4 py-4 bg-zone-50/60">
+              <div className="flex items-center gap-2 mb-3">
+                <Package className="w-4 h-4 text-blood-500" />
+                <span className="font-display text-sm uppercase tracking-wide text-zone-900">
+                  Результаты · Delivered Artifact Dossier
+                </span>
+                <span className="font-mono text-[10px] text-zone-600">
+                  {artifacts.length} файлов — отчёт, 3D-модель, PCB, чертежи
+                </span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                {artifacts.map((a) => (
+                  <a
+                    key={a.url}
+                    href={`${BASE}${a.url}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    download
+                    className="flex items-center gap-3 px-3 py-2 rounded border border-zone-300 bg-white hover:border-blood-500 hover:shadow-sm transition"
+                  >
+                    <span
+                      className="w-2 h-2 rounded-full shrink-0"
+                      style={{ background: a.ext === '.glb' ? '#ef4444' : a.ext === '.svg' ? '#3b82f6' : a.ext === '.pdf' ? '#f59e0b' : '#64748b' }}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm text-zone-900 truncate font-mono">{a.name}</div>
+                      <div className="font-mono text-[9px] text-zone-500 uppercase">{a.size_h} · {a.ext.toUpperCase().slice(1) || 'FILE'}</div>
+                    </div>
+                    <span className="font-mono text-[9px] uppercase text-blood-500 flex items-center gap-1">
+                      <Download className="w-3 h-3" /> получить
+                    </span>
+                  </a>
+                ))}
+              </div>
+              <p className="font-mono text-[9px] text-zone-500 mt-2">
+                В каждый архив — по одной ссылке; агенты: запросили цели → собрали → вышли с этим списком при завершении заказа.
+              </p>
             </div>
           )}
 

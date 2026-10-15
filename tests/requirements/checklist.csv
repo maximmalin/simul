@@ -12,8 +12,8 @@ REQ-IO-01,Передача по USB,host,"CDC, 22 Ом терминация",tes
 REQ-IO-02,Модуль GNU Radio,host,"headless ко-симуляция, водопад",tests/requirements/gnuradio/,implemented,requirements/host/REQ-IO-02_gnuradio.md
 REQ-PWR-01,Цепь питания,power,"5 → 3.3 В AMS1117-3.3, развязка",tests/requirements/emc/test_emc.py#test_req_24_*,implemented,requirements/power/REQ-PWR-01_supply.md
 REQ-PWR-02,Аналоговая шина,power,FB1 600 Ом@100 МГц,tests/requirements/emc/test_emc.py#test_req_24_ferrite_isolation,implemented,requirements/power/REQ-PWR-02_analog_rail.md
-REQ-MECH-01,Корпус и экранирование,mechanics,"Al ≥ 0.5 мм, прокладки ≤ 10 мОм",tests/requirements/emc/test_emc.py#test_req_21_*,planned,requirements/mechanics/REQ-MECH-01_enclosure.md
-REQ-MECH-02,Зонирование корпуса,mechanics,"3 секции, R_общ < 40 мОм",tests/requirements/emc/test_emc.py#test_req_25_*,planned,requirements/mechanics/REQ-MECH-02_zoning.md
+REQ-MECH-01,Корпус и экранирование,mechanics,"Al ≥ 0.5 мм, прокладки ≤ 10 мОм",tests/requirements/emc/test_emc.py#test_req_21_*,implemented,requirements/mechanics/REQ-MECH-01_enclosure.md
+REQ-MECH-02,Зонирование корпуса,mechanics,"3 секции, R_общ < 40 мОм",tests/requirements/emc/test_emc.py#test_req_25_*,implemented,requirements/mechanics/REQ-MECH-02_zoning.md
 REQ-EMC-01,Экранирование,emc,"δ(Al,1 ГГц) = 2.59 мкм; SE ≥ 40 дБ",tests/requirements/emc/test_emc.py#test_req_21_*,implemented,requirements/emc/REQ-EMC-01_shielding.md
 REQ-EMC-02,Иммунитет к ЭМ-полям,emc,"3 В/м, 80–2700 МГц",tests/requirements/emc/test_emc.py#test_req_22_*,implemented,requirements/emc/REQ-EMC-02_immunity.md
 REQ-EMC-03,Уровень эмиссии,emc,CISPR 22 Класс Б: 40 / 47 дБмкВ/м,tests/requirements/emc/test_emc.py#test_req_23_*,implemented,requirements/emc/REQ-EMC-03_emission.md
@@ -27,4 +27,4 @@ REQ-PERF-02,Чувствительность,performance,NF ≤ 3.5 дБ; −136
 REQ-PERF-03,SFDR,performance,≥ 75–80 дБ,tests/requirements/rf/test_rf.py#test_perf_03_*,implemented,requirements/performance/REQ-PERF-03_sfdr.md
 REQ-ANA-01,Дальность приёма,analysis,982 / 125 / 105 км,tests/requirements/reception/test_reception.py#test_link_budget_*,implemented,requirements/analysis/REQ-ANA-01_reception_range.md
 REQ-ANA-02,Пеленгование,analysis,"σ_θ ≈ 3.9°, FOV ±90°, NEC-2",tests/requirements/reception/test_reception.py#test_doa_*,implemented,requirements/analysis/REQ-ANA-02_direction_finding.md
-REQ-ANA-03,Распознавание YOLO,analysis,4 класса: cw/am/fm/noise,tests/requirements/ml/,partial,requirements/analysis/REQ-ANA-03_ml_recognition.md
+REQ-ANA-03,Распознавание YOLO,analysis,4 класса: cw/am/fm/noise,tests/requirements/ml/test_ml.py,implemented,requirements/analysis/REQ-ANA-03_ml_recognition.md

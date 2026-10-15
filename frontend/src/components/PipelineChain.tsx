@@ -1,6 +1,8 @@
 import { Skull, Brain, DraftingCompass, ScanLine, FlaskRound, Gauge, ChevronRight, Package, Settings2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import type { Agent, Project, Task } from '@/lib/supabase';
 import { PROJECT_STATUS_CONFIG, PRIORITY_CONFIG } from '@/lib/constants';
+import { getConfig, type KrConfig } from '@/lib/bridge';
 
 interface PipelineChainProps {
   agents: Agent[];
@@ -24,37 +26,20 @@ const PIPELINE_STAGES: PipelineStage[] = [
   { roleKey: 'optimizer', label: 'Optimize', subLabel: 'Оптимизация', icon: Gauge },
 ];
 
-const PRODUCT_SPECS: Record<string, { product: string; specs: { label: string; value: string }[] }> = {
-  'PROJECT-CHRYN-01': {
-    product: 'Lattice Propulsion Core MK-IV',
-    specs: [
-      { label: 'Topology', value: 'Adaptive 7-G' },
-      { label: 'Thermal Range', value: '−40 to +320°C' },
-      { label: 'Lattice Density', value: '14.7 nodes/cm³' },
-      { label: 'Coupling Eff.', value: '87.2%' },
-    ],
-  },
-  'PROJECT-VEKT-02': {
-    product: 'Vektor Telemetry Pipeline v2',
-    specs: [
-      { label: 'Throughput', value: '2.1M evt/s' },
-      { label: 'Latency', value: '<47ms' },
-      { label: 'Anomaly Det.', value: 'Real-time' },
-      { label: 'Buffer', value: '512MB/ch' },
-    ],
-  },
-  'PROJECT-NOVA-03': {
-    product: 'Novaya Zarya Coupling Matrix',
-    specs: [
-      { label: 'Matrix Order', value: '12×12' },
-      { label: 'Field Type', value: 'Multi-axis' },
-      { label: 'Coupling Mode', value: 'Variable' },
-      { label: 'Status', value: 'Theoretical' },
-    ],
-  },
-};
-
 export function PipelineChain({ agents, projects, tasks }: PipelineChainProps) {
+  // Характеристики изделия по кодам проектов — с агентного моста.
+  const [specsByCode, setSpecsByCode] = useState<Record<
+    string, { product: string; specs: { label: string; value: string }[] }
+  >>({});
+
+  useEffect(() => {
+    let alive = true;
+    getConfig()
+      .then((c: KrConfig) => { if (alive) setSpecsByCode(c.product_specs ?? {}); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, []);
+
   const getStageStatus = (roleKey: string, projectId: string): 'active' | 'done' | 'pending' | 'idle' => {
     const agent = agents.find((a) => a.role_key === roleKey);
     if (!agent) return 'idle';
@@ -87,7 +72,9 @@ export function PipelineChain({ agents, projects, tasks }: PipelineChainProps) {
       {/* Pipeline chains per project */}
       <div className="space-y-4">
         {activeProjects.map((project) => {
-          const specs = PRODUCT_SPECS[project.code];
+          // Характеристики изделия приходят с агентного моста
+          // (backend/krconfig.py), а не зашиты в интерфейс.
+          const specs = specsByCode[project.code];
           const pStatus = PROJECT_STATUS_CONFIG[project.status];
           const pPriority = PRIORITY_CONFIG[project.priority];
 

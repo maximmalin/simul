@@ -73,3 +73,7 @@ sim/netlists/sdr_skidl_ngspice.net
 
 # run logs
 sim/logs/
+
+# FreeCAD: временные файлы восстановления
+hardware/enclosure/*.FCBak
+hardware/enclosure/*.FCStd1

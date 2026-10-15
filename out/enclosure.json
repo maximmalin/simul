@@ -1,0 +1,80 @@
+{
+  "source": "hardware/enclosure/build_enclosure_fc.py",
+  "board_mm": {
+    "w": 88.6,
+    "h": 85.08,
+    "t": 1.6
+  },
+  "case_mm": {
+    "w": 92.6,
+    "h": 89.08,
+    "h_total": 17.5,
+    "wall": 0.5,
+    "base": 2.0,
+    "lid": 1.5,
+    "partition": 1.0
+  },
+  "gasket": {
+    "depth_mm": 0.5,
+    "width_mm": 2.5,
+    "contact_resistance_mohm": 10.0,
+    "standard": "MIL-DTL-83528"
+  },
+  "zones": [
+    {
+      "name": "ВЧ-аналоговая",
+      "x_from": -45.8,
+      "x_to": 9.16,
+      "parts": "J_ANT, Q_LNA1/2, X_QWC1, U_MIX1, U_OP1, FB1, C_ANA*"
+    },
+    {
+      "name": "Цифровая",
+      "x_from": 9.16,
+      "x_to": 45.8,
+      "y_from": 24.6624,
+      "y_to": 44.04,
+      "parts": "U1, Y1, J_USB, C_MCU*"
+    },
+    {
+      "name": "Питание",
+      "x_from": 9.16,
+      "x_to": 45.8,
+      "y_from": -44.04,
+      "y_to": 24.6624,
+      "parts": "J_PWR, U_LDO, C_LDO*"
+    }
+  ],
+  "material": {
+    "alloy": "Al 6061-T6",
+    "sigma_s_per_m": 35000000.0,
+    "grounding_screw": "M3, ГОСТ 14192-96"
+  },
+  "desiccant": {
+    "standard": "ГОСТ 3956-76, тип V",
+    "hole_mm": 3.0,
+    "mass_g": 8
+  },
+  "shielding": {
+    "1GHz": {
+      "skin_depth_m": 2.5908547655754223e-06,
+      "absorption_db": 1676.2807617413594,
+      "reflection_db": 10.193599492126616,
+      "total_db": 1686.474361233486
+    },
+    "7GHz": {
+      "skin_depth_m": 9.792510561141595e-07,
+      "absorption_db": 4435.022023089551,
+      "reflection_db": -6.708361308158522,
+      "total_db": 4428.3136617813925
+    },
+    "se_required_db": 40.0,
+    "verdict": "PASS",
+    "note": "Толщина стенки даёт SE >> 40 дБ; практический предел задают стыки, поэтому норма — R прокладок ≤ 10 мОм"
+  },
+  "volume_cm3": 24.9,
+  "outputs": [
+    "hardware/enclosure/krystal-case.FCStd",
+    "hardware/enclosure/krystal-case.step",
+    "hardware/enclosure/krystal-case.stl"
+  ]
+}

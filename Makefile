@@ -60,7 +60,7 @@ DOC        := technical_task
         viewer page \
         gnuradio gnuradio-gui \
         link-budget direction \
-        reliability thermal \
+        reliability thermal enclosure \
         agents agent-api agent-web frontend \
         test test-all \
         clean distclean
@@ -68,7 +68,7 @@ DOC        := technical_task
 # ===========================================================================
 #  all
 # ===========================================================================
-all: netlist spice pcb publish erc drc board-svg drawings docs viewer gnuradio link-budget direction page test reliability thermal manifest
+all: netlist spice pcb publish erc drc board-svg drawings docs viewer gnuradio link-budget direction page test reliability thermal enclosure manifest
 	@echo
 	@echo "Krystal Radio build complete — see $(OUT)/ and $(CAD_FIG)/"
 
@@ -145,6 +145,12 @@ viewer: ## bundle the offline three.js model viewer (rollup)
 page: publish board-svg drawings viewer gnuradio link-budget direction ## 3D + drawings + waterfall + дальность/пеленгация на одной странице
 	$(PYTHON) tools/build_page.py --out $(OUT)/krystal-radio.html
 	@echo "report page: $(OUT)/krystal-radio.html"
+
+# ===========================================================================
+#  Корпус (FreeCAD, headless) — REQ-MECH-01/02
+# ===========================================================================
+enclosure: ## корпус Al с 3 зонами -> FCStd/STEP/STL + out/enclosure.json
+	$(FREECAD) hardware/enclosure/build_enclosure_fc.py
 
 # ===========================================================================
 #  Agent bridge — HTTP-мост между LLM-агентами и веб-интерфейсом
@@ -233,6 +239,8 @@ clean: ## remove derived outputs (keeps sources)
 	rm -f $(OUT)/waterfall.png $(OUT)/virtual_rx_iq.c64 $(OUT)/virtual_rx_spectrum.json
 	rm -f $(OUT)/link_budget.json $(OUT)/link_budget.svg
 	rm -f $(OUT)/direction_finding.json $(OUT)/direction_finding.svg $(OUT)/df_array.nec
+	rm -f $(OUT)/enclosure.json
+	rm -rf hardware/enclosure/*.FCStd hardware/enclosure/*.step hardware/enclosure/*.stl
 	rm -f $(DOC).html $(DOC).docx $(DOC).pdf
 	rm -rf $(CAD_FIG)
 	find . -path ./.venv -prune -o -path ./node_modules -prune -o \

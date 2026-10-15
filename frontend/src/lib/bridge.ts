@@ -91,7 +91,12 @@ export interface Metrics {
     baseline_mm: number;
     backend: string;
   };
-  thermal: { tj_max_c: number | null; tmax_fem_c: number | null };
+  thermal: {
+    tj_c: number | null;
+    tj_limit_c: number | null;
+    tmax_fem_c: number | null;
+    devices: { ref: string; p_w: number; tj_c: number; tj_max_c: number; margin_c: number; pass: boolean }[];
+  };
   reliability: { mtbf_h: number | null; req_min_h: number; pass: boolean | null };
   receiver: Record<string, unknown>;
   emc: { test_file: string; expected: number; note: string };
@@ -156,6 +161,54 @@ export interface KrProject {
   tasks_total?: number;
   tasks_done?: number;
 }
+
+export interface ZoneTelemetry {
+  status: 'nominal' | 'degraded' | 'critical';
+  status_label: string;
+  radiation_c: number | null;
+  radiation_display: string;
+  anomalies_count: number;
+  anomalies: { key: string; label: string; state: ChainState }[];
+  network_pct: number;
+  network_display: string;
+  chain_progress_pct: number;
+  chain_done: number;
+  chain_total: number;
+  has_page: boolean;
+  has_waterfall: boolean;
+  has_glb: boolean;
+}
+
+/** Полный снимок для дашборда: один опрос вместо шести запросов. */
+export interface Snapshot {
+  health: Health;
+  chain: Chain;
+  zone: ZoneTelemetry;
+  metrics: Metrics;
+  projects: { source: string; count: number; projects: KrProject[] };
+  specs: Record<string, { product: string; specs: { label: string; value: string }[] }>;
+  tests: TestResult | null;
+  jobs: { id: string; target: string; status: string; agent_id: string | null; exit_code: number | null; started_at: string }[];
+  updated: string;
+}
+
+export interface KrConfig {
+  dev_roles: { key: string; label: string; designation: string }[];
+  languages: string[];
+  frameworks: string[];
+  warehouse: { categories: string[]; manufacturers: string[]; mcus: string[] };
+  enums: Record<string, string[]>;
+  product_specs: Record<string, { product: string; specs: { label: string; value: string }[] }>;
+  aliases: Record<string, string>;
+}
+
+export const getSnapshot = () => req<Snapshot>('/api/snapshot');
+export const getZone = () => req<ZoneTelemetry>('/api/zone');
+export const getConfig = () => req<KrConfig>('/api/config');
+export const getSpecs = (code: string) =>
+  req<{ code: string; product: string; specs: { label: string; value: string }[] }>(
+    `/api/specs/${encodeURIComponent(code)}`,
+  );
 
 export const getChain = () => req<Chain>('/api/chain');
 

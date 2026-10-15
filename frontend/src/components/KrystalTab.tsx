@@ -347,7 +347,7 @@ python3 backend/agent_bridge.py --port 8787{'\n'}# затем:  make agent-api
               value={`${metrics.direction.theta_est_deg?.toFixed(0) ?? '—'}°`}
               sub={`±${metrics.direction.sigma_theta_deg?.toFixed(1) ?? '—'}° · FOV ±${metrics.direction.fov_deg?.toFixed(0) ?? '—'}°`} />
             <MetricCard icon={Cpu} title="Тепло Tj / MTBF"
-              value={`${metrics.thermal.tj_max_c?.toFixed(1) ?? '—'} °C`}
+              value={`${metrics.thermal.tj_c?.toFixed(1) ?? '—'} °C`}
               sub={`MTBF ${metrics.reliability.mtbf_h ? `${Math.round(metrics.reliability.mtbf_h).toLocaleString('ru-RU')} ч` : '—'}`} />
           </div>
 

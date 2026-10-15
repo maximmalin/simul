@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Radio, Activity, Radiation, AlertTriangle } from 'lucide-react';
 import { WeatherBar } from '@/components/WeatherBar';
+import { getZone, type ZoneTelemetry } from '@/lib/bridge';
 
 interface ZoneHeaderProps {
   agentCount: number;
@@ -18,6 +19,17 @@ function useClock() {
 }
 
 export function ZoneHeader({ agentCount, activeProjects, totalCycles }: ZoneHeaderProps) {
+  const [zone, setZone] = useState<ZoneTelemetry | null>(null);
+  // Телеметрия приходит с агентного моста вместо жёстко зашитых строк.
+  useEffect(() => {
+    let alive = true;
+    const load = () =>
+      getZone().then((z) => { if (alive) setZone(z); }).catch(() => {});
+    load();
+    const t = setInterval(load, 15_000);
+    return () => { alive = false; clearInterval(t); };
+  }, []);
+
   const time = useClock();
   const timeStr = time.toLocaleTimeString('en-GB', { hour12: false });
 
@@ -41,10 +53,11 @@ export function ZoneHeader({ agentCount, activeProjects, totalCycles }: ZoneHead
             <div className="flex gap-10 animate-ticker whitespace-nowrap font-mono text-[9px] tracking-widest text-zone-700 uppercase">
               {Array.from({ length: 2 }).map((_, i) => (
                 <span key={i} className="flex gap-10">
-                  <span>Zone Status: Nominal</span>
-                  <span>Radiation: 3.4 R/h</span>
-                  <span>Anomalies: 2 Detected</span>
-                  <span>Network: 97.3%</span>
+                  <span>Build: {zone?.status_label ?? '—'}</span>
+                  <span>Tj: {zone?.radiation_display ?? '—'}</span>
+                  <span>Stages: {zone?.anomalies_count ?? 0} pending</span>
+                  <span>Tests: {zone?.network_display ?? '—'}</span>
+                  <span>Chain: {zone?.chain_done ?? 0}/{zone?.chain_total ?? 0}</span>
                   <span>Cycles: {totalCycles.toLocaleString()}</span>
                   <span>Agents Deployed: {agentCount}</span>
                   <span>Active Projects: {activeProjects}</span>

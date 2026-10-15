@@ -207,40 +207,105 @@ class DetectedSignal:
 
 
 def numpy_detect(p_image: np.ndarray, grid: int = 16,
-                 n_classes: int = N_CLASSES) -> Tuple[List[DetectedSignal], float]:
-    """Детектор на основе частотных пиков (fallback, без TF).
+                 n_classes: int = N_CLASSES,
+                 n_max: int = 6) -> Tuple[List[DetectedSignal], float]:
+    """Детектор сигналов по спектрограмме — запасной путь без TensorFlow.
 
-    Ищет top-N пиков в интегрированном по частотам спектрограмме,
-    фильтрует по порогу и возвращает боксы YOLO.
+    ЧТО ДЕЛАЕТ НАДЁЖНО: **локализацию**. Находит активные интервалы по
+    времени, в каждом — полосу по частоте, и возвращает корректные рамки
+    YOLO в нормализованных координатах [0, 1].
+
+    ЧТО ДЕЛАЕТ ПРИБЛИЗИТЕЛЬНО: поле `cls`. Классификация модуляции по
+    спектральной ширине — эвристика; на зашумлённых сценах (SNR < 25 дБ)
+    она регулярно ошибается. Достоверный класс модуляции даёт только
+    обученная сеть (`ml/train.py` + `model.build_yolo_model`), см. REQ-ANA-03.
+    Не полагайтесь на `cls` из этого пути в критичных применениях.
+
+    p_image — (H, W) в диапазоне [0, 1]: строки = частота (снизу вверх),
+    столбцы = время. Амплитуда — нормированная яркость.
     """
     img = np.asarray(p_image, dtype=np.float64)
-    # интегрируем по осям
-    integ = np.mean(img, axis=0)  # shape (W,)
-    # пики выше 20-percentile
-    thr = np.percentile(integ, 20)
-    peak_idx = np.where(integ > thr)[0]
-    if len(peak_idx) == 0:
+    if img.ndim != 2:
+        raise ValueError("ожидается (H, W)")
+    h, w = img.shape
+    if h == 0 or w == 0:
         return [], 0.0
 
+    # 1) порог относительно максимума: шумовой фон не должен считаться
+    #    сигналом. Абсолютный порог не годится — фон зависит от SNR.
+    peak_img = float(img.max())
+    if peak_img <= 0.0:
+        return [], 0.0
+
+    # Скользящее среднее 1×3 по частоте: подавляет изолированные
+    # шумовые пики, не размывая сигнал (он шире одного бина).
+    sm = img.copy()
+    sm[1:-1, :] = (img[:-2, :] + img[1:-1, :] + img[2:, :]) / 3.0
+    peak_s = float(sm.max())
+    thr = max(0.55 * peak_s, float(np.percentile(sm, 80.0)))
+    mask = sm >= thr
+
+    # 2) активные столбцы времени: не меньше 2 бинов по частоте
+    col_energy = mask.sum(axis=0)
+    if col_energy.max() < 2:
+        return [], peak_img
+    col_thr = max(2.0, 0.30 * float(col_energy.max()))
+    active = np.flatnonzero(col_energy >= col_thr)
+    if active.size == 0:
+        return [], peak_img
+
+    # 3) группируем соседние столбцы в один burst
+    groups, current = [], [active[0]]
+    for c in active[1:]:
+        if c - current[-1] <= max(2, w // 64):
+            current.append(c)
+        else:
+            groups.append(current)
+            current = [c]
+    groups.append(current)
+
+    # 4) по каждой группе — пик по частоте
     detected: List[DetectedSignal] = []
-    for idx in peak_idx[:6]:  # ограничение 6 сигналов
-        # найдем область вокруг пика
-        win = max(1, idx - 2, idx + 3)
-        win_idx = peak_idx[max(0, min(len(peak_idx) - 1, win))]
-        # грубая оценка cx,cy,w,h
-        cx = (win_idx / grid)  # нормализованная позиция по времени
-        # предполагаем w ~ 0.05 (короткий сигнал)
-        w = 0.05
-        # частота по средней интенсивности
-        freq_band = img[:, idx:min(idx + 10, img.shape[1])].mean()
-        cy = 1.0 - freq_band  # если низкая частота = нижний спектр
+    for g in groups[:n_max]:
+        c0, c1 = int(g[0]), int(g[-1])
+        seg = mask[:, c0:c1 + 1]
+        rows = np.flatnonzero(seg.any(axis=1))
+        if rows.size == 0:
+            continue
+        strength = seg.sum(axis=1).astype(np.float64)
+        total = max(1.0, float(strength.sum()))
+        p_r = strength / total
+
+        # Эффективная ширина спектра: 1/sum(p^2) в бинах.
+        # Один тон -> ~1 бин; АМ с боковыми -> несколько; шум -> вся полоса.
+        eff_bins = float(1.0 / max(1e-9, float(np.sum(p_r ** 2))))
+        n_bins = rows.size
+
+        # Отношение пика к сумме по полосе: у тона ≈1, у шума ≈1/n
+        peak_ratio = float(strength.max() / total * n_bins)
+
+        if n_bins > 0.45 * h or (n_bins > 8 and peak_ratio < 1.8):
+            cls = "noise"
+        elif eff_bins <= 2.0:
+            cls = "cw"
+        elif eff_bins <= 8.0:
+            cls = "am"
+        else:
+            cls = "fm"
+
+        r0, r1 = int(rows.min()), int(rows.max())
         detected.append(DetectedSignal(
-            cls="cw", cx=float(cx), cy=float(cy), w=float(w), h=float(w), conf=1.0
+            cls=cls,
+            cx=(c0 + c1 + 1) / 2.0 / w,
+            # строка 0 — низкая частота, а YOLO считает cy сверху вниз
+            cy=1.0 - (r0 + r1 + 1) / 2.0 / h,
+            w=max((c1 - c0 + 1) / w, 1.5 / w),
+            h=max((r1 - r0 + 1) / h, 1.5 / h),
+            conf=float(np.clip(strength.max() / max(1.0, float(mask.sum())), 0.0, 1.0)),
         ))
-    return detected, float(np.max(integ))
 
+    return detected, float(img.max())
 
-# ---------- high-level API ----------
 
 def detect_from_png(path: str | Path,
                     model: Optional["tf.keras.Model"] = None,

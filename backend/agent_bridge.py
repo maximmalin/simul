@@ -366,6 +366,83 @@ def _runtime_context() -> str:
     return rt._project_context() if rt else ""
 
 
+def _cfg():
+    """krconfig — словари предметной области для интерфейса."""
+    try:
+        import krconfig
+        return krconfig.config_payload()
+    except Exception:                                           # noqa: BLE001
+        return {"error": "krconfig unavailable"}
+
+
+def _zone(health: dict) -> dict:
+    import krconfig
+    return krconfig.zone_telemetry(health, chain_status(), _last_tests(),
+                                   collect_metrics())
+
+
+def _spec_for(code: str):
+    import krconfig
+    return krconfig.product_specs_for(code)
+
+
+#: Кэш последнего прогона тестов — чтобы /api/zone не запускал pytest
+#: на каждом опросе фронтенда (иначе дашборд грузит CPU).
+_TESTS_CACHE: dict = {"at": 0.0, "data": None}
+_TESTS_TTL = 300.0      # секунд
+
+
+def _last_tests(force: bool = False) -> dict | None:
+    global _TESTS_CACHE
+    now = time.monotonic()
+    if (not force and _TESTS_CACHE["data"] is not None
+            and now - _TESTS_CACHE["at"] < _TESTS_TTL):
+        return _TESTS_CACHE["data"]
+    data = run_tests()
+    _TESTS_CACHE = {"at": now, "data": data}
+    return data
+
+
+def _snapshot() -> dict:
+    """Всё для дашборда одним ответом (для polling вместо 6 fetch'ей)."""
+    o = out_dir()
+    health = {
+        "ok": True, "root": str(ROOT), "time": _now(),
+        "artifacts": len(list_artifacts()),
+        "has_page": (o / "krystal-radio.html").exists(),
+        "has_waterfall": (o / "waterfall.png").exists(),
+        "has_glb": (o / "board.glb").exists(),
+        "jobs": len(JOBS),
+    }
+    chain = chain_status()
+    tests = _last_tests()
+    metrics = collect_metrics()
+    projs = projects_list()
+
+    specs = {}
+    for p in projs.get("projects", []):
+        s = _spec_for(p.get("code", ""))
+        if s:
+            specs[p["code"]] = s
+
+    return {
+        "health": health,
+        "chain": chain,
+        "zone": __import__("krconfig").zone_telemetry(health, chain, tests, metrics),
+        "metrics": metrics,
+        "projects": projs,
+        "specs": specs,
+        "tests": tests,
+        "jobs": [{"id": j.id, "target": j.target, "status": j.status,
+                  "agent_id": j.agent_id, "exit_code": j.exit_code,
+                  "started_at": j.started_at}
+                 for j in sorted(JOBS.values(),
+                                 key=lambda x: x.started_at,
+                                 reverse=True)[:10]],
+        "updated": _now(),
+    }
+
+
 def _runtime_ask(prompt: str) -> dict:
     rt = _rt()
     if not rt:
@@ -495,6 +572,15 @@ def collect_metrics() -> dict:
     th_fem = load_json(o / "thermal_fem.json")
     rel = load_json(o / "reliability.json")
     spec = load_json(o / "virtual_rx_spectrum.json")
+    encl = load_json(o / "enclosure.json")
+
+    # thermal_fast.json имеет вложенность {"board":…, "ngspice":…, "fast":{…}}
+    fast = th_fast.get("fast", th_fast)
+    devices = fast.get("devices", [])
+    tj_now = max((d.get("tj_c", 0.0) for d in devices), default=None)
+    tj_limit = min((d.get("tj_max_c", 1e9) for d in devices), default=None)
+    fem = th_fem.get("fem", th_fem)
+    tmax = fem.get("tmax_c") or fem.get("tmax")
 
     channels = [
         {
@@ -526,10 +612,18 @@ def collect_metrics() -> dict:
             "backend": df.get("backend"),
         },
         "thermal": {
-            "tj_max_c": th_fast.get("tj_max_c") or th_fast.get("Tj_max"),
-            "tmax_fem_c": th_fem.get("tmax_c") or th_fem.get("Tmax"),
-            "raw_fast": th_fast,
-            "raw_fem": th_fem,
+            "tj_c": tj_now,
+            "tj_limit_c": tj_limit,
+            "tmax_fem_c": tmax,
+            "devices": [
+                {"ref": d.get("ref"), "p_w": d.get("p_w"),
+                 "tj_c": d.get("tj_c"), "tj_max_c": d.get("tj_max_c"),
+                 "margin_c": d.get("margin_c"), "pass": d.get("pass_")
+                 or d.get("pass")}
+                for d in devices
+            ],
+            "enclosure": encl.get("shielding") if encl else None,
+            "case_volume_cm3": encl.get("volume_cm3") if encl else None,
         },
         "reliability": {
             "mtbf_h": rel.get("system", {}).get("mtbf_h") or rel.get("MTBF_h"),
@@ -781,11 +875,35 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/chain":
             return self._json(chain_status())
 
+        if path == "/api/config":
+            return self._json(_cfg())
+
+        if path == "/api/zone":
+            o = out_dir()
+            h = {"has_page": (o / "krystal-radio.html").exists(),
+                 "has_waterfall": (o / "waterfall.png").exists(),
+                 "has_glb": (o / "board.glb").exists()}
+            return self._json(_zone(h))
+
+        if path == "/api/snapshot":
+            # Один запрос вместо нескольких: фронтенд опрашивает это
+            # вместо цепочки fetch'ей, поэтому здесь всё, что нужно
+            # дашборду верхнего уровня.
+            return self._json(_snapshot())
+
+        if path.startswith("/api/specs/"):
+            code = path[len("/api/specs/"):]
+            spec = _spec_for(code)
+            if spec is None:
+                return self._json({"error": "unknown project code",
+                                   "code": code}, 404)
+            return self._json({"code": code, **spec})
+
         if path == "/api/projects":
             return self._json(projects_list())
 
         if path == "/api/tests":
-            return self._json(run_tests())
+            return self._json(_last_tests(force=True))
 
         if path.startswith("/api/build/"):
             jid = path[len("/api/build/"):]

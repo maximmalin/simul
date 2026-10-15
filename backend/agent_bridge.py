@@ -283,6 +283,14 @@ def project_create(payload: dict) -> dict:
     items = load_projects()
     if any(p.get("code") == code for p in items):
         return {"error": f"project code already exists: {code}"}
+    # начало нового проекта: очищаем песочницы, чтобы старые заказы
+    # не накапливались и не путали изоляцию
+    try:
+        import shutil
+        shutil.rmtree(ROOT / "work" / "orders", ignore_errors=True)
+        (ROOT / "work" / "orders").mkdir(parents=True, exist_ok=True)
+    except Exception:                                       # noqa: BLE001
+        pass
     proj = {
         "id": uuid.uuid4().hex[:12],
         "code": code,

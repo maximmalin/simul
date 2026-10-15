@@ -16,6 +16,7 @@ interface LocalOrder {
   status: string;
   intent?: string;
   progress?: number;
+  archive?: string;
   steps?: { id: string; target: string; title: string; agent_id?: string; status?: string; exit_code?: number | null; log_tail?: string[] }[];
 }
 
@@ -61,11 +62,25 @@ export function ProjectsTab({
   const [newTaskAgent, setNewTaskAgent] = useState<string>('');
   const [localOrders, setLocalOrders] = useState<LocalOrder[]>([]);
   const [bridgeArtifacts, setBridgeArtifacts] = useState<BridgeArtifact[]>([]);
+  const [orderArchives, setOrderArchives] = useState<Record<string, BridgeArtifact[]>>({});
 
   useEffect(() => {
     fetch(`${BASE}/api/orders`)
       .then((r) => r.json())
-      .then((d) => setLocalOrders(Array.isArray(d?.orders) ? d.orders : []))
+      .then((d) => {
+        const list = Array.isArray(d?.orders) ? d.orders : [];
+        setLocalOrders(list);
+        for (const o of list) {
+          if (o?.archive) {
+            fetch(`${BASE}/api/artifact/${o.archive}/manifest.json`)
+              .then((r) => r.json())
+              .then((m) => {
+                if (m?.files) setOrderArchives((prev) => ({ ...prev, [o.id]: m.files }));
+              })
+              .catch(() => {});
+          }
+        }
+      })
       .catch(() => setLocalOrders([]));
     fetch(`${BASE}/api/artifacts`)
       .then((r) => r.json())
@@ -134,7 +149,29 @@ export function ProjectsTab({
                   ))}
                 </div>
               )}
-              {bridgeArtifacts.length > 0 && (
+              {orderArchives[o.id] && orderArchives[o.id].length > 0 && (
+                <div className="mb-2 rounded border border-zone-300 bg-white p-2">
+                  <div className="font-mono text-[9px] uppercase text-zone-600 mb-1">Архив агентов · {o.id}</div>
+                  <div className="flex flex-wrap gap-2">
+                    {orderArchives[o.id].map((a) => (
+                      a.ext === '.svg' || a.ext === '.png' ? (
+                        <a key={a.url} href={`${BASE}${a.url}`} target="_blank" rel="noreferrer" className="block rounded border border-zone-300 bg-zone-50 p-1">
+                          <img src={`${BASE}${a.url}`} alt={a.name} className="h-16 w-auto" />
+                        </a>
+                      ) : a.ext === '.glb' ? (
+                        <a key={a.url} href={`${BASE}${a.url}`} target="_blank" rel="noreferrer" className="px-3 py-2 rounded border border-blood-500 bg-blood-50 text-blood-600 text-xs font-mono">
+                          ▶ 3D модель · {a.name}
+                        </a>
+                      ) : (
+                        <a key={a.url} href={`${BASE}${a.url}`} target="_blank" rel="noreferrer" className="px-2 py-1 rounded border border-zone-300 text-[10px] text-zone-600 hover:text-zone-900 hover:border-blood-500">
+                          {a.name} ({a.size_h})
+                        </a>
+                      )
+                    ))}
+                  </div>
+                </div>
+              )}
+                            {bridgeArtifacts.length > 0 && (
                 <>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
                     {bridgeArtifacts.map((a) => (

@@ -20,6 +20,9 @@
 from __future__ import annotations
 
 import os
+import re
+from pathlib import Path
+import shutil
 import threading
 import time
 import traceback
@@ -106,6 +109,7 @@ def _order_view(o: dict) -> dict:
         "sandbox": o.get("sandbox"),
         "sandboxed": bool(o.get("sandbox")),
         "integrity": o.get("integrity"),
+        "archive": o.get("archive"),
     }
 
 
@@ -169,6 +173,66 @@ def submit(text: str, root: str = ".", profile: str = "",
 
     threading.Thread(target=_run, args=(order["id"], proj), daemon=True).start()
     return _order_view(order)
+
+
+
+def _archive_order_outputs(order_id: str, proj: Any, order: dict) -> None:
+    """Сложить результат заказа в отдельную папку по проекту/заказу.
+
+    Архивация нужна, чтобы каждый публичный заказ формировал свой комплект
+    выходных (чертижи, 3D-модели, Gerber и т. д.), а не делил с остальными
+    каталог `out/`. Ошибки архивации не отменяют успешный заказ, но
+    пишутся в журнал.
+    """
+    root = Path(proj.root)
+    slug = re.sub(r"[^\w.-]+", "-", str(proj.name or "").lower()).strip("-") or "project"
+    archive_root = root / "out" / "archive" / slug
+    target = archive_root / order_id
+    src = root / "out"
+    try:
+        if target.exists():
+            shutil.rmtree(target)
+        target.mkdir(parents=True, exist_ok=True)
+        for item in src.iterdir():
+            if item.name == "archive":
+                continue
+            dst = target / item.name
+            if item.is_dir():
+                shutil.copytree(item, dst, dirs_exist_ok=True)
+            elif item.is_file():
+                shutil.copy2(item, dst)
+        # список файлов для фронтенда
+        entries = []
+        for f in sorted(target.rglob("*")):
+            if not f.is_file():
+                continue
+            rel = f.relative_to(target).as_posix()
+            try:
+                size = f.stat().st_size
+            except OSError:
+                size = 0
+            def _human(n: int) -> str:
+                for unit in ("B", "KB", "MB"):
+                    if n < 1024:
+                        return f"{n} {unit}"
+                    n //= 1024
+                return f"{n} GB"
+            entries.append({
+                "name": f.name, "path": rel, "size": size,
+                "size_h": _human(size), "ext": f.suffix.lower(),
+                "url": f"/api/artifact/out/archive/{slug}/{order_id}/{rel}",
+            })
+        manifest = {
+            "order_id": order_id, "project": proj.name, "count": len(entries),
+            "files": entries,
+        }
+        (target / "manifest.json").write_text(
+            json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
+        order["archive"] = f"out/archive/{slug}/{order_id}"
+        order["logs"].append(
+            f"архив артефактов: {len(entries)} файлов → out/archive/{slug}/{order_id}")
+    except Exception as exc:                                    # noqa: BLE001
+        order["logs"].append(f"архив не создан: {exc}")
 
 
 def _run(order_id: str, proj: Project) -> None:
@@ -292,6 +356,11 @@ def _run(order_id: str, proj: Project) -> None:
         except Exception as exc:                                # noqa: BLE001
             order["logs"].append(f"артефакты не перенесены: {exc}")
 
+    if order["status"] in ("done", "partial"):
+        try:
+            _archive_order_outputs(order_id, proj, order)
+        except Exception as exc:                            # noqa: BLE001
+            order["logs"].append(f"архив не создан: {exc}")
 
 def cancel(order_id: str) -> bool:
     """Пометить заказ отменённым.

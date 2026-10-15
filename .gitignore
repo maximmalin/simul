@@ -51,6 +51,15 @@ hardware/tscircuit/viewer/dist/
 out/virtual_rx_iq.c64
 out/df_array.out
 
+# локальное состояние агентного моста (проекты создаются из UI)
+.krystal/
+
+# frontend: node_modules и сборка
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.local
+
 # SKiDL / openEMS scratch output
 sdr_skidl_circuit*.net
 sdr_skidl_circuit_sklib.py

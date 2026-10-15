@@ -61,6 +61,7 @@ DOC        := technical_task
         gnuradio gnuradio-gui \
         link-budget direction \
         reliability thermal \
+        agents agent-api agent-web frontend \
         test test-all \
         clean distclean
 
@@ -144,6 +145,24 @@ viewer: ## bundle the offline three.js model viewer (rollup)
 page: publish board-svg drawings viewer gnuradio link-budget direction ## 3D + drawings + waterfall + дальность/пеленгация на одной странице
 	$(PYTHON) tools/build_page.py --out $(OUT)/krystal-radio.html
 	@echo "report page: $(OUT)/krystal-radio.html"
+
+# ===========================================================================
+#  Agent bridge — HTTP-мост между LLM-агентами и веб-интерфейсом
+#  (frontend/ = EngineeringTeam). Фронтенд говорит с проектом только через
+#  этот мост: /api/chain (цепочка сборки), /api/projects, /api/metrics,
+#  /api/agents, POST /api/agent/run, POST /api/ask.
+# ===========================================================================
+BRIDGE_PORT ?= 8787
+
+agents: ## список локальных агентов (AGENT_PROMPTS.md + AGENT_ENCLOSURE.md)
+	$(PYTHON) backend/agent_runtime.py --list
+
+agent-api: ## запустить агентный мост (по умолчанию :8787)
+	@echo "agent bridge: http://127.0.0.1:$(BRIDGE_PORT)"
+	$(PYTHON) backend/agent_bridge.py --port $(BRIDGE_PORT)
+
+frontend: ## Vite dev-сервер интерфейса (проксирует /api на мост)
+	cd frontend && npm run dev
 
 # ===========================================================================
 #  Дальность приёма и пеленгация (link budget + direction finding)

@@ -1,0 +1,2 @@
+[functions.process-chat]
+verify_jwt = false

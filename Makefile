@@ -195,6 +195,22 @@ agents-ask: ## разобрать заказ в цели, ничего не за
 agents-run: ## выполнить заказ через граф (TEXT="...")
 	PYTHONPATH=$(BACKEND) $(VENV_PY) -m agents run --root . "$(TEXT)"
 
+# --- репозиторий без веб-интерфейса ---------------------------------------
+# Создание, публикация и удаление репозитория на Forgejo из терминала.
+# Учётные данные берутся из ~/.git-credentials — отдельный токен не нужен:
+# Forgejo принимает пароль по HTTP Basic и для git, и для API.
+REPO_NAME ?= $(shell basename $(CURDIR))
+REPO_DESC ?=
+
+repo-init: ## создать репозиторий на Forgejo и запушить (REPO_NAME=..., REPO_DESC=...)
+	./scripts/repo.sh init $(REPO_NAME) "$(REPO_DESC)"
+
+repo-list: ## какие репозитории есть на сервере
+	./scripts/repo.sh list
+
+repo-push: ## отправить текущую ветку на forgejo
+	./scripts/repo.sh push forgejo
+
 frontend: ## Vite dev-сервер интерфейса (проксирует /api на мост)
 	cd frontend && npm run dev
 

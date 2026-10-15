@@ -260,6 +260,79 @@ def provider_key(pk: str) -> str:
 
 
 # ==========================================================================
+#  Ключи, уже имеющиеся на машине
+# ==========================================================================
+#  Если Nous Portal уже авторизован через Hermes, отдельный ключ
+#  заводить не нужно: он лежит в ~/.hermes/auth.json. Движок подхватывает
+#  его сам — требовать от пользователя дублировать учётные данные было бы
+#  лишним. Явно заданная переменная окружения всегда важнее.
+# ==========================================================================
+HERMES_AUTH = Path(os.environ.get(
+    "KR_HERMES_AUTH", Path.home() / ".hermes" / "auth.json"))
+
+_CRED_CACHE: dict[str, str] = {}
+
+
+def _hermes_credential() -> str:
+    """Токен Nous Portal из локального входа Hermes.
+
+    В файле два токена: access_token и agent_key. Оба короткоживущие
+    (порядка часа), поэтому результат кэшируется на время жизни процесса,
+    а перед использованием проверяется срок — иначе запрос уйдёт с
+    заведомо мёртвым токеном и молча уйдёт в паузу.
+    """
+    if not HERMES_AUTH.is_file():
+        return ""
+    cached = _CRED_CACHE.get("nous")
+    if cached:
+        return cached
+    try:
+        data = json.loads(HERMES_AUTH.read_text(encoding="utf-8"))
+        nous = data.get("providers", {}).get("nous", {})
+    except (OSError, ValueError):
+        return ""
+
+    # agent_key живёт дольше access_token, берём его первым
+    for field in ("agent_key", "access_token"):
+        tok = nous.get(field)
+        exp = nous.get(f"{field}_expires_at") or nous.get("expires_at")
+        if not tok:
+            continue
+        if exp and _expired(exp):
+            continue
+        _CRED_CACHE["nous"] = tok
+        return tok
+    # срок неизвестен или истёк — отдаём как есть: лучше 401, чем «нет ключа»
+    tok = nous.get("agent_key") or nous.get("access_token") or ""
+    if tok:
+        _CRED_CACHE["nous"] = tok
+    return tok
+
+
+def _expired(stamp: str) -> bool:
+    """Истёк ли срок в ISO-строке."""
+    try:
+        from datetime import datetime, timezone
+        t = datetime.fromisoformat(str(stamp).replace("Z", "+00:00"))
+        if t.tzinfo is None:
+            t = t.replace(tzinfo=timezone.utc)
+        return (t - datetime.now(timezone.utc)).total_seconds() <= 0
+    except (ValueError, TypeError):
+        return False
+
+
+def credential_source(pk: str) -> str:
+    """Откуда взят ключ провайдера — для честного отчёта о настройках."""
+    if provider_key(pk):
+        return f"{PROVIDERS[pk].key_env} (переменная окружения)"
+    if pk == "nous":
+        if HERMES_AUTH.is_file():
+            return f"{HERMES_AUTH} (вход Hermes, найден автоматически)"
+        return "не задан — войдите через Hermes или задайте NOUS_PORTAL_API_KEY"
+    return "не задан"
+
+
+# ==========================================================================
 #  Конфигурация (с учётом переопределений переменных)
 # ==========================================================================
 def _env(name: str, default: str = "") -> str:
@@ -301,9 +374,15 @@ def routes() -> list[tuple[str, str]]:
 
     out: list[tuple[str, str]] = []
 
-    main_pk = _env("KR_LLM_PROVIDER", "ollama")
+    # Дефолт — бесплатная модель в облаке. Раньше стоял ollama с
+    # несуществующей 7B, из-за чего первый же заказ уходил в паузу.
+    # Nous Portal даёт рабочие вызовы инструментов бесплатно, а локальный
+    # сервер остаётся откатом, если сеть недоступна.
+    default_pk = "nous" if _hermes_credential() else "ollama"
+    main_pk = _env("KR_LLM_PROVIDER", default_pk)
     main_model = _env("KR_LLM_MODEL") or PROVIDERS.get(
-        main_pk, PROVIDERS["ollama"]).default_model
+        main_pk, PROVIDERS[main_pk] if main_pk in PROVIDERS
+        else PROVIDERS["ollama"]).default_model
     out.append((main_pk, _resolve_model(main_pk, main_model)))
 
     fast_pk = _env("KR_LLM_FAST_PROVIDER")
@@ -358,8 +437,13 @@ def enabled() -> bool:
     """Включён ли LLM и есть ли хоть один пригодный маршрут."""
     if not ENABLED:
         return False
-    return any(provider_key(pk) or not PROVIDERS[pk].key_required
-               for pk, _ in routes())
+    for pk, _m in routes():
+        if provider_key(pk) or not PROVIDERS[pk].key_required:
+            return True
+        # Nous Portal: вход через Hermes тоже считается ключом
+        if pk == "nous" and _hermes_credential():
+            return True
+    return False
 
 
 # ==========================================================================
@@ -421,7 +505,7 @@ def _headers(pk: str) -> dict:
     всегда, и локальные серверы отвечали 401 — с Ollama не работало.
     """
     h = {"Content-Type": "application/json"}
-    key = provider_key(pk)
+    key = provider_key(pk) or (_hermes_credential() if pk == "nous" else "")
     if key:
         h["Authorization"] = f"Bearer {key}"
     return h
@@ -432,7 +516,8 @@ def probe(pk: str, timeout: float = 4.0) -> tuple[bool, str]:
     p = PROVIDERS.get(pk)
     if not p:
         return False, f"неизвестный провайдер «{pk}»"
-    if p.key_required and not provider_key(pk):
+    if p.key_required and not (provider_key(pk)
+                               or (pk == "nous" and _hermes_credential())):
         return False, f"нет ключа ({p.key_env})"
     try:
         req = urllib.request.Request(p.base.rstrip("/") + "/models",
@@ -491,12 +576,13 @@ def chat(messages: list[dict], *, tools: list[dict] | None = None,
     for pk, model in chain:
         if pk not in PROVIDERS:
             continue
+        if PROVIDERS[pk].key_required and not (
+                provider_key(pk) or (pk == "nous" and _hermes_credential())):
+            errors.append(f"{pk}: нет ключа")
+            continue
         if _is_dead(pk):
             errors.append(f"{pk}: {_DEAD_REASON.get(pk, 'недоступен')} "
                           f"(пауза {_COOLDOWN_S}s)")
-            continue
-        if PROVIDERS[pk].key_required and not provider_key(pk):
-            errors.append(f"{pk}: нет ключа")
             continue
 
         payload: dict = {
@@ -605,12 +691,13 @@ def complete(user: str, context: str = "", *, fast: bool = False,
     for pk, model in chain:
         if pk not in PROVIDERS:
             continue
+        if PROVIDERS[pk].key_required and not (
+                provider_key(pk) or (pk == "nous" and _hermes_credential())):
+            errors.append(f"{pk}: нет ключа")
+            continue
         if _is_dead(pk):
             errors.append(f"{pk}: {_DEAD_REASON.get(pk, 'недоступен')} "
                           f"(пауза {_COOLDOWN_S}s)")
-            continue
-        if PROVIDERS[pk].key_required and not provider_key(pk):
-            errors.append(f"{pk}: нет ключа")
             continue
         msgs = [{"role": "system", "content": system or _DEFAULT_SYSTEM}]
         if context:
@@ -745,7 +832,8 @@ def status(probe_live: bool = False) -> dict:
               "title": PROVIDERS[pk].title if pk in PROVIDERS else pk,
               "base": PROVIDERS[pk].base if pk in PROVIDERS else "",
               "local": pk in LOCAL_KEYS,
-              "key_set": bool(provider_key(pk)),
+              "key_set": bool(provider_key(pk) or _hermes_credential()),
+              "key_source": credential_source(pk),
               "cooldown": _is_dead(pk),
               "cooldown_reason": _DEAD_REASON.get(pk),
               "last_ok": _LAST_OK.get(pk),
@@ -827,11 +915,11 @@ def main() -> int:
         p = PROVIDERS.get(pk)
         kind = "локальный" if (pk in LOCAL_KEYS or pk.startswith("local:")) \
             else "облако"
-        key = "ключ есть" if provider_key(pk) else (
-            "ключ не нужен" if kind == "локальный" else "КЛЮЧА НЕТ")
         mark = "основной" if i == 0 else f"откат {i}"
+        src = credential_source(pk)
         print(f"    {i}. {mark:9s} {pk:12s} [{kind}] {model}")
-        print(f"       {p.title if p else pk} · {p.base if p else ''} · {key}")
+        print(f"       {p.title if p else pk} · {p.base if p else ''}")
+        print(f"       ключ: {src}")
         if args.probe:
             ok, note = probe(pk)
             print(f"       {'ЖИВ' if ok else 'НЕ ОТВЕЧАЕТ'}: {note}")
@@ -842,8 +930,11 @@ def main() -> int:
               "сводки структурные.")
         print("       Включить: KR_LLM_ENABLED=1 и KR_LLM_PROVIDER "
               "с ключом, либо поднимите локальный сервер.")
+    else:
+        src = credential_source(routes()[0][0])
+        print(f"\n  Ключ основного маршрута: {src}")
 
-    if not provider_key("nous"):
+    if not (provider_key("nous") or _hermes_credential()):
         print("\n  Бесплатное облако без карты — Nous Portal:")
         print("    1. зарегистрироваться на portal.nousresearch.com")
         print("    2. создать ключ в разделе API keys")

@@ -86,3 +86,9 @@ hardware/enclosure/*.FCStd1
 # Служебное: pid-файлы, логи и база чекпоинтов графа
 .run/
 backend/.run/
+
+# Результат ngspice из экспорта. Файл на 76 МБ, генерируется заново
+# при каждом запуске export_ngspice.py / build_fmu.py. В git попал
+# по ошибке и раздувал репозиторий.
+/sim/netlists/sdr_trace.dat
+/sdr_trace.dat

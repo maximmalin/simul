@@ -1,6 +1,6 @@
 {
   "project": "kristall-radio",
-  "generated_utc": "2026-10-13T21:00:46+00:00",
+  "generated_utc": "2026-10-15T12:57:33+00:00",
   "purpose": "Zero-IF SDR direct-conversion receiver with STM32 Blue Pill; code-generated hardware with ngspice/FMI co-simulation",
   "source_of_truth": "sim/scripts/sdr_skidl_circuit.py",
   "map": "AGENT_MAP.md",
@@ -76,7 +76,7 @@
       "role": "FreeCAD / CAD geometry",
       "kind": "source",
       "exists": true,
-      "size": "1.7 MB"
+      "size": "1.6 MB"
     },
     "sim/octave": {
       "role": "Octave formula checks",
@@ -106,13 +106,13 @@
       "role": "Hardware pipeline orchestrator",
       "kind": "source",
       "exists": true,
-      "size": "13.1 MB"
+      "size": "13.6 MB"
     },
     "hardware/kicad": {
       "role": "KiCad schematic generator and symbol/S-expression library",
       "kind": "source",
       "exists": true,
-      "size": "0.3 MB"
+      "size": "0.7 MB"
     },
     "hardware/tscircuit": {
       "role": "PCB emitter, 3D models, part selection, viewer",
@@ -136,7 +136,7 @@
       "role": "Requirement-matrix and stress tests",
       "kind": "source",
       "exists": true,
-      "size": "0.4 MB"
+      "size": "0.5 MB"
     },
     "requirements": {
       "role": "Requirement matrix and per-block requirements",
@@ -174,12 +174,6 @@
       "exists": true,
       "size": "0"
     },
-    "local_footprints": {
-      "role": "KiCad footprint libraries",
-      "kind": "data",
-      "exists": true,
-      "size": "91.0 MB"
-    },
     "out": {
       "role": "Generated board artifacts (Gerbers/BOM/GLB/STEP)",
       "kind": "derived",
@@ -190,7 +184,7 @@
       "role": "npm dependencies",
       "kind": "derived",
       "exists": true,
-      "size": "601.4 MB"
+      "size": "575.6 MB"
     }
   },
   "automation": {
@@ -386,7 +380,10 @@
     },
     "node": {
       "dependencies": {
-        "kicad": "^4.0.0"
+        "kicad-component-converter": "^0.1.41",
+        "kicad-to-circuit-json": "^0.0.129",
+        "kicadts": "^0.0.58",
+        "tscircuit": "^0.0.2744"
       }
     },
     "external_data": {

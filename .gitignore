@@ -77,3 +77,8 @@ sim/logs/
 # FreeCAD: временные файлы восстановления
 hardware/enclosure/*.FCBak
 hardware/enclosure/*.FCStd1
+
+# Сторонний shallow-клон https://github.com/KiCad/kicad-footprints.
+# В сборке не используется (нет fp-lib-table, платы генерирует tscircuit),
+# ранее попал в индекс как gitlink и в клоне давал пустой каталог.
+/local_footprints/

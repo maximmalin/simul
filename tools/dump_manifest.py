@@ -57,7 +57,6 @@ LAYOUT: dict[str, tuple[str, str]] = {
     "references": ("Formulas and sources", "source"),
     "config": ("Module parameters", "source"),
     "docs": ("Documentation (currently empty; see AGENT_MAP.md)", "source"),
-    "local_footprints": ("KiCad footprint libraries", "data"),
     "out": ("Generated board artifacts (Gerbers/BOM/GLB/STEP)", "derived"),
     "node_modules": ("npm dependencies", "derived"),
 }

@@ -439,7 +439,7 @@ external/binary.
 | `tools/` | source | Spec (`spec.py`, `blocks.py`), manifest/init tooling |
 | `tests/` | source | Requirement-matrix + stress tests |
 | `requirements/`, `plan/`, `work/`, `tz/`, `references/`, `config/`, `issues/` | source | Requirements, plan, TZ, formulas, parameters |
-| `local_footprints/` | data | KiCad footprint libraries |
+| `local_footprints/` | external | Опциональный клон [KiCad/kicad-footprints](https://github.com/KiCad/kicad-footprints) для ручной правки плат в KiCad. Не входит в репозиторий и не нужен для сборки: плату генерирует tscircuit, футпринты берутся из resolved-таблицы деталей. |
 | `out/` | derived | Generated board artifacts (gerbers/BOM/GLB/STEP) |
 | `node_modules/`, `.venv/` | derived | Dependency installs |
 | `.forgejo/` | source | CI workflow definitions |

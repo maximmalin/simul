@@ -1,0 +1,3 @@
+[submodule "frontend/vendor/gnuradio-world"]
+	path = frontend/vendor/gnuradio-world
+	url = https://github.com/777arc/gnuradio-world.git

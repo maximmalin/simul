@@ -108,6 +108,9 @@ class _Ctx(threading.local):
     project: Project | None = None
     #: рабочий каталог заказа (песочница). None — работаем в корне.
     workdir: str | None = None
+    #: активный заказ интерфейса для «живых» публикаций
+    order: Any = None
+    active_state: Any = None
 
 
 _CTX = _Ctx()
@@ -135,6 +138,37 @@ def set_workdir(path: str | Path | None) -> None:
 
 def current_workdir() -> str | None:
     return _CTX.workdir
+
+
+def set_order(order: Any = None) -> None:
+    _CTX.order = order
+
+
+def set_active_state(state: Any = None) -> None:
+    _CTX.active_state = state
+
+
+def _publish(state: Any = None) -> None:
+    st = state if state is not None else _CTX.active_state
+    order = _CTX.order
+    if st is None or order is None:
+        return
+    try:
+        order.update({
+            "status": st.get("status", order.get("status", "running")),
+            "intent": st.get("intent", order.get("intent", "")),
+            "planner": st.get("planner", order.get("planner", "")),
+            "progress": st.get("progress", 0) or 0,
+            "verdict": st.get("verdict", order.get("verdict", "")),
+            "question": st.get("question", order.get("question", "")),
+            "note": st.get("note", order.get("note", "")),
+            "steps": [dict(x) if not hasattr(x, "as_dict") else x.as_dict()
+                      for x in st.get("steps", [])],
+            "report": st.get("report", order.get("report", "")),
+            "logs": list(st.get("log", order.get("logs", []))),
+        })
+    except Exception:                                # noqa: BLE001
+        return
 
 
 # ==========================================================================
@@ -242,6 +276,8 @@ def _set_plan(state: GraphState, targets: list[str], intent: str,
     state["planner"] = "llm"
     state["progress"] = progress_of(state["steps"])
     state["log"] = state.get("log", []) + [f"план от модели: {targets}"]
+    set_active_state(state)
+    _publish(state)
 
 
 def _run_single(state: GraphState, proj: Project, name: str) -> dict:
@@ -254,8 +290,12 @@ def _run_single(state: GraphState, proj: Project, name: str) -> dict:
                      agent=proj.agent_owner.get(name, "agent.build")).as_dict()
         steps.append(found)
         state["steps"] = steps
+    set_active_state(state)
     res = _execute_one(proj, found)
     steps[steps.index(found)] = res
+    state["steps"] = steps
+    state["progress"] = progress_of(steps)
+    _publish(state)
     state["steps"] = steps
     state["progress"] = progress_of(steps)
     return res
@@ -301,13 +341,49 @@ def _execute_one(proj: Project, s: dict) -> dict:
              attempt=s.get("attempt", 0) + 1)
     if cwd != Path(proj.root):
         s["sandbox"] = str(cwd)
+    st = _CTX.active_state
+    if st is not None:
+        for x in st.get("steps", []):
+            if (x.get("id") == s.get("id") or x.get("target") == s.get("target")):
+                x.update(s)
+        st["progress"] = progress_of(st.get("steps", []))
+    _publish(st)
+
+    last = [0.0]
+    def _on_line(line: str) -> None:
+        buf = s.setdefault("log_tail", [])
+        buf.append(line)
+        if len(buf) > 120:
+            del buf[:60]
+        if _CTX.active_state is not None:
+            _state = _CTX.active_state
+            for x in _state.get("steps", []):
+                if (x.get("id") == s.get("id")
+                        or x.get("target") == s.get("target")):
+                    x["log_tail"] = list(buf)
+                    x["status"] = "running"
+            _state["progress"] = progress_of(_state.get("steps", []))
+        now = __import__("time").monotonic()
+        if now - last[0] > 0.8:
+            last[0] = now
+            _publish(_CTX.active_state)
+
     rc, out, dur = R.run(cwd, cmd, timeout=STEP_TIMEOUT,
-                         jobs=MAX_PARALLEL)
+                         jobs=MAX_PARALLEL, on_line=_on_line)
     s.update(status="done" if rc == 0 else "failed", exit_code=rc,
-             duration_s=round(dur, 2), finished_at=now_iso(), log=out[-80:])
+             duration_s=round(dur, 2), finished_at=now_iso(),
+             log=out[-80:], log_tail=list(out[-80:]))
     if rc != 0:
         tail = [ln for ln in out[-6:] if ln.strip()]
         s["error"] = "; ".join(tail)[:400] or f"код возврата {rc}"
+    st = _CTX.active_state
+    if st is not None:
+        for x in st.get("steps", []):
+            if (x.get("id") == s.get("id")
+                    or x.get("target") == s.get("target")):
+                x.update(s)
+        st["progress"] = progress_of(st.get("steps", []))
+    _publish(st)
     return s
 
 
@@ -651,6 +727,7 @@ def run(text: str, proj: Project, order_id: str | None = None,
     set_project(proj)
     state = new_state(text, order_id, proj.name)
     state["durable"] = durable
+    set_active_state(state)
     cfg = {"configurable": {"thread_id": resume or state["order_id"]}}
     try:
         final = app.invoke(state, cfg)
@@ -692,6 +769,7 @@ def run_plain(text: str, proj: Project, order_id: str | None = None) -> dict:
     set_project(proj)
     state = new_state(text, order_id, proj.name)
     state["mode"] = "plain"
+    set_active_state(state)
     for name in ("plan_rules", "execute_rules", "review", "report"):
         state = REGISTRY[name].run(dict(state))
     return dict(state)

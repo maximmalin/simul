@@ -247,6 +247,13 @@ def _run(order_id: str, proj: Project) -> None:
         return
     order["status"] = "running"
 
+    try:
+        from agents import engine as _eng
+        _eng.set_order(order)
+        _eng.set_active_state(None)
+    except Exception:                                    # noqa: BLE001
+        pass
+
     # До создания песочницы гарантируем, что проект не висит залоченным
     # (например, после падения предыдущего заказа) — иначе cp -a упрётся
     # в каталоги без права записи.
@@ -314,6 +321,11 @@ def _run(order_id: str, proj: Project) -> None:
         return
     finally:
         engine.set_workdir(None)
+        try:
+            engine.set_order(None)
+            engine.set_active_state(None)
+        except Exception:                                # noqa: BLE001
+            pass
         if locked:
             # артефакты забираются позже, поэтому здесь только права
             sandbox.unlock(proj.root)

@@ -234,7 +234,7 @@ def make_bindings(project: Project, run_one: Callable[[str], dict],
         # здесь только фиксируем намерение
         return f"__ASK_HUMAN__{question}"
 
-    return {
+    all_bindings = {
         "list_targets": list_targets,
         "describe_target": describe_target,
         "submit_plan": submit_plan,
@@ -242,6 +242,11 @@ def make_bindings(project: Project, run_one: Callable[[str], dict],
         "read_artifacts": read_artifacts,
         "ask_human": ask_human,
     }
+    # Уровень ограничивает не только показ схем, но и вызов: скрытый
+    # инструмент недоступен даже если модель назвала его напрямую.
+    # Иначе «компактный» набор был бы украшением.
+    keep = tier_names(tier)
+    return {k: v for k, v in all_bindings.items() if k in keep}
 
 
 def _minimise(targets: list[str], project: Project) -> list[str]:

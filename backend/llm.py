@@ -219,8 +219,10 @@ def _guess_provider(port: int) -> str:
 # ==========================================================================
 PRESETS: dict[str, dict[str, str]] = {
     # --- локально ---
-    "hermes": {"provider": "llamacpp", "model": "hermes3-8b",
-               "hint": "Nous Hermes 3 Llama 3.1 8B — нужна видеокарта или много RAM"},
+    # Hermes намеренно нет в списке. Документация Nous Research прямо
+    # предупреждает: семейство Hermes 4 «настроено под чат и рассуждения,
+    # а не под быстрый цикл вызова инструментов, на который агент опирается».
+    # Для агентного цикла Hermes — худший выбор из открытых.
     "qwen": {"provider": "ollama", "model": "qwen2.5:3b-instruct",
              "hint": "Qwen2.5 3B — быстрый вариант для CPU без видеокарты"},
     "llama": {"provider": "ollama", "model": "llama3.1:8b",

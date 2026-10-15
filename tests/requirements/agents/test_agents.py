@@ -518,18 +518,40 @@ class TestTools:
         }, "tl2")
         proj = profile.load(root)
         ran: list[str] = []
+        # полный набор: эти тесты проверяют поведение инструментов,
+        # а не уровни (для уровней есть отдельный тест)
         bindings = tools.make_bindings(
             proj,
             run_one=lambda n: (ran.append(n),
                                {"status": "done", "exit_code": 0,
-                                "duration_s": 0.1, "log": ["ok"]})[1])
+                                "duration_s": 0.1, "log": ["ok"]})[1],
+            tier="full")
         return proj, bindings, ran
 
     def test_all_tools_have_schemas(self, ctx):
-        proj, bindings, _ = ctx
-        schemas = tools.tool_schemas(proj)
-        names = {s["function"]["name"] for s in schemas}
-        assert names == set(bindings)
+        """Схемы и привязки должны предлагать один и тот же набор."""
+        proj, _b, _r = ctx
+        bindings = tools.make_bindings(
+            proj, run_one=lambda n: {}, tier="full")
+        schemas = tools.tool_schemas(proj, tier="full")
+        assert {s["function"]["name"] for s in schemas} == set(bindings)
+
+    def test_tier_limits_visible_tools(self, ctx):
+        """Слабой модели нельзя показывать все инструменты сразу.
+
+        Заимствовано у WebBrain: компактный уровень оставляет три
+        инструмента, которых хватает для большинства заказов.
+        """
+        proj, _b, _r = ctx
+        compact = {s["function"]["name"]
+                   for s in tools.tool_schemas(proj, tier="compact")}
+        full = {s["function"]["name"]
+                for s in tools.tool_schemas(proj, tier="full")}
+        assert len(compact) < len(full)
+        assert "run_target" in compact, "даже компактный набор умеет собирать"
+        # привязки урезаются тем же уровнем: вызвать скрытое нельзя
+        tight = tools.make_bindings(proj, run_one=lambda n: {}, tier="compact")
+        assert set(tight) == compact
 
     def test_schemas_have_required_fields(self, ctx):
         proj, _b, _r = ctx

@@ -480,6 +480,21 @@ export function OrderTab() {
                   {artifacts.length} файлов — отчёт, 3D-модель, PCB, чертежи
                 </span>
               </div>
+              {/* Мини-превью (3D/SVG) */}
+              <div className="flex flex-wrap gap-2 mb-3">
+                {artifacts.map((a) => (
+                  a.ext === '.svg' || a.ext === '.png' || a.ext === '.jpg' ? (
+                    <div key={`preview-${a.url}`} className="rounded border border-zone-300 bg-white overflow-hidden shadow-sm">
+                      <img src={`${BASE}${a.url}`} alt={a.name} className="h-24 w-auto object-contain" />
+                    </div>
+                  ) : a.ext === '.glb' ? (
+                    <a key={`preview-${a.url}`} href={`${BASE}${a.url}`} target="_blank" rel="noreferrer" className="px-3 py-2 rounded border border-blood-500 bg-blood-50 text-blood-600 text-xs font-mono flex items-center gap-2">
+                      <Download className="w-3 h-3" /> открыть 3D {a.name}
+                    </a>
+                  ) : null
+                )).filter(Boolean)}
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 {artifacts.map((a) => (
                   <a

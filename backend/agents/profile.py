@@ -69,6 +69,7 @@ def load(root: str | Path, name: str = "", profile: str = "",
         system=data.get("system", ""),
         verify=data.get("verify", ""),
         agent_owner=dict(data.get("agent_owner", {})),
+        agents=list(data.get("agents", []) or []),
     )
 
     _load_targets(proj, root, data)

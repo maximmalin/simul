@@ -143,6 +143,12 @@ class Project:
 
     agent_owner: dict[str, str] = field(default_factory=dict)
 
+    #: агенты бюро, объявленные в описании проекта.
+    #: Каждый вносит id (задан бюро), name, goal, role и либо цель
+    #: make (target), либо список файлов. Любой, кто пробует превратить
+    #: описание в промпты, должен сначала прочитать отсюда имена.
+    agents: list[dict] = field(default_factory=list)
+
     def target(self, name: str) -> Target | None:
         return next((t for t in self.targets if t.name == name), None)
 

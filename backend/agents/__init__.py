@@ -97,11 +97,15 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(
         prog="python3 -m agents",
         description="Агентно-функциональный граф: заказ → цели → сборка → отчёт")
-    ap.add_argument("command", choices=("check", "run", "ask", "graph", "runners"))
+    ap.add_argument("command", choices=("check", "run", "ask", "graph", "runners",
+                         "prompts"))
     ap.add_argument("args", nargs="*")
     ap.add_argument("--root", default=".", help="корень проекта")
     ap.add_argument("--profile", default="", help="файл описания проекта")
     ap.add_argument("--json", action="store_true")
+    ap.add_argument("--write", default="", help="записать в файл")
+    ap.add_argument("--check", action="store_true",
+            help="проверить расхождения с проектом")
     opts = ap.parse_args(argv)
 
     if opts.command == "runners":
@@ -145,6 +149,26 @@ def main(argv: list[str] | None = None) -> int:
                    if t.name not in {x.name for x in proj.buildable()}]
         if skipped:
             print(f"\nслужебные (в планы не попадают): {', '.join(skipped)}")
+        return 0
+
+    if opts.command == "prompts":
+        from . import prompts as P
+        ps = P.generate(proj)
+        if opts.check:
+            problems = P.verify(proj, ps)
+            if problems:
+                for pr in problems:
+                    print("ПРОБЛЕМА:", pr)
+                return 1
+            print(f"OK: {len(ps)} промптов, расхождений нет")
+            return 0
+        md = P.to_markdown(proj, ps)
+        if opts.write:
+            import pathlib as _p
+            _p.Path(opts.write).write_text(md, encoding="utf-8")
+            print(f"записано: {opts.write} ({len(ps)} промптов)")
+        else:
+            print(md)
         return 0
 
     if not opts.args:

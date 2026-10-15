@@ -180,3 +180,180 @@ agent_owner:
   reliability: agent.reliability
   enclosure: agent.mechanical
   all: agent.build
+
+# ---------------------------------------------------------------------------
+# Агенты бюро.
+#
+# Идентификаторы заданы бюро и интерфейсом: их показывает
+# /api/agents, по ним пишутся отчёты и переписка. Поэтому
+# переименовывать их нельзя, а выдумывать новые — тем более.
+#
+# Здесь у агента указана цель make, за которую он отвечает.
+# Команда и файлы при этом собираются заново из описания
+# проекта: пути в старом AGENT_PROMPTS.md были абсолютными и
+# устаревали.
+#
+# Без привязки к цели агент остаётся в бюро (его видно в
+# интерфейсе), но в графе заказов не участвует.
+# ---------------------------------------------------------------------------
+agents:
+  - id: AGENT-MK-01
+    name: "Запустить `make all` и проверить RC=0"
+    goal: "Убедиться, что все этапы (netlist, pcb, drawings, gnuradio, page, tests) проходят без ошибок."
+    command: "`cd /mnt/ext4data/kristall-radio && make all 2>&1 | tail -5`"
+    target: all
+    role: agent.report
+
+  - id: AGENT-MK-02
+    name: "Проверить, что `make page` генерирует HTML с SVG-рисунками"
+    goal: "Подтвердить, что страница одной страницы (3D + GOST + waterfall) собирается корректно."
+    command: "`cd /mnt/ext4data/kristall-radio && python3 tools/build_page.py --out out/krystal-radio.html && grep -c 'data:image/svg+xml;base64' out/krystal-radio.html`"
+    target: page
+    role: agent.report
+
+  - id: AGENT-MK-03
+    name: "Обновить `link_budget_section()` в `tools/build_page.py`"
+    goal: "Убедиться, что раздел link budget на странице содержит таблицу каналов A/B/C с дальностью и примечанием о шумовой дорожке."
+    command: "`cd /mnt/ext4data/kristall-radio && python3 -c \"import tools.build_page as bp; print(bp.link_budget_section({'channels':[{'title':'zмейка 200 МГц','f_mhz':200,'g_rx_dbi':-3,'range_free_space_m':9821000,'range_realistic_m':982100,'noise_floor_pass':True,'mds_pass':True,'eirp_dbm':30}]}, {'eirp_dbm':30,'bw_hz':2700,'nf_db':3.5}))\" | grep -c 'Дальность'`"
+    files: ["tools/build_page.py` (функция `link_budget_section`)"]
+    role: agent.report
+
+  - id: AGENT-TST-01
+    name: "Запуститьpytest tests/requirements и убедиться, что все 169 тестов проходят"
+    goal: "Подтвердить, что все суеты (EMC, reception, reliability, thermal, netlist, pin-contract) зеленые."
+    command: "`cd /mnt/ext4data/kristall-radio && timeout 900 pytest tests/requirements -q`"
+    target: test
+    role: agent.verify
+
+  - id: AGENT-TST-02
+    name: "Добавить новые тесты в `tests/requirements/report/`"
+    goal: "Добавить проверки наличия разделов «дальность приёма» и «пеленгация» на HTML-странице."
+    command: "`cd /mnt/ext4data/kristall-radio && python3 -c \" from tests.requirements.report.test_report_page import * import re html = open('out/krystal-radio.html').read() test_page_has_reception_distance(html) test_page_has_direction_finding(html) print('reception+direction tests pass') \"`"
+    files: ["tests/requirements/report/test_report_page.py"]
+    role: agent.verify
+
+  - id: AGENT-GNUR-01
+    name: "Сгенерировать водопад (waterfall.png) и спектр (virtual_rx_spectrum.json)"
+    goal: "Убедиться, что `make gnuradio` запускает GNU Radio co-simulation и сохраняет PNG + JSON."
+    command: "`cd /mnt/ext4data/kristall-radio && python3 src/gnuradio_krystal/krystal_virtual_rx.py --out out --nsamples 262144`"
+    target: gnuradio
+    role: agent.rf
+
+  - id: AGENT-TH-01
+    name: "Запустить `make thermal` и проверить `out/thermal_{fast,fem}.json`"
+    goal: "Подтвердить, что Tj ≤ 85 °C (консервативно) и FEM-модель даёт Tmax ≤ 35 °C."
+    command: "`cd /mnt/ext4data/kristall-radio && make thermal && cat out/thermal_fast.json | python3 -c 'import json,sys; d=json.load(sys.stdin); print(\\\"Tj_max\\\",d.get(\\\"Tj_max\\\"))'`"
+    target: thermal
+    role: agent.thermal
+
+  - id: AGENT-RL-01
+    name: "Запустить `make reliability` и проверить `out/reliability.json` (MTBF ≥ 10 000 ч)"
+    goal: "Подтвердить Octave parts-count + Arrhenius расчёт."
+    command: "`cd /mnt/ext4data/kristall-radio && make reliability && cat out/reliability.json | python3 -c 'import json,sys; d=json.load(sys.stdin); print(\\\"MTBF ч\\\", d.get(\\\"MTBF_h\\\"))'`"
+    target: reliability
+    role: agent.reliability
+
+  - id: AGENT-DF-01
+    name: "Запустить `make direction` и проверить `out/direction_finding.{json,svg}`"
+    goal: "Подтвердить, что phase interferometer считает θ̂ и рисует диаграмму."
+    command: "`cd /mnt/ext4data/kristall-radio && make direction`"
+    target: link-budget
+    role: agent.rf
+
+  - id: AGENT-DF-02
+    name: "Экспорт `.nec` для AntennaSim и проверка import"
+    goal: "Убедиться, что `out/df_array.nec` валиден и можно отправить на AntennaSim API."
+    command: "`cd /mnt/ext4data/kristall-radio && python3 -c \"open('out/df_array.nec').read(); print('NEC deck valid')\"`"
+    target: drawings
+    role: agent.rf
+
+  - id: AGENT-ML-01
+    name: "Сгенерировать синтетический датасет YOLO"
+    goal: "Создать `ml_data/` с images/labels train/val и `data.yaml`, `scenes.json`."
+    command: "`cd /mnt/ext4data/kristall-radio && python3 -c \"from ml.dataset import generate_dataset; ds=generate_dataset('ml_data', n_train=16, n_val=4, seed=2025); print('DS root:', ds['root'])\"`"
+    files: ["ml/dataset.py", "ml/scene.py", "ml/detector.py"]
+    role: agent.ml
+
+  - id: AGENT-ML-02
+    name: "Обучить компактную YOLO-сеть и сохранить артефакты"
+    goal: "Вызвать `ml.train.train()` → получить `model.json` + `model_weights.h5` и mAP@0.5."
+    command: "`cd /mnt/ext4data/kristall-radio && python3 -c \"from ml.train import train; r=train(epochs=6); print('mAP05:', r['mAP05']); print('model:', r['model_path'])\"`"
+    files: ["ml/train.py", "model.json", "model_weights.h5"]
+    role: agent.ml
+
+  - id: AGENT-ML-03
+    name: "Инференс: дан PNG-спектрограмма, вывести список детектированных сигналов"
+    goal: "Получить список {cls, cx, cy, w, h} для входного изображения."
+    command: "`cd /mnt/ext4data/kristall-radio && python3 -c \" from ml.detector import detect_from_png, build_yolo_model model = build_yolo_model(); detected, peak = detect_from_png('ml_data/images/train/00000.png', model) print('detected:', [d.cls for d in detected]); print('peak:', peak) \"`"
+    files: ["ml/detector.py", "detect_from_png()"]
+    role: agent.ml
+
+  - id: AGENT-DOC-01
+    name: "Обновить `README.md` с новыми make-целями (link-budget, direction, EMC, reception)"
+    goal: "Пользователь видит полный список доступных целей make."
+    command: "`cd /mnt/ext4data/kristall-radio && grep -A2 '--- Reception' README.md | head -6`"
+    files: ["README.md"]
+    role: agent.report
+
+  - id: AGENT-DOC-02
+    name: "Обновить `AGENT_MAP.md` с новыми командами агентов"
+    goal: "Новые агенты видят, какие цели доступны."
+    command: "`cd /mnt/ext4data/kristall-radio && grep -A3 '--- Reception' AGENT_MAP.md | head -6`"
+    files: ["AGENT_MAP.md"]
+    role: agent.report
+
+  - id: AGENT-DOC-03
+    name: "Добавить записи в `tests/requirements/checklist.csv` (EMC REQ-21..25 + reception + direction)"
+    goal: "Чеклист отражает выполнение всех требований."
+    command: "`cd /mnt/ext4data/kristall-radio && head -5 tests/requirements/checklist.csv && wc -l tests/requirements/checklist.csv`"
+    files: ["tests/requirements/checklist.csv"]
+    role: agent.report
+
+  - id: AGENT-KICAD-01
+    name: "Сгенерировать полную принципиальную схему KiCad одним листом"
+    goal: "Проверить, что `generate_brig_receiver.py` produces a valid `.kicad_sch` with empty Errors/Violations via `kicad-cli sch check`."
+    command: "`cd /mnt/ext4data/kristall-radio && .venv/bin/python3 hardware/kicad/generate_brig_receiver.py && kicad-cli sch check hardware/kicad/brig_receiver.kicad_sch 2>&1 | tail -5`"
+    files: ["hardware/kicad/generate_brig_receiver.py", "hardware/kicad/kicad_lib_brig.py", "hardware/kicad/kicad_lib.py"]
+    role: agent.pcb
+
+  - id: AGENT-KICAD-02
+    name: "Собрать PCB и экспортировать gerbers/3D через tscircuit + kicad-cli"
+    goal: "Убедиться, что `make pcb` → `out/board.kicad_pcb` и `kicad-cli pcb export gerbers` генерирует полный набор."
+    command: "`cd /mnt/ext4data/kristall-radio && make pcb 2>&1 | tail -5 && ls -la out/board.kicad_pcb out/gerbers.zip`"
+    target: pcb
+    role: agent.pcb
+
+  - id: AGENT-KICAD-03
+    name: "Проверить электрическую связность (netlist) схемы"
+    goal: "Сравнить сгенерированный netlist и tscircuit-экспортированный, убедиться в отсутствии расхождений."
+    command: "`cd /mnt/ext4data/kristall-radio && diff <(.venv/bin/python3 hardware/kicad/generate_brig_receiver.py 2>/dev/null || true) <cat hardware/tscircuit/out/circuit.json 2>/dev/null | head -20 || echo \"compare manually\"`"
+    files: ["hardware/kicad/sdr_receiver.kicad_sch", "hardware/tscircuit/out/circuit.json"]
+    role: agent.pcb
+
+  - id: AGENT-KICAD-04
+    name: "Создать TZ-документацию (техническое задание) по антенной системе"
+    goal: "Написать/обновить `requirements/antenna/REQ-ANT-*.md` и `hardware/antenna/` набор задач на проектирование 3-х антенных каналов (змейка 0-0.9 ГГц, патч 1.2-3 ГГц, матрица 4×4 4-7 ГГц)."
+    command: "`cd /mnt/ext4data/kristall-radio && ls hardware/antenna/band_*/task.md && head -10 hardware/antenna/band_a/task.md`"
+    files: ["requirements/antenna/REQ-ANT-*.md", "hardware/antenna/band_a/task.md", "hardware/antenna/band_b/task.md", "hardware/antenna/band_c/task.md"]
+    role: agent.pcb
+
+  - id: AGENT-GIT-01
+    name: "Подготовить коммит: пронуmeros все изменённые файлы, проверить `git status`"
+    goal: "Убедиться, что нет незакомitted изменений перед пушем."
+    command: "`cd /mnt/ext4data/kristall-radio && git status --short | wc -l`"
+    files: ["git status", ".gitignore"]
+    role: agent.release
+
+  - id: AGENT-GIT-02
+    name: "Сделать `git commit -am \"finish krystal-radio ...` и `git push origin main`"
+    goal: "Опубликовать финальный проект."
+    command: "`cd /mnt/ext4data/kristall-radio && git add -A && git commit -m \"krystal-radio: finish SDR, YOLO ML, EMC, direction, page\" && git push origin main`"
+    files: ["—", "репозиторий `origin/main"]
+    role: agent.release
+
+  - id: AGENT-ENC-01
+    name: "Проектирование aluminum корпуса с учетом требований EMC (REQ-21..25, REQ-26, REQ-27)"
+    goal: "Создать 3D-модель корпуса в FreeCAD, соответствующую всем электромагнитным, тепловым и безопасностным требованиям, с готовой файловой структурой для производства."
+    target: enclosure
+    role: agent.mechanical
+

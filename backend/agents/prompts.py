@@ -113,28 +113,85 @@ def _command_for(target: Target, proj: Project) -> str:
 #  Генерация
 # ==========================================================================
 def _slug(name: str) -> str:
-    """Имя цели -> часть идентификатора.
+    """Имя -> часть идентификатора.
 
-    Идентификатор строится из имени цели, а не из счётчика: нумерация
+    Идентификатор строится из имени, а не из счётчика: нумерация
     счётчиком сдвигалась бы при любой перестановке целей, и ссылки на
     агента в отчётах и переписке становились бы неверными.
+
+    Латиница и цифры оставляются как есть, кириллица транслитерируется.
+    Без этого все агенты-артефакты получали одно и то же имя: из
+    «дальность приёма» после вычистки не оставалось ничего.
     """
-    out = re.sub(r"[^A-Za-z0-9]+", "-", name).strip("-").upper()
-    return out[:24] or "TASK"
+    table = {
+        "а": "a", "б": "b", "в": "v", "г": "g", "д": "d", "е": "e",
+        "ё": "e", "ж": "zh", "з": "z", "и": "i", "й": "y", "к": "k",
+        "л": "l", "м": "m", "н": "n", "о": "o", "п": "p", "р": "r",
+        "с": "s", "т": "t", "у": "u", "ф": "f", "х": "h", "ц": "ts",
+        "ч": "ch", "ш": "sh", "щ": "sch", "ъ": "", "ы": "y", "ь": "",
+        "э": "e", "ю": "yu", "я": "ya",
+    }
+    out = []
+    for ch in name.lower():
+        if ch.isascii() and (ch.isalnum() or ch in "-_."):
+            out.append(ch)
+        elif ch in table:
+            out.append(table[ch])
+        elif ch in " -_./":
+            out.append("-")
+    slug = re.sub(r"-{2,}", "-", "".join(out)).strip("-").upper()
+    return slug[:28] or "TASK"
 
 
-def _agent_id(kind: str, name: str) -> str:
-    return f"AGENT-{PREFIX.get(kind, 'GEN')}-{_slug(name)}"
+def _agent_id(kind: str, name: str, fallback: str = "") -> str:
+    """Идентификатор агента.
+
+    Строится из читаемой части; если она вырождается (glob-шаблон вроде
+    `out/*.json` не даёт букв), берётся короткий хеш исходного имени —
+    чтобы два разных правила артефактов не получили один идентификатор.
+    """
+    slug = _slug(name)
+    if slug in ("", "TASK", "-"):
+        import hashlib
+        digest = hashlib.sha1(
+            (name or fallback).encode("utf-8")).hexdigest()[:6].upper()
+        slug = f"PAT{digest}"
+    return f"AGENT-{PREFIX.get(kind, 'GEN')}-{slug}"
 
 
 def generate(proj: Project) -> list[AgentPrompt]:
     """Полный набор агентов для проекта."""
     extra = _project_agents(proj)
+    declared_targets = {spec.get("target") for spec in extra if spec.get("target")}
+    # канонические id агентов из описания — их трогать нельзя
+    declared_ids = {spec.get("id") for spec in extra if spec.get("id")}
     prompts: list[AgentPrompt] = []
+
+    # 0. агенты, объявленные самим проектом (имена заданы интерфейсом)
+    for spec in extra:
+        t = proj.target(spec.get("target")) if spec.get("target") else None
+        files = list(spec.get("files", []))
+        cmd = spec.get("command") or ""
+        if (not files and t is not None):
+            files = _files_for(t, proj)
+        if (not cmd and t is not None):
+            cmd = _command_for(t, proj)
+        kind = spec.get("kind", "declared")
+        prompts.append(AgentPrompt(
+            id=spec.get("id") or _agent_id(kind, spec.get("name", "задача")),
+            name=spec.get("name", "задача проекта"),
+            goal=spec.get("goal", ""),
+            files=files,
+            command=cmd,
+            role=spec.get("role", "agent.build"),
+            kind=kind,
+        ))
 
     # 1. сборка: по одной на верхнеуровневую цель
     for t in proj.buildable():
         if not t.top_level:
+            continue
+        if t.name in declared_targets:
             continue
         role = _role_of(t)
         prompts.append(AgentPrompt(
@@ -150,6 +207,8 @@ def generate(proj: Project) -> list[AgentPrompt]:
     # 2. проверка: отдельная цель, если она есть
     for t in proj.buildable():
         if _role_of(t) != "verify":
+            continue
+        if t.name in declared_targets:
             continue
         prompts.append(AgentPrompt(
             id=_agent_id("verify", t.name),
@@ -169,7 +228,9 @@ def generate(proj: Project) -> list[AgentPrompt]:
         if not hits:
             continue
         prompts.append(AgentPrompt(
-            id=_agent_id("artifact", art.title),
+            # идентификатор — из читаемого заголовка; хеш от паттерна
+            # подстрахует, если заголовок пустой
+            id=_agent_id("artifact", art.title, art.pattern),
             name=f"Проверить результат: {art.title}",
             goal=(f"Убедиться, что {art.title} получен и содержит "
                   f"числовые значения. Файлы: {', '.join(hits[:4])}."),
@@ -179,18 +240,6 @@ def generate(proj: Project) -> list[AgentPrompt]:
             kind="artifact",
         ))
 
-    # 4. то, что описал сам проект и машина вывести не может
-    for spec in extra:
-        prompts.append(AgentPrompt(
-            id=spec.get("id") or _agent_id(spec.get("kind", "build"),
-                                            spec.get("name", "задача")),
-            name=spec.get("name", "задача проекта"),
-            goal=spec.get("goal", ""),
-            files=list(spec.get("files", [])),
-            command=spec.get("command", ""),
-            role=spec.get("role", "agent.build"),
-            kind=spec.get("kind", "build"),
-        ))
 
     return prompts
 
@@ -249,11 +298,15 @@ def _project_agents(proj: Project) -> list[dict]:
     `vocabulary` и `artifacts`: проект говорит на своём языке, движок
     не знает ни про что конкретное.
     """
-    from .profile import _read_profile
-    data = _read_profile(Path(proj.root))
-    agents = data.get("agents", [])
-    if isinstance(agents, dict):
-        agents = [{"name": k, **v} for k, v in agents.items()]
+    # сначала — то, что уже загружено в проект; если пусто — читаем
+    # описание напрямую, чтобы генератор работал и вне кэша
+    agents = list(getattr(proj, "agents", []) or [])
+    if not agents:
+        from .profile import _read_profile
+        data = _read_profile(Path(proj.root))
+        agents = data.get("agents", [])
+        if isinstance(agents, dict):
+            agents = [{"name": k, **v} for k, v in agents.items()]
     return [a for a in agents if isinstance(a, dict)]
 
 

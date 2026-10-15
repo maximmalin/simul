@@ -297,6 +297,124 @@ def verify_intact(before: dict[str, str],
 
 
 # ==========================================================================
+#  Блокировка проекта на время работы агентов
+# ==========================================================================
+#  Песочница изолирует по файлам, но пользователь просит более сильной
+#  гарантии: «основной проект только читаемый для агентов». Без прав
+#  root недоступны chattr +i и mount -o ro, поэтому остаётся POSIX.
+#
+#  Что делается: у всех файлов под git и у каталогов снимается право
+#  записи. После этого агент не может ни изменить исходник, ни создать
+#  новый файл рядом с ним — даже если он выйдет за пределы песочницы.
+#
+#  Восстановление обязано быть безусловным, поэтому состояние
+#  записывается в файл: если процесс упал и права не вернулись, их
+#  вернёт следующий запуск (см. `restore_if_locked`), а проект не
+#  останется в нечитаемом состоянии.
+# ==========================================================================
+#: каталоги, которые запирать нельзя: там пишут песочницы и журналы
+_LOCK_EXCLUDE = {"work", ".run", ".git", "node_modules", ".venv",
+                 "__pycache__", ".pytest_cache", "frontend"}
+
+LOCK_STATE = ".run/project-lock.json"
+
+
+def _lock_targets(project: Path) -> list[Path]:
+    """Что запираем: файлы под git плюс каталоги верхнего уровня.
+
+    Каталоги нужны, чтобы агент не мог создать новый файл там, где его
+    быть не должно: запрет на файл не мешает создать соседний.
+    """
+    import subprocess as sp
+
+    targets: list[Path] = []
+    try:
+        names = sp.run(["git", "ls-files"], cwd=project, capture_output=True,
+                       text=True, timeout=60).stdout.splitlines()
+    except (sp.SubprocessError, OSError):
+        names = []
+    for name in names:
+        p = project / name.strip()
+        if p.is_file() and not p.is_symlink():
+            targets.append(p)
+
+    for child in project.iterdir():
+        if child.is_dir() and child.name not in _LOCK_EXCLUDE:
+            targets.append(child)
+    return targets
+
+
+def lock(project: str | Path) -> dict:
+    """Снять право записи с проекта. Возвращает состояние для отката."""
+    project = Path(project).resolve()
+    state = LOCK_STATE
+    state_path = project / state
+
+    # незакрытый прошлый запуск — сначала доводим до конца
+    restore_if_locked(project)
+
+    targets = _lock_targets(project)
+    saved: list[dict] = []
+    for p in targets:
+        try:
+            mode = p.stat().st_mode
+            if mode & 0o222:
+                os.chmod(p, mode & ~0o222)
+                saved.append({"p": str(p.relative_to(project)),
+                              "mode": oct(mode)})
+        except OSError:
+            continue
+
+    state_path.parent.mkdir(parents=True, exist_ok=True)
+    import json
+    state_path.write_text(json.dumps(saved, ensure_ascii=False),
+                          encoding="utf-8")
+    print(f"[lock] {len(saved)} путей без права записи")
+    return {"locked": len(saved), "state": state}
+
+
+def unlock(project: str | Path) -> int:
+    """Вернуть права по сохранённому состоянию."""
+    project = Path(project).resolve()
+    state_path = project / LOCK_STATE
+    if not state_path.is_file():
+        return 0
+    import json
+    try:
+        saved = json.loads(state_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        state_path.unlink(missing_ok=True)
+        return 0
+
+    n = 0
+    for item in saved:
+        p = project / item["p"]
+        try:
+            if p.exists():
+                os.chmod(p, int(item["mode"], 8))
+                n += 1
+        except OSError:
+            continue
+    state_path.unlink(missing_ok=True)
+    if n:
+        print(f"[lock] права возвращены: {n} путей")
+    return n
+
+
+def restore_if_locked(project: str | Path) -> int:
+    """Открыть проект, если он остался закрытым после падения.
+
+    Вызывается лаунчером при старте: иначе проект, закрытый упавшим
+    заказом, остался бы нечитаемым до следующего успешного запуска.
+    """
+    return unlock(project)
+
+
+def is_locked(project: str | Path) -> bool:
+    return (Path(project).resolve() / LOCK_STATE).is_file()
+
+
+# ==========================================================================
 #  Уборка
 # ==========================================================================
 def list_sandboxes(project: str | Path) -> list[dict]:

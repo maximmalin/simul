@@ -183,6 +183,8 @@ llm-check: ## настройки LLM: выключатель, маршруты, 
 llm-off: ## подсказка: выключить LLM принудительно (KR_LLM_ENABLED=0)
 	@echo "export KR_LLM_ENABLED=0"
 
+agents-prompts: ## перегенерировать AGENT_PROMPTS.md из agents.project.yaml
+	PYTHONPATH=$(BACKEND) $(VENV_PY) -m agents prompts --root . --write AGENT_PROMPTS.md
 agents-check: ## что движок увидел в проекте: раннер, цели, артефакты
 	PYTHONPATH=$(BACKEND) $(VENV_PY) -m agents check --root .
 

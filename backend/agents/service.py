@@ -44,6 +44,16 @@ TAKE_ARTIFACTS = os.environ.get("KR_TAKE_ARTIFACTS", "1").strip().lower() not in
 #: сколько песочниц хранить, прежде чем убрать старые
 KEEP_SANDBOXES = int(os.environ.get("KR_KEEP_SANDBOXES", "10"))
 
+#: закрывать ли основной проект на запись на время заказа.
+#: Песочница изолирует по файлам; это — по правам: пока проект закрыт,
+#: агент не может изменить исходник даже извне своей пасочницы.
+LOCK_PROJECT = os.environ.get("KR_LOCK_PROJECT", "1").strip().lower() not in (
+    "0", "false", "no", "off")
+
+#: сверять ли хеши исходников до и после заказа
+CHECK_INTEGRITY = os.environ.get("KR_CHECK_INTEGRITY", "1").strip().lower() \
+    not in ("0", "false", "no", "off")
+
 #: заказы в памяти; сколько хранить
 ORDERS: dict[str, dict] = {}
 MAX_ORDERS = 60
@@ -91,6 +101,7 @@ def _order_view(o: dict) -> dict:
         "engine": "langgraph" if have_langgraph() else "plain",
         "sandbox": o.get("sandbox"),
         "sandboxed": bool(o.get("sandbox")),
+        "integrity": o.get("integrity"),
     }
 
 
@@ -181,7 +192,7 @@ def _run(order_id: str, proj: Project) -> None:
             # стирает опору.
             order["status"] = "failed"
             order["logs"] = (order.get("logs") or []) + [
-                f"песощница не создана: {exc}"]
+                f"песочница не создана: {exc}"]
             order["report"] = (
                 "Заказ остановлен: не удалось создать изолированную "
                 f"песочницу.\n\n{exc}\n\n"
@@ -196,6 +207,22 @@ def _run(order_id: str, proj: Project) -> None:
             order["finished_at"] = now_iso()
             return
 
+    # Песочница готова — запираем проект. Дальше агент не сможет
+    # изменить исходник, даже если выйдет за пределы своей папки.
+    before = (sandbox.source_manifest(proj.root)
+              if CHECK_INTEGRITY else {})
+
+    locked = False
+    if LOCK_PROJECT:
+        try:
+            sandbox.lock(proj.root)
+            locked = True
+            order["logs"] = (order.get("logs") or []) + [
+                "проект закрыт на запись до конца заказа"]
+        except Exception as exc:                                # noqa: BLE001
+            order["logs"] = (order.get("logs") or []) + [
+                f"проект не закрыт ({exc}) — защита ограничена песочницей"]
+
     engine.set_workdir(box)
     try:
         res = (engine.run(order["text"], proj, order_id) if have_langgraph()
@@ -206,9 +233,14 @@ def _run(order_id: str, proj: Project) -> None:
                            f"{traceback.format_exc()[-600:]}")
         order["finished_at"] = now_iso()
         engine.set_workdir(None)
+        if locked:
+            sandbox.unlock(proj.root)
         return
     finally:
         engine.set_workdir(None)
+        if locked:
+            # артефакты забираются позже, поэтому здесь только права
+            sandbox.unlock(proj.root)
 
     with _LOCK:
         order.update({
@@ -228,6 +260,25 @@ def _run(order_id: str, proj: Project) -> None:
     # Артефакты забираются наружу только при успехе: неудачный заказ
     # мог оставить в out/ обрывки, и молчаливый перенос испортил бы
     # отчётность предыдущих сборок.
+    # Сверка целостности. Запрет разрушающих целей и блокировка прав —
+    # меры предупреждающие; «даже случайно» ими не закрывается, поэтому
+    # расхождение обнаруживается здесь и попадает в отчёт.
+    if CHECK_INTEGRITY and before:
+        verdict = sandbox.verify_intact(before, proj.root)
+        order["integrity"] = verdict
+        if verdict["intact"]:
+            order["logs"].append("исходники не изменились")
+        else:
+            what = []
+            if verdict["changed"]:
+                what.append(f"изменено: {', '.join(verdict['changed'][:5])}")
+            if verdict["removed"]:
+                what.append(f"удалено: {', '.join(verdict['removed'][:5])}")
+            order["logs"].append("ВНИМАНИЕ: " + "; ".join(what))
+            order["report"] = ("\n\n!! ИСХОДНИКИ ПРОЕКТА ИЗМЕНЕНЫ !!\n"
+                               + "\n".join(what)
+                               + "\n\nПроверьте состояние репозитория.")
+
     if box and order["status"] in ("done", "partial") and TAKE_ARTIFACTS:
         try:
             brought = sandbox.collect_artifacts(order_id, proj.root)
@@ -416,6 +467,8 @@ def capabilities(root: str = ".", profile: str = "") -> dict:
         "llm": llm.status(),
         "sandbox": {
             "enabled": USE_SANDBOX,
+            "locked": LOCK_PROJECT,
+            "integrity_check": CHECK_INTEGRITY,
             "take_artifacts": TAKE_ARTIFACTS,
             "keep": KEEP_SANDBOXES,
             "root": str(Path(proj.root) / "work" / "orders"),

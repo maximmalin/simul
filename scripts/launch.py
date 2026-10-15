@@ -43,6 +43,16 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 FRONTEND = ROOT / "frontend"
 
+# Восстановление прав, если прошлый запуск (заказ) упал, не unlocking.
+try:
+    sys.path.insert(0, str(ROOT / "backend"))
+    from agents import sandbox as _sb  # type: ignore
+    _n = _sb.restore_if_locked(ROOT)
+    if _n:
+        print(f"[lock] восстановлено {_n} путей после сбоя", file=sys.stderr)
+except Exception as exc:  # noqa: BLE001
+    print(f"[lock] проверка пропущена: {exc}", file=sys.stderr)
+
 
 def _pick_python() -> str:
     """Интерпретатор для моста.

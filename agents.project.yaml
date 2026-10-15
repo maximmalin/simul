@@ -1,0 +1,182 @@
+# Описание проекта для агентно-функционального графа (backend/agents).
+#
+# Движок ничего не знает про Krystal Radio: он читает это описание и
+# работает с любым проектом, у которого есть такой же файл. Чтобы
+# подключить другое изделие, достаточно положить рядом свой файл —
+# правки в коде не нужны.
+#
+# Что здесь задаётся:
+#   * system      — что вообще делает проект (попадает в промпт модели)
+#   * vocabulary  — слова, которыми оператор описывает задачи, и цели,
+#                   которым они соответствуют. Это единственное место,
+#                   где живёт язык проекта: описания целей в Makefile
+#                   английские, а заказы приходят по-русски.
+#   * artifacts   — откуда брать факты для отчёта
+#   * agent_owner — какая агентная функция отвечает за цель
+#
+# Автоопределение без этого файла тоже работает: make/npm/just подхватятся
+# по файлам в корне. Файл нужен там, где автопределения не хватает — словарь,
+# система проекта и подсказка, куда смотреть за результатами.
+
+name: Krystal Radio
+description: >-
+  Zero-IF SDR — прямое преобразование (direct conversion) в диапазоне
+  0–7 ГГц на STM32F103C8T6. Приёмник: LNA 2N7002 → фильтр LPJ-1 →
+  смеситель LT5560 → I/Q УС (OPA2134) → АЦП STM32 → USB CDC.
+  Проект — печатная плата, GNU Radio ко-симуляция, расчёты тракта,
+  пеленгация, тепловой режим, надёжность, корпус и сводный отчёт.
+
+system: >-
+  Проект собирается через make. Один make-вызов верхнего уровня
+  подтягивает все зависимости сам, поэтому планировщику достаточно
+  называть верхние цели, а не каждую зависимость. Результаты
+  складываются в out/. Цели make, чьё имя оператор произносит
+  дословно, распознаются напрямую; остальное сопоставляется по
+  словарю vocabulary.
+
+verify: make test
+
+# ---------------------------------------------------------------------------
+# Служебные цели: серверы и висячие команды.
+# В планы они не попадают — сервер не завершится, а `help` ничего
+# не проверяет. По имени отличить их от обычной цели нельзя, поэтому
+# проект объявляет их сам.
+# ---------------------------------------------------------------------------
+service:
+  - run
+  - run-build
+  - frontend
+  - agent-api
+  - gnuradio-gui
+  - agents
+  - help
+  - distclean
+  - clean
+  - test-all
+
+# ---------------------------------------------------------------------------
+# Словарь: слово оператора -> цели
+# Порядок важен: при совпадении нескольких слов берётся первый блок.
+# ---------------------------------------------------------------------------
+vocabulary:
+  всё: [all]
+  все: [all]
+  целиком: [all]
+  полная-сборка: [all]
+  everything: [all]
+
+  страница: [page]
+  отчёт: [page]
+  отчет: [page]
+  отчёт-на-одной-странице: [page]
+  витрина: [page]
+  report: [page]
+
+  водопад: [gnuradio]
+  спектр: [gnuradio]
+  ко-симуляция: [gnuradio]
+  cosim: [gnuradio]
+  waterfall: [gnuradio]
+
+  дальность: [link-budget]
+  дистанция: [link-budget]
+  энергетика: [link-budget]
+  бюджет-линка: [link-budget]
+  link: [link-budget]
+
+  пеленг: [direction]
+  пеленгация: [direction]
+  направление: [direction]
+  bearing: [direction]
+  antennasim: [direction]
+
+  тепло: [thermal]
+  тепловой: [thermal]
+  нагрев: [thermal]
+  температура: [thermal]
+  перегрев: [thermal]
+
+  надёжность: [reliability]
+  надежность: [reliability]
+  mtbf: [reliability]
+  отказы: [reliability]
+  наработка: [reliability]
+
+  корпус: [enclosure]
+  кейс: [enclosure]
+  алюминий: [enclosure]
+
+  плата: [pcb, publish]
+  печатная-плата: [pcb, publish]
+  gerber: [pcb, publish]
+  гepбер: [pcb, publish]
+  разводка: [pcb, publish]
+
+  чертёж: [drawings]
+  чертеж: [drawings]
+  гост: [drawings]
+  dxf: [drawings]
+  эскиз-платы: [drawings]
+
+  трёхмерная-модель: [viewer]
+  3d: [viewer]
+  модель: [viewer]
+
+  документ: [docs]
+  тз: [docs]
+  pdf: [docs]
+  docx: [docs]
+
+  манифест: [manifest]
+  спецификация: [manifest]
+  bom: [manifest]
+
+  нетлист: [netlist]
+  схема: [netlist]
+
+# ---------------------------------------------------------------------------
+# Откуда брать факты для отчёта. Порядок важен: он же порядок в отчёте.
+# ---------------------------------------------------------------------------
+artifacts:
+  - pattern: out/link_budget.json
+    title: дальность приёма
+  - pattern: out/thermal_fast.json
+    title: тепловой режим
+  - pattern: out/reliability.json
+    title: надёжность (MTBF)
+  - pattern: out/direction_finding.json
+    title: пеленгация
+  - pattern: out/virtual_rx_spectrum.json
+    title: спектр виртуального приёмника
+  - pattern: out/enclosure.json
+    title: корпус
+  - pattern: out/*.json
+    title: прочие результаты расчётов
+
+# ---------------------------------------------------------------------------
+# Кто отвечает за цель. Это подпись в отчёте и роль в Бюро;
+# на выполнение не влияет.
+# ---------------------------------------------------------------------------
+agent_owner:
+  netlist: agent.schematic
+  spice: agent.schematic
+  pcb: agent.pcb
+  publish: agent.pcb
+  board-svg: agent.pcb
+  erc: agent.verify
+  drc: agent.verify
+  test: agent.verify
+  drawings: agent.cad
+  cad: agent.cad
+  viewer: agent.viewer
+  page: agent.report
+  docs: agent.report
+  manifest: agent.report
+  gnuradio: agent.rf
+  gnuradio-gui: agent.rf
+  link-budget: agent.rf
+  direction: agent.rf
+  thermal: agent.thermal
+  reliability: agent.reliability
+  enclosure: agent.mechanical
+  all: agent.build

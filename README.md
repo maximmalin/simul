@@ -530,63 +530,106 @@ See [`AGENT_MAP.md`](AGENT_MAP.md) for the deep functional map and
 [`sim/COSIM_STATUS.md`](sim/COSIM_STATUS.md) for the co-simulation narrative and
 evidence.
 
-## 🤖 LLM Agent Framework (LangGraph)
+## 🤖 Агентно-функциональный граф
 
-The project is designed to be orchestrated by an LLM-driven agent using **LangGraph** as the state graph framework. This enables natural-language control of the entire build pipeline.
-
-### Agent Workflow
+Заказ приходит текстом, проходит граф функций-агентов и превращается
+в сборку. Движок **не знает про Krystal Radio** — всё, что касается
+конкретного изделия, лежит в [`agents.project.yaml`](agents.project.yaml).
 
 ```
-User request
-    │
-    ▼
-LLM (GPT-4o / Claude / local) ─ determines which sub‑graph to run
-    │
-    ▼
-LangGraph executes nodes (each node = existing Make target or Python script)
-    │
-    ▼
-Artifacts produced in out/ (board.glb, krystal-radio.html, waterfall.png, etc.)
-    │
-    ▼
-Optional: LLM summarizes results, suggests next steps
+POST /api/order "посчитай дальность и пеленгацию"
+        │
+        ▼
+   ┌──────────┐  модель получает инструменты и решает:
+   │supervisor│  list_targets → submit_plan → run_target → read_artifacts
+   └────┬─────┘  (или ask_human, когда нужен человек)
+        ▼
+   ┌──────┐  выполняет вызовы, возвращает модели результат
+   │ tools│
+   └──┬───┘
+      ├─ нужна помощь ─► await_human ─► interrupt() ─► ответ оператора ─┐
+      ├─ есть модель ──► supervisor (цикл: думаю → действую → смотрю)  │
+      └─ нет модели ───► plan_rules → execute_rules → review          │
+                                                                        │
+   ┌────────┐ ◄───────────────────────────────────────────────────────┘
+   │ report │  факты из артефактов → структурный отчёт (+ резюме модели)
+   └────────┘
 ```
 
-### Example Commands (via `make agent` or direct LangGraph CLI)
+### Почему LangGraph, а не что-то другое
+
+Проверено по документации LangChain: **LangGraph — это agent runtime,
+LangChain — framework, Deep Agents — harness**. Runtime даёт наибольший
+контроль над тем, что именно выполняется.
+
+Здесь контроль — главное требование. Модель **выбирает** из объявленных
+целей, а **исполняет** система сборки. Harness вроде CrewAI или Deep
+Agents даёт ReAct-агента с доступом к файловой системе — то есть
+ровно то, чего в инженерном проекте быть не должно: агент с правом
+писать что угодно был бы не помощью, а источником порчи.
+
+Что взято из рантайма по-современному:
+
+| Возможность | Как реализовано |
+|---|---|
+| Вызов инструментов | Типизированные схемы в `backend/agents/tools.py`, ответ приходит разобранным. Прежний разбор JSON регуляркой не нужен |
+| Цикл «думаю — действую — смотрю» | Узлы `supervisor` ↔ `tools`, не один план на всё |
+| Прерывание человека | `interrupt()` — граф встаёт, состояние сохранено, после ответа продолжается с места остановки |
+| Долговременное состояние | `SqliteSaver` в `.run/graph.db`; переживает перезапуск моста |
+| Устойчивость к обрыву | Недоступный провайдер уходит в паузу на `KR_LLM_COOLDOWN` секунд, чтобы не ждать таймаут на каждом вызове |
+
+Без `langgraph` движок работает на запасном пути (`run_plain`): те же
+узлы, те же проверки — теряются только чекпоинты и прерывание.
+
+### Модели: свободные веса, любой рантайм
+
+`Authorization` не отправляется, если ключа нет — поэтому один и тот же
+код работает и с облаком, и с локальным сервером. Локальные серверы
+**находятся сами**: опрашиваются типовые порты (`11434`, `8080`,
+`1234`, `8000`, `5000`…), так что не важно, запущен Ollama, llama.cpp,
+LM Studio или vLLM.
 
 ```bash
-# Build the full page via LLM intent
-make agent REQUEST="Generate the single-page HTML report with 3D model, GOST drawings, waterfall, link budget, and direction finding."
-
-# Check thermal compliance
-make agent REQUEST="Run thermal analysis and report if Tj stays below 85°C."
-
-# YOLO signal recognition
-make agent REQUEST="Generate YOLO dataset for signal detection, train a compact model, and show inference on a recorded waterfall PNG."
+make llm-check                            # что включено, что отвечает, какие модели есть
+KR_LLM_PRESET=hermes make llm-check       # то же для другой открытой модели
+KR_LLM_ENABLED=0 make llm-check           # проверить, что будет при выключенной модели
 ```
 
-### LLMs Compatible with this Project
+| Переменная | Смысл |
+|---|---|
+| `KR_LLM_ENABLED` | Главный выключатель. `0` — план по правилам, сводки структурные |
+| `KR_LLM_PRESET` | `hermes`, `qwen`, `llama`, `gemma`, `mistral` |
+| `KR_LLM_PROVIDER` | `ollama`, `llamacpp`, `lmstudio`, `vllm`, `openai`, `deepseek`, `groq`, `custom` |
+| `KR_LLM_MODEL` | Модель. Если её нет на сервере — подставится та, что есть |
+| `KR_LLM_MODEL_FAST` | Отдельная модель для сводок (обычно локальная и дешёвая) |
+| `KR_LLM_FALLBACK` | `auto` — откат на живой локальный сервер, либо имя провайдера |
 
-| LLM | Access | Notes |
-|-----|--------|-------|
-| `gpt-4o` | OpenAI API | Best all-rounder; follows tool calls reliably |
-| `claude-3-5-sonnet` | Anthropic API | Strong reasoning, good for complex workflow planning |
-| `deepseek-coder-v2` | Local (Ollama) | Free, good for code‑gen and script orchestration |
-| `llama3.1:70b-instruct` | Local (Ollama) | Large, capable, offline |
-| **Hybrid recommended** | — | Use local LLM for routine tasks; OpenAI/Anthropic for ambiguous or first‑time runs |
+Роли разделены намеренно: планирование требует аккуратного разбора
+формулировки, сводка — нет. Сводить второе на слабую локальную модель
+безопасно, потому что **модель не выдумывает числа**: она читает их
+из артефактов (`backend/agents/reporter.py`).
 
-### How It Works (technical summary)
+> Про эту машину: 8 ядер, 11 ГБ RAM, GPU нет. Hermes 3 Llama 3.1 8B
+> (4.9 ГБ) здесь даёт единицы токенов в секунду — для агентного цикла
+> непригодно. Практичен `qwen2.5:3b-instruct`; Hermes имеет смысл
+> включать на машине с видеокартой.
 
-1. **AGENT_MAP.md** + **AGENT_PROMPTS.md** define the canonical set of agents and their prompt templates.
-2. Each agent's `make <target>` command is wrapped as a LangGraph **tool** (node).
-3. The **state** carries: `current_step`, `artifacts/` (paths to out/ files), `logs/`, `llm_choice`.
-4. The LLM observes the state and either:
-   - Calls a tool (executes `make link-budget`, `python3 src/gnuradio_krystal/krystal_virtual_rx.py`, etc.)
-   - Returns a natural-language response
-   - Requests more info from the user
-5. **Checkpointing** saves the graph state after each node, enabling `resume` from any failure point.
+### Никакой конкретики в движке
 
-To get started, run `make agent` (once the LangGraph CLI or wrapper script is added) or invoke the LangGraph workflow programmatically from Python using the project's existing scripts as node functions.
+Это проверяется тестом, а не обещанием: `tests/requirements/agents`
+создаёт посторонние проекты (make, npm, just, пустой) и требует, чтобы
+движок с ними работал. Отдельный тест разбирает AST движка и падает,
+если в коде появятся имена целей или файлы артефактов этого проекта.
+
+### Команды
+
+```bash
+make agents-check                       # что движок увидел в проекте
+make agents-graph                       # узлы графа
+make agents-ask  TEXT="нужен водопад"   # разобрать заказ, ничего не запуская
+make agents-run  TEXT="собери всё"      # выполнить заказ
+make run                                # мост + интерфейс по одному адресу
+```
 
 ---
 

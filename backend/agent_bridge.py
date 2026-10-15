@@ -366,12 +366,27 @@ def _runtime_context() -> str:
     return rt._project_context() if rt else ""
 
 
-def _orch():
+def _agents():
+    """Пакет агентно-функционального графа (backend/agents)."""
     try:
-        import orchestrator
-        return orchestrator
+        from agents import service
+        return service
     except Exception:                                           # noqa: BLE001
         return None
+
+
+def _llm():
+    """Слой доступа к LLM: провайдеры, выключатель, статус."""
+    try:
+        import llm
+        return llm
+    except Exception:                                           # noqa: BLE001
+        return None
+
+
+def _project_root() -> str:
+    """Корень проекта, которым управляет граф."""
+    return os.environ.get("KR_PROJECT_ROOT", str(ROOT))
 
 
 def _cfg():
@@ -390,14 +405,24 @@ def _zone(health: dict) -> dict:
 
 
 def _order_logs(order) -> dict:
-    """Лог каждого шага заказа — из джоб моста."""
+    """Лог каждого шага заказа — из джоб моста.
+
+    Шаги графа выполняются напрямую (без джоб), поэтому джобы есть
+    только у заказов, запущенных напрямую через `/api/agent/run`.
+    Для графовых шагов лог лежит в самом шаге.
+    """
     out = {}
-    for st in order.steps:
-        if not st.job_id:
-            continue
-        job = JOBS.get(st.job_id)
-        if job:
-            out[st.id] = {"status": job.status, "log": job.log[-40:]}
+    steps = order.get("steps", []) if isinstance(order, dict) else order.steps
+    for st in steps:
+        d = st if isinstance(st, dict) else st.as_dict()
+        if d.get("job_id"):
+            job = JOBS.get(d["job_id"])
+            if job:
+                out[d["id"]] = {"status": job.status, "log": job.log[-40:]}
+                continue
+        if d.get("log_tail"):
+            out[d["id"]] = {"status": d.get("status", "?"),
+                            "log": d["log_tail"]}
     return out
 
 
@@ -923,31 +948,56 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(projects_list())
 
         if path == "/api/order/capabilities":
-            o = _orch()
-            if not o:
-                return self._json({"error": "orchestrator unavailable"}, 503)
-            return self._json({**o.capabilities(),
-                               "suggestions": o.SUGGESTIONS})
+            svc = _agents()
+            if not svc:
+                return self._json({"error": "agents unavailable"}, 503)
+            return self._json(svc.capabilities(root=_project_root()))
+
+        if path == "/api/graph":
+            """Узлы агентно-функционального графа.
+
+            Отдельный путь, а не /api/agents: там живут агенты Бюро
+            из AGENT_PROMPTS.md, здесь — функции-узлы движка.
+            """
+            svc = _agents()
+            if not svc:
+                return self._json({"error": "agents unavailable"}, 503)
+            return self._json({"nodes": svc.capabilities(
+                root=_project_root())["agents"]})
+
+        if path == "/api/llm":
+            """Настройки LLM: выключатель, цепочка провайдеров, живость."""
+            mod = _llm()
+            if not mod:
+                return self._json({"error": "llm module unavailable"}, 503)
+            live = q.get("probe", ["0"])[0] == "1"
+            return self._json(mod.status(probe_live=live))
 
         if path == "/api/orders":
-            o = _orch()
-            if not o:
-                return self._json({"error": "orchestrator unavailable"}, 503)
-            return self._json({"orders": o.list_orders(
+            svc = _agents()
+            if not svc:
+                return self._json({"error": "agents unavailable"}, 503)
+            return self._json({"orders": svc.list_orders(
                 int(q.get("limit", ["20"])[0]))})
 
+        if path == "/api/orders/waiting":
+            """Заказы, на которых граф стоит и ждёт решения оператора."""
+            svc = _agents()
+            if not svc:
+                return self._json({"error": "agents unavailable"}, 503)
+            return self._json({"waiting": svc.waiting()})
+
         if path.startswith("/api/order/"):
-            o = _orch()
-            if not o:
-                return self._json({"error": "orchestrator unavailable"}, 503)
+            svc = _agents()
+            if not svc:
+                return self._json({"error": "agents unavailable"}, 503)
             oid = path[len("/api/order/"):]
-            order = o.get(oid)
+            order = svc.get(oid)
             if order is None:
                 return self._json({"error": "unknown order", "id": oid}, 404)
-            d = order.as_dict()
             if q.get("log", ["0"])[0] == "1":
-                d["logs"] = _order_logs(order)
-            return self._json(d)
+                order["step_logs"] = _order_logs(order)
+            return self._json(order)
 
         if path == "/api/tests":
             return self._json(_last_tests(force=True))
@@ -1022,11 +1072,41 @@ class Handler(BaseHTTPRequestHandler):
             text = str(payload.get("text", "")).strip()
             if not text:
                 return self._json({"error": "text required"}, 400)
-            o = _orch()
-            if not o:
-                return self._json({"error": "orchestrator unavailable"}, 503)
-            order = o.submit(text, payload.get("project_id"))
-            return self._json(order.as_dict(), 202)
+            svc = _agents()
+            if not svc:
+                return self._json({"error": "agents unavailable"}, 503)
+            order = svc.submit(text, root=str(payload.get("root")
+                                              or _project_root()),
+                               project_id=payload.get("project_id"))
+            return self._json(order, 202)
+
+        if path == "/api/order/plan":
+            """Предпросмотр: разобрать заказ в цели, ничего не запуская."""
+            text = str(payload.get("text", "")).strip()
+            if not text:
+                return self._json({"error": "text required"}, 400)
+            svc = _agents()
+            if not svc:
+                return self._json({"error": "agents unavailable"}, 503)
+            return self._json(svc.plan_only(text, root=_project_root()))
+
+        if path.startswith("/api/order/") and path.endswith("/resume"):
+            """Продолжить прерванный заказ после ответа оператора."""
+            svc = _agents()
+            if not svc:
+                return self._json({"error": "agents unavailable"}, 503)
+            oid = path[len("/api/order/"):-len("/resume")]
+            answer = str(payload.get("answer", "")).strip()
+            if not answer:
+                return self._json({"error": "answer required"}, 400)
+            return self._json(svc.resume(oid, answer, root=_project_root()))
+
+        if path.endswith("/cancel"):
+            svc = _agents()
+            if not svc:
+                return self._json({"error": "agents unavailable"}, 503)
+            oid = path[len("/api/order/"):-len("/cancel")]
+            return self._json({"cancelled": svc.cancel(oid), "id": oid})
 
         if path == "/api/agent/run":
             aid = str(payload.get("agent_id", "")).strip()

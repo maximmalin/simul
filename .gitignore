@@ -82,3 +82,7 @@ hardware/enclosure/*.FCStd1
 # В сборке не используется (нет fp-lib-table, платы генерирует tscircuit),
 # ранее попал в индекс как gitlink и в клоне давал пустой каталог.
 /local_footprints/
+
+# Служебное: pid-файлы, логи и база чекпоинтов графа
+.run/
+backend/.run/

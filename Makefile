@@ -159,16 +159,50 @@ enclosure: ## корпус Al с 3 зонами -> FCStd/STEP/STL + out/enclosur
 #  /api/agents, POST /api/agent/run, POST /api/ask.
 # ===========================================================================
 BRIDGE_PORT ?= 8787
+UI_PORT     ?= 5173
+#: доп. аргументы для `make run`, напр. make run RUN_ARGS="--prebuilt --host 0.0.0.0"
+RUN_ARGS   ?=
 
 agents: ## список локальных агентов (AGENT_PROMPTS.md + AGENT_ENCLOSURE.md)
 	$(PYTHON) backend/agent_runtime.py --list
 
 agent-api: ## запустить агентный мост (по умолчанию :8787)
 	@echo "agent bridge: http://127.0.0.1:$(BRIDGE_PORT)"
-	$(PYTHON) backend/agent_bridge.py --port $(BRIDGE_PORT)
+	$(VENV_PY) backend/agent_bridge.py --port $(BRIDGE_PORT)
+
+# --- агентно-функциональный граф -------------------------------------------
+# Граф живёт в .venv: там langgraph. VENV_PY — интерпретатор с ним,
+# если venv есть, иначе системный (тогда граф идёт запасным путём).
+VENV_PY  := $(shell test -x .venv/bin/python && echo .venv/bin/python || echo $(PYTHON))
+#: пакет agents лежит в backend/, а make запускается из корня
+BACKEND  := $(CURDIR)/backend
+
+llm-check: ## настройки LLM: выключатель, маршруты, живость провайдеров
+	PYTHONPATH=$(BACKEND) $(VENV_PY) backend/llm.py --probe
+
+llm-off: ## подсказка: выключить LLM принудительно (KR_LLM_ENABLED=0)
+	@echo "export KR_LLM_ENABLED=0"
+
+agents-check: ## что движок увидел в проекте: раннер, цели, артефакты
+	PYTHONPATH=$(BACKEND) $(VENV_PY) -m agents check --root .
+
+agents-graph: ## узлы графа и порядок их вызова
+	PYTHONPATH=$(BACKEND) $(VENV_PY) -m agents graph
+
+agents-ask: ## разобрать заказ в цели, ничего не запуская (TEXT="...")
+	PYTHONPATH=$(BACKEND) $(VENV_PY) -m agents ask --root . "$(TEXT)"
+
+agents-run: ## выполнить заказ через граф (TEXT="...")
+	PYTHONPATH=$(BACKEND) $(VENV_PY) -m agents run --root . "$(TEXT)"
 
 frontend: ## Vite dev-сервер интерфейса (проксирует /api на мост)
 	cd frontend && npm run dev
+
+run: ## весь проект по одному адресу: мост + интерфейс (Ctrl-C — остановка)
+	$(PYTHON) scripts/launch.py $(RUN_ARGS)
+
+run-build: ## то же, но собранный dist/ без HMR (быстрее, стабильнее)
+	$(PYTHON) scripts/launch.py --prebuilt $(RUN_ARGS)
 
 # ===========================================================================
 #  Дальность приёма и пеленгация (link budget + direction finding)

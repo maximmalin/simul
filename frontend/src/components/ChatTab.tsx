@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Send, Radio, Skull, Brain, DraftingCompass, ScanLine, FlaskRound, Gauge, Loader2, CheckCircle2, FolderKanban, type LucideIcon } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { api } from '@/lib/supabase';
 import type { Agent, Project, ChatRequestWithAgent } from '@/lib/supabase';
 
 interface ChatTabProps {
@@ -48,14 +48,7 @@ export function ChatTab({ projects }: ChatTabProps) {
   }, [messages]);
 
   const fetchHistory = async () => {
-    const { data } = await supabase
-      .from('bureau_chat_requests')
-      .select(`
-        *,
-        response_agent:bureau_agents!response_agent_id(id, codename, role_key, role_title, zone_callsign)
-      `)
-      .order('created_at', { ascending: true })
-      .limit(50);
+    const data = await api.get('/api/bureau/bureau_chat_requests');
 
     if (data) {
       const typed = data as unknown as ChatRequestWithAgent[];

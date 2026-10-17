@@ -9,12 +9,45 @@ KiCad-библиотеки: разбор .kicad_sym, извлечение опр
 
 from __future__ import annotations
 
+import os
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from uuid import uuid4
 
 SYMDIR = Path("/usr/share/kicad/symbols")
+
+#: Корень репозитория (hardware/kicad → hardware → корень проекта).
+ROOT = Path(__file__).resolve().parents[2]
+
+
+def _env_dirs() -> list[Path]:
+    """Каталоги символов из KR_SYMBOL_DIRS (разделитель — ':' в PATH-стиле)."""
+    out: list[Path] = []
+    for part in os.environ.get("KR_SYMBOL_DIRS", "").split(os.pathsep):
+        part = part.strip()
+        if part:
+            out.append(Path(part).expanduser())
+    return out
+
+
+#: Порядок поиска библиотек символов: системные KiCad, проектные
+#: библиотеки песочницы (design/libs — символы, собранные из EasyEDA по
+#: LCSC-коду), явные каталоги из KR_SYMBOL_DIRS.
+LIB_DIRS: list[Path] = [SYMDIR, Path.cwd() / "design" / "libs"] + _env_dirs()
+
+#: «Сумки» одиночных символов: <ИмяСимвола>.kicad_sym, один символ в файле.
+BAG_DIRS: list[Path] = [ROOT / "local_symbols"]
+
+
+def add_search_dir(path: str | Path) -> None:
+    """Добавить каталог в поиск библиотек символов (сброс кэшей)."""
+    p = Path(path)
+    if p.is_dir() and p not in LIB_DIRS:
+        LIB_DIRS.append(p)
+        _LIB_CACHE.clear()
+        _RESOLVED.clear()
+
 SCH_VERSION = "20250114"          # формат KiCad 9
 SCH_GENERATOR = "brig-receiver-generator"
 SCH_GENERATOR_VERSION = "9.0"
@@ -156,19 +189,45 @@ def dump_sexp(node, indent: int = 0, tab: str = "\t") -> str:
 # --------------------------------------------------------------------------- #
 #  Символьные библиотеки KiCad
 # --------------------------------------------------------------------------- #
-_LIB_CACHE: dict[str, S] = {}
+_LIB_CACHE: dict[Path, S] = {}
+
+
+def _lib_file(lib: str, name: str = "") -> Path | None:
+    """Файл библиотеки символов.
+
+    Сначала <lib>.kicad_sym в каталогах поиска; если не найден — «сумка»
+    одиночных символов <name>.kicad_sym (lib_id вида «local:Battery_Cell»).
+    """
+    for d in LIB_DIRS:
+        f = d / f"{lib}.kicad_sym"
+        if f.is_file():
+            return f
+    if name:
+        for d in BAG_DIRS:
+            f = d / f"{name}.kicad_sym"
+            if f.is_file():
+                return f
+    return None
+
+
+def load_lib_file(path: Path) -> S:
+    """Читает .kicad_sym по прямому пути и возвращает узел kicad_symbol_lib."""
+    path = Path(path)
+    if path in _LIB_CACHE:
+        return _LIB_CACHE[path]
+    node = parse_sexp(path.read_text(errors="ignore"))
+    _LIB_CACHE[path] = node
+    return node
 
 
 def load_lib(lib: str) -> S:
     """Читает .kicad_sym и возвращает узел kicad_symbol_lib."""
-    if lib in _LIB_CACHE:
-        return _LIB_CACHE[lib]
-    path = SYMDIR / f"{lib}.kicad_sym"
-    if not path.exists():
-        raise FileNotFoundError(f"нет библиотеки KiCad: {path}")
-    node = parse_sexp(path.read_text(errors="ignore"))
-    _LIB_CACHE[lib] = node
-    return node
+    path = _lib_file(lib)
+    if path is None:
+        dirs = ", ".join(str(d) for d in LIB_DIRS)
+        raise FileNotFoundError(
+            f"нет библиотеки символа «{lib}» (искал в: {dirs})")
+    return load_lib_file(path)
 
 
 def sym_name(s: S) -> str:
@@ -178,13 +237,18 @@ def sym_name(s: S) -> str:
 
 
 def _raw_symbol(lib: str, name: str) -> S:
-    top = load_lib(lib)
+    path = _lib_file(lib, name)
+    if path is None:
+        dirs = ", ".join(str(d) for d in LIB_DIRS)
+        raise FileNotFoundError(
+            f"нет библиотеки символа {lib}:{name} (искал в: {dirs})")
+    top = load_lib_file(path)
     if top.head != "kicad_symbol_lib":
         top = top.find("kicad_symbol_lib") or top
     for s in top.find_all("symbol"):
         if sym_name(s) == name:
             return s
-    raise KeyError(f"символ {lib}:{name} не найден в {SYMDIR}")
+    raise KeyError(f"символ {lib}:{name} не найден в {path}")
 
 
 _RESOLVED: dict[str, S] = {}
@@ -273,12 +337,16 @@ def unit_for_pin(sym: S, pin_number: str) -> int:
 
 
 def pin_positions(sym: S, unit: int = 1) -> dict[str, tuple[float, float]]:
-    """Номер пина -> (x, y) в координатах символа (Y вверх, как в библиотеке)."""
+    """Номер пина -> (x, y) в координатах символа (Y вверх, как в библиотеке).
+
+    Юнит 0 — общая графика и выводы для всех юнитов (так их пишут и
+    KiCad, и конвертер EasyEDA), поэтому он входит в каждый запрос.
+    """
     out: dict[str, tuple[float, float]] = {}
     for u in sym.find_all("symbol"):
         tail = sym_name(u)
         m = re.search(r"_(\d+)_(\d+)$", tail)
-        if m and int(m.group(1)) != unit:
+        if m and int(m.group(1)) not in (0, unit):
             continue
         for p in u.find_all("pin"):
             at = p.find("at")

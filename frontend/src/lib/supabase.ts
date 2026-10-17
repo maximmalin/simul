@@ -1,42 +1,46 @@
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
-
 /**
- * Supabase-клиент создаётся ЛЕНИВО.
+ * Локальный API-клиент вместо Supabase.
  *
- * Раньше `createClient()` вызывался на уровне модуля и падал с
- * «supabaseUrl is required», если переменные окружения не заданы — из-за
- * этого падало всё React-дерево, включая вкладки, работающие от локального
- * агентного моста (Krystal). Теперь createClient бросает исключение только
- * в момент обращения, поэтому интерфейс грузится и без Supabase.
+ * Все данные бюро хранятся в JSON-файле на сервере (backend/localdb.py)
+ * и доступны через REST-эндпоинты /api/bureau/<table>.
+ *
+ * Этот модуль сохраняет те же типы данных, что и раньше, чтобы
+ * компоненты не пришлось переписыовать.
  */
-export const SUPABASE_CONFIGURED = Boolean(supabaseUrl && supabaseAnonKey);
 
-let _client: SupabaseClient | null = null;
+const BASE = (import.meta.env.VITE_BRIDGE_URL as string | undefined) ?? '';
 
-export function getSupabase(): SupabaseClient {
-  if (_client) return _client;
-  if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error(
-      'Supabase не настроен: задайте VITE_SUPABASE_URL и VITE_SUPABASE_ANON_KEY',
-    );
+// ---------------------------------------------------------------------------
+// API helper
+// ---------------------------------------------------------------------------
+
+async function apiRequest<T = any>(
+  method: string,
+  path: string,
+  body?: unknown,
+): Promise<T> {
+  const res = await fetch(`${BASE}${path}`, {
+    method,
+    headers: body ? { 'Content-Type': 'application/json' } : undefined,
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(err.error || `HTTP ${res.status}`);
   }
-  _client = createClient(supabaseUrl, supabaseAnonKey);
-  return _client;
+  return res.json();
 }
 
-/**
- * Обратно совместимая ссылка: бросает при обращении, если не настроен.
- * Для явной проверки используйте `SUPABASE_CONFIGURED` / `getSupabase()`.
- */
-export const supabase = new Proxy({} as SupabaseClient, {
-  get(_t, prop) {
-    const client = getSupabase() as unknown as Record<string | symbol, unknown>;
-    return client[prop];
-  },
-});
+export const api = {
+  get: <T = any>(path: string) => apiRequest<T>('GET', path),
+  post: <T = any>(path: string, body?: unknown) => apiRequest<T>('POST', path, body),
+  patch: <T = any>(path: string, body?: unknown) => apiRequest<T>('PATCH', path, body),
+  delete: <T = any>(path: string) => apiRequest<T>('DELETE', path),
+};
+
+// ---------------------------------------------------------------------------
+// Типы данных (те же, что были в Supabase)
+// ---------------------------------------------------------------------------
 
 export type AgentStatus = 'active' | 'processing' | 'idle' | 'offline';
 export type ProjectStatus = 'planning' | 'active' | 'review' | 'completed';
@@ -160,7 +164,7 @@ export interface WarehouseComponent {
 }
 
 export type WorkflowStatus = 'draft' | 'active' | 'paused' | 'completed';
-export type StepType = 'input' | 'process' | 'decision' | 'review' | 'output';
+export type StepType = 'input' | 'process' | 'decision' | 'output' | 'review';
 export type StepStatus = 'pending' | 'active' | 'done' | 'skipped';
 
 export interface FlowWorkflow {
@@ -225,4 +229,34 @@ export interface DevAgent {
   code_quality: number;
   efficiency: number;
   created_at: string;
+}
+
+// ---------------------------------------------------------------------------
+// Заглушка для совместимости: SUPABASE_CONFIGURED теперь всегда true
+// ---------------------------------------------------------------------------
+
+export const SUPABASE_CONFIGURED = true;
+
+// ---------------------------------------------------------------------------
+// Заглушка для `supabase` — простой прокси, чтобы старый код работал
+// ---------------------------------------------------------------------------
+
+export const supabase = {
+  from: (table: string) => ({
+    select: () => api.get(`/api/bureau/${table}`),
+    insert: (data: unknown) => api.post(`/api/bureau/${table}`, data),
+    update: (data: unknown) => {
+      // В Supabase цепочка была .update().eq('id', id)
+      // Здесь упрощённо: передаём {id, ...data}
+      const id = (data as any).id;
+      return api.patch(`/api/bureau/${table}/${id}`, data);
+    },
+    delete: () => {
+      throw new Error('delete() не поддерживается через цепочку — используйте api.delete(path)');
+    },
+  }),
+};
+
+export function getSupabase() {
+  return supabase;
 }

@@ -31,6 +31,7 @@
 
 from __future__ import annotations
 
+import datetime
 import os
 import sqlite3
 import threading
@@ -148,12 +149,37 @@ def set_active_state(state: Any = None) -> None:
     _CTX.active_state = state
 
 
+def _stamp_logs(lines: list[str], state: Any) -> list[str]:
+    """Метка времени появления строки журнала — один раз на строку.
+
+    Журнал — живая консоль заказа во фронтенде; без времени строки
+    читаются как обезличенный поток. Водяной знак держится на самом
+    состоянии: если список перезаписан (перезапуск стадии), метки
+    не дублируются.
+    """
+    out = [str(x) for x in lines]
+    n = int(state.get("_log_stamped", 0) or 0)
+    if len(out) < n:                       # список сократился — заново
+        n = 0
+    for i in range(n, len(out)):
+        if not out[i].startswith("["):
+            out[i] = f"[{datetime.datetime.now():%H:%M:%S}] {out[i]}"
+    try:
+        state["_log_stamped"] = len(out)
+    except Exception:                      # noqa: BLE001
+        pass
+    return out
+
+
 def _publish(state: Any = None) -> None:
     st = state if state is not None else _CTX.active_state
     order = _CTX.order
     if st is None or order is None:
         return
     try:
+        # отметка прогресса: сторож заказа опирается на неё, чтобы
+        # отличить живой заказ от зависшего
+        order["_seen_at"] = time.time()
         order.update({
             "status": st.get("status", order.get("status", "running")),
             "intent": st.get("intent", order.get("intent", "")),
@@ -165,34 +191,71 @@ def _publish(state: Any = None) -> None:
             "steps": [dict(x) if not hasattr(x, "as_dict") else x.as_dict()
                       for x in st.get("steps", [])],
             "report": st.get("report", order.get("report", "")),
-            "logs": list(st.get("log", order.get("logs", []))),
+            "logs": _stamp_logs(st.get("log", order.get("logs", [])), st),
         })
-    except Exception:                                # noqa: BLE001
+    except Exception as exc:                                # noqa: BLE001
+        # Публикацию нельзя глотать молча: из-за этого заказ однажды
+        # «завис» с нулём шагов. Причина попадает в лог заказа, чтобы
+        # поломка была видна сразу, а не после ручного разбора.
+        try:
+            order["logs"] = (order.get("logs") or []) + [
+                f"публикация состояния не удалась: "
+                f"{type(exc).__name__}: {exc}"[:200]]
+        except Exception:                                # noqa: BLE001
+            pass
         return
 
 
 # ==========================================================================
 #  Узел 1: supervisor — модель решает, что делать
 # ==========================================================================
-SUPERVISOR = """Ты — руководитель сборки проекта «{name}».
+SUPERVISOR = """Ты — руководитель инженерного цикла разработки изделия «{name}».
 
 {desc}
+
+Вы ведёте СТУПЕНЧАТЫЙ ЦИКЛ: каждый этап потребляет артефакты предыдущего,
+без пауз и остановок:
+
+  ЭТАП 1 (замысел)   — суть изделия из заказа; глубину разделов ТЗ берите
+                       у эталона technical_task.md: те же разделы, REQ-XX
+                       нумерация, решения по каждому разделу.
+  ЭТАП 2 (расчёты)   — превратите числа заказа в расчётные величины
+                       (мощности, токи, частоты, компоновку) и запишите
+                       первым артефактом design/calc.json (write_artifact).
+  ЭТАП 3 (схема)     — напишите design/schematic.json (write_artifact):
+                       parts (реальные lib_id из библиотек KiCad — сначала
+                       запросите kicad_libs, не выдумывайте имена), nets
+                       (name, conns=[[ref, пин]…], power для шин GND/+5V),
+                       blocks по функциональным узлам. Все величины —
+                       из design/calc.json, не новые числа.
+  ЭТАП 4 (сборка)    — run_target(name="kicad"): скриптовая часть назначит
+                       корпуса, выполнит разводку, соберёт KiCad-схему.
+                       Ничего не рисуется руками.
+  ЭТАП 5 (проверка)  — судья kicad-cli. Ошибки netlist/ERC от run_target —
+                       ваш вход: исправьте design/schematic.json и повторите
+                       ЭТАП 4. Максимум 3 цикла исправлений, каждый раз по
+                       конкретным причинам из текста ошибок.
+  ЭТАП 6 (документы) — run_target(name="all"), затем run_target(name="test"),
+                       добейтесь кода 0.
+  ЭТАП 7 (отчёт)     — перечислите артефакты одним абзацем и скажите ГОТОВО.
+
+Генерируете ТОЛЬКО: ТЗ-требования, design/schematic.json (уровень SKiDL),
+design/structure.drawio, расчёты. Всё остальное (корпуса, .kicad_sch,
+netlist, чертежи, PCB, страницы) выполняют СКРИПТЫ проекта.
 
 Твои инструменты:
 {tools}
 
 Правила работы:
-- сначала вызови list_targets, если не знаешь, что можно собрать;
-- выбирай минимальный достаточный набор целей и фиксируй его через
-  submit_plan;
-- цели верхнего уровня сами тянут зависимости — не перечисляй их;
-- запускай цель через run_target и **смотри на результат** прежде чем
-  решать следующий шаг;
-- числа бери из read_artifacts, не выдумывай;
-- если продолжать нельзя (нужен доступ, нет данных, нужно решение
-  инженера) — вызови ask_human.
+- сначала вызовите list_targets, если не знаете список целей;
+- минимальный достаточный план фиксируйте submit_plan (обычно kicad, all);
+- после каждого run_target смотрите вывод прежде чем решать следующий шаг;
+- числа в отчёте — только из read_artifacts, не выдумывайте;
+- остановок и вопросов человеку НЕТ: если что-то не выходит —
+  продолжайте максимально возможным путём и перечислите препятствия
+  в итоговом отчёте.
 
-Когда работа закончена и всё сделано — ответь одним словом: ГОТОВО.
+Когда работа сделана и проверена — ответьте одним словом: ГОТОВО.
 """
 
 
@@ -223,13 +286,18 @@ def fn_supervisor(state: GraphState) -> GraphState:
 
     messages = [{"role": "system", "content": system}]
     messages += history[-12:]
+    first_user = f"Заказ: {state.get('text', '')}"
+    if state.get("pending_user"):
+        first_user += "\n" + state["pending_user"]
     if not history:
-        messages.append({"role": "user", "content": f"Заказ: {state.get('text', '')}"})
-    elif state.get("pending_user"):
-        messages.append({"role": "user", "content": state["pending_user"]})
+        messages.append({"role": "user", "content": first_user})
+        state["pending_user"] = ""
+    else:
+        messages.append({"role": "user",
+                         "content": state.get("pending_user") or ""})
         state["pending_user"] = ""
 
-    turn = llm.chat(messages, tools=tools, temperature=0.0, max_tokens=900,
+    turn = llm.chat(messages, tools=tools, temperature=0.0, max_tokens=4000,
                     timeout=_FIRST_TURN_TIMEOUT if not history
                     else _TURN_TIMEOUT)
     if turn is None:
@@ -531,11 +599,17 @@ def fn_review(state: GraphState) -> GraphState:
     done = sum(1 for s in steps if s.get("status") == "done")
     bad = [s for s in steps if s.get("status") in ("failed", "blocked")]
     if bad:
-        state["verdict"] = "needs_human"
-        state["question"] = (f"Цель «{bad[0].get('target')}» завершилась "
-                             f"с ошибкой. {str(bad[0].get('error') or '')[:200]}")
+        # автономный цикл: неудачные цели не останавливают заказ —
+        # отчёт перечисляет их, статус частичный
+        state["verdict"] = "done"
+        state["status"] = "partial"
+        state["log"] = state.get("log", []) + [
+            "не выполнено (см. отчёт): "
+            + ", ".join(f"{s.get('target')}" for s in bad)
+            + " — " + str(bad[0].get("error") or "")[:200]]
     else:
         state["verdict"] = "done"
+        state["status"] = "done" if done == len(steps) else "partial"
     state["note"] = f"{done}/{len(steps)} целей выполнено"
     return state
 
@@ -651,12 +725,32 @@ def build():
         if s.get("pending_tool"):
             return "tools"
         if s.get("mode") == "llm":
-            return "report" if _llm_says_done(s) else "tools"
+            if _llm_says_done(s) and not _cycle_incomplete(s):
+                return "report"
+            if _llm_says_done(s) and _cycle_incomplete(s):
+                # модель объявила завершение рано: вернуть в цикл
+                # подсказкой, пока не накопится 3 таких возврата
+                s["nudges"] = s.get("nudges", 0) + 1
+                if s["nudges"] >= 3:
+                    s["log"] = s.get("log", []) + [
+                        "три досрочных «ГОТОВО» — завершаю принудительно",
+                        "заказ помечается partial: не все цели выполнены"]
+                    s["status"] = "partial"
+                    return "report"
+                s["pending_user"] = (
+                    "Работа не завершена: " + "; ".join(_cycle_incomplete(s))
+                    + ". Продолжайте цикл: вызовите run_target для "
+                      "следующей цели, по необходимости исправьте "
+                      "design/schematic.json инструментом write_artifact.")
+                s["verdict"] = ""
+            return "tools"
         return "plan_rules"
 
     def after_tools(s: GraphState) -> str:
         if s.get("verdict") == "needs_human":
             return "await_human"
+        if s.get("status") == "partial":
+            return "report"
         return "report" if _turns_exhausted(s) else "supervisor"
 
     def after_await(s: GraphState) -> str:
@@ -691,6 +785,14 @@ def _llm_says_done(s: GraphState) -> bool:
     return txt.startswith("ГОТОВО") or txt.startswith("DONE")
 
 
+def _cycle_incomplete(s: GraphState) -> list[str]:
+    """Цели принятого плана, которые ещё не выполнены (порядок цикла)."""
+    steps = s.get("steps", []) or []
+    left = [f"{st.get('target')} ({st.get('status')})" for st in steps
+            if st.get("status", "") not in ("done", "skipped")]
+    return left
+
+
 def _turns_exhausted(s: GraphState) -> bool:
     return s.get("turns", 0) >= MAX_TURNS
 
@@ -714,7 +816,17 @@ def _wrap(name: str):
 
 def run(text: str, proj: Project, order_id: str | None = None,
         resume: str | None = None) -> dict:
-    """Прогнать заказ по графу."""
+    """Прогнать заказ по графу.
+
+    Основной маршрут — детерминированный драйвер ступеней
+    (:mod:`agents.stages`): порядок фиксирован, модель работает внутри
+    ступени. Свободный LLM-цикл (langgraph) — резерв для сильных моделей
+    и продолжения по ask-чекпоинту.
+    """
+    if llm.enabled():
+        from . import stages                              # поздний импорт
+        return stages.run(text, proj, order_id)
+
     g = build()
     if g is None:
         raise RuntimeError("langgraph не установлен")
@@ -727,6 +839,30 @@ def run(text: str, proj: Project, order_id: str | None = None,
     set_project(proj)
     state = new_state(text, order_id, proj.name)
     state["durable"] = durable
+
+    # ---- обязательный план: детерминированная инъекция ступеней цикла ----
+    # Планировщик (правила+llm) дополняется до полного цикла kicad → all →
+    # test. Супервизор не зависит от причуд модели: какой бы план она ни
+    # предложила, этапы уже стоят в плане.
+    try:
+        pre = planner.plan(text, proj)
+        if pre.get("steps"):
+            state["steps"] = pre["steps"]
+            state["intent"] = pre.get("intent", state["intent"])
+            state["planner"] = pre.get("planner", "rules")
+            state["progress"] = progress_of(state["steps"])
+            names = [s["target"] for s in state["steps"]]
+            state["log"] = state.get("log", []) + [
+                "обязательный план цикла: " + " → ".join(names)]
+            state["pending_user"] = (
+                "Заказ принят. Обязательный план: " + " → ".join(names)
+                + ". Перед kicad запишите design/calc.json и "
+                  "design/schematic.json (write_artifact), затем запускайте "
+                  "run_target по порядку плана.")
+    except Exception as exc:                                    # noqa: BLE001
+        state["log"] = state.get("log", []) + [
+            f"предварительный план не удался: {exc}"]
+
     set_active_state(state)
     cfg = {"configurable": {"thread_id": resume or state["order_id"]}}
     try:

@@ -1,0 +1,37 @@
+{
+  "ok": true,
+  "title": "Flashlight",
+  "scheme": "out/flashlight_kicad/Flashlight.kicad_sch",
+  "netlist": "out/flashlight_kicad/Flashlight.net",
+  "project": "out/flashlight_kicad/Flashlight.kicad_pro",
+  "stem": "Flashlight",
+  "power_nets": [
+    "BAT",
+    "BAT-",
+    "GND",
+    "LED_K",
+    "S1_GND",
+    "VOUT24"
+  ],
+  "ground": "BAT-",
+  "comps": 16,
+  "nets": 10,
+  "nodes": 30,
+  "wires": 14,
+  "labels": 9,
+  "power_symbols": 20,
+  "blocks": 6,
+  "page": {
+    "w": 1189,
+    "h": 631,
+    "paper": "A0"
+  },
+  "erc_errors": -1,
+  "erc": [],
+  "notes": [
+    "сеть LED_K: 1 вывод — висячий конец",
+    "сеть S1_GND: 1 вывод — висячий конец",
+    "сеть BAT-: 1 вывод — висячий конец",
+    "ERC: -1 ошибок (подробности в файле)"
+  ]
+}

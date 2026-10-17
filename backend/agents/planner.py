@@ -252,6 +252,31 @@ def _braces(raw: str) -> str:
 
 
 # ==========================================================================
+#  Обязательный инженерный цикл: порядок этапов один для любого изделия
+# ==========================================================================
+#: эталонный порядок целей разработки hardware-изделия. Проекты без
+#: какой-то из них (сервисные проекты, документация) просто пропускают шаг.
+CYCLE_ORDER = ("kicad", "all", "test")
+
+
+def ensure_cycle(targets: list[str], by_name: dict) -> tuple[list[str], list[str]]:
+    """Гарантировать обязательные этапы цикла в любом плане.
+
+    Порядок цикла: kicad (валидная схема по спецификации агента) →
+    all (полная сборка) → test (проверки: ERC, make test). Возвращает
+    (полный план, добавленные имена).
+    """
+    present = {t for t in targets if t in by_name}
+    in_cycle = [t for t in CYCLE_ORDER if t in by_name]
+    if not in_cycle or all(t in present for t in in_cycle):
+        return targets, []
+    added = [t for t in in_cycle if t not in present]
+    head = [t for t in targets if t not in in_cycle]
+    out = list(dict.fromkeys(head + in_cycle))
+    return out, added
+
+
+# ==========================================================================
 #  Точка входа
 # ==========================================================================
 def plan(text: str, proj: Project) -> dict:
@@ -276,6 +301,10 @@ def plan(text: str, proj: Project) -> dict:
                 "available": [t.name for t in proj.targets[:60]]}
 
     by_name = proj.by_name()
+    picked, added = ensure_cycle(picked, by_name)
+    if added:
+        plan_note = note + f"; в план добавлены этапы цикла: {added}"
+        note = plan_note
     steps = [
         Step(id=f"s{i}", target=n, title=by_name[n].title or n,
              agent=proj.agent_owner.get(n, "agent.build")).as_dict()

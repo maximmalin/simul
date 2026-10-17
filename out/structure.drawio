@@ -1,0 +1,17 @@
+<mxfile host="app.diagrams.net" modified="X" agent="agent-pipeline">
+  <diagram name="X" id="page-1">
+    <mxGraphModel dx="0" dy="0" grid="1" gridSize="10" page="1" pageScale="1"
+                  pageWidth="1169" pageHeight="827">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="T0" value="X — СТРУКТУРНАЯ СХЕМА (Э1)"
+                style="text;html=1;fontSize=16;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="24" width="800" height="28" as="geometry" />
+        </mxCell>
+        <!-- функциональные части появятся из блоков спецификации агента
+             (design/schematic.json, поле blocks) -->
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

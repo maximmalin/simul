@@ -53,6 +53,10 @@ from urllib.parse import urlparse, parse_qs
 ROOT = Path(os.environ.get("KR_ROOT", Path(__file__).resolve().parent.parent))
 TOKEN = os.environ.get("KR_TOKEN")
 
+# Локальная JSON-БД вместо Supabase
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import localdb
+
 
 def out_dir() -> Path:
     """Каталог артефактов (вычисляется каждый раз — ROOT может смениться)."""
@@ -1144,6 +1148,34 @@ class Handler(BaseHTTPRequestHandler):
             return self._json({"count": len(items), "projects": items,
                               "current": _current_project_code()})
 
+        # --- LocalDB bureau endpoints (replaces Supabase) ---
+        if path.startswith("/api/bureau/"):
+            parts = path[len("/api/bureau/"):].split("/")
+            table = parts[0]
+            row_id = parts[1] if len(parts) > 1 else None
+            allowed_tables = {
+                "bureau_agents", "bureau_projects", "bureau_tasks",
+                "bureau_messages", "bureau_chat_requests", "bureau_deliverables",
+                "warehouse_components", "flow_workflows", "flow_steps",
+                "flow_connections", "dev_agents",
+            }
+            if table not in allowed_tables:
+                return self._json({"error": f"unknown table: {table}"}, 404)
+            if row_id:
+                row = localdb.get_row(table, row_id)
+                if row is None:
+                    return self._json({"error": "not found"}, 404)
+                return self._json(row)
+            # list with optional filters from query string
+            filters = {k: v[0] for k, v in q.items() if k != "limit"}
+            rows = localdb.query(table, filters=filters if filters else None)
+            if "limit" in q:
+                try:
+                    rows = rows[: int(q["limit"][0])]
+                except (ValueError, IndexError):
+                    pass
+            return self._json({"count": len(rows), "rows": rows})
+
         return self._json({"error": "not found", "path": path}, 404)
 
     def do_POST(self) -> None:                                  # noqa: N802
@@ -1301,6 +1333,38 @@ class Handler(BaseHTTPRequestHandler):
             ans = _runtime_ask(prompt)
             return self._json(ans, 200)
 
+        # --- LocalDB bureau write endpoints ---
+        if path.startswith("/api/bureau/"):
+            parts = path[len("/api/bureau/"):].split("/")
+            table = parts[0]
+            row_id = parts[1] if len(parts) > 1 else None
+            allowed_tables = {
+                "bureau_agents", "bureau_projects", "bureau_tasks",
+                "bureau_messages", "bureau_chat_requests", "bureau_deliverables",
+                "warehouse_components", "flow_workflows", "flow_steps",
+                "flow_connections", "dev_agents",
+            }
+            if table not in allowed_tables:
+                return self._json({"error": f"unknown table: {table}"}, 404)
+            if not isinstance(payload, dict):
+                return self._json({"error": "body must be JSON object"}, 400)
+            if row_id:
+                # PATCH (update) or DELETE
+                if self.command == "PATCH":
+                    updated = localdb.update_row(table, row_id, payload)
+                    if updated is None:
+                        return self._json({"error": "not found"}, 404)
+                    return self._json(updated)
+                if self.command == "DELETE":
+                    ok = localdb.delete_row(table, row_id)
+                    if not ok:
+                        return self._json({"error": "not found"}, 404)
+                    return self._json({"deleted": True, "id": row_id})
+                return self._json({"error": "method not allowed"}, 405)
+            # POST (insert)
+            inserted = localdb.insert_row(table, payload)
+            return self._json(inserted, 201)
+
         if path == "/api/prompt":
             aid = str(payload.get("agent_id", ""))
             for a in parse_agents():
@@ -1319,6 +1383,35 @@ class Handler(BaseHTTPRequestHandler):
                     })
             return self._json({"error": "unknown agent", "id": aid}, 404)
 
+        return self._json({"error": "not found", "path": path}, 404)
+
+    def do_PATCH(self) -> None:                                  # noqa: N802
+        # Делегируем в do_POST — маршрутизация проверяет self.command
+        self.do_POST()
+
+    def do_DELETE(self) -> None:                                 # noqa: N802
+        # DELETE не имеет тела — читаем path напрямую
+        if not self._auth_ok():
+            return self._json({"error": "unauthorized"}, 401)
+        u = urlparse(self.path)
+        path = u.path.rstrip("/") or "/"
+        if path.startswith("/api/bureau/"):
+            parts = path[len("/api/bureau/"):].split("/")
+            table = parts[0]
+            row_id = parts[1] if len(parts) > 1 else None
+            allowed_tables = {
+                "bureau_agents", "bureau_projects", "bureau_tasks",
+                "bureau_messages", "bureau_chat_requests", "bureau_deliverables",
+                "warehouse_components", "flow_workflows", "flow_steps",
+                "flow_connections", "dev_agents",
+            }
+            if table not in allowed_tables:
+                return self._json({"error": f"unknown table: {table}"}, 404)
+            if row_id:
+                ok = localdb.delete_row(table, row_id)
+                if not ok:
+                    return self._json({"error": "not found"}, 404)
+                return self._json({"deleted": True, "id": row_id})
         return self._json({"error": "not found", "path": path}, 404)
 
     # -- отдача файла ------------------------------------------------------

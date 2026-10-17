@@ -23,6 +23,7 @@ import {
   Cpu, CheckCircle2, XCircle, Loader2, Circle, Clock, Sparkles,
   ListTree, SkipForward, HelpCircle, Play, ScrollText, Ban, Download, Package,
 } from 'lucide-react';
+import { OrderConsole } from './OrderConsole';
 
 const BASE = (import.meta.env.VITE_BRIDGE_URL as string | undefined) ?? '';
 
@@ -126,6 +127,7 @@ export function OrderTab() {
   const [err, setErr] = useState<string | null>(null);
   const [answer, setAnswer] = useState('');
   const [showLog, setShowLog] = useState(false);
+  const [streamTick, setStreamTick] = useState(0);
   const [artifacts, setArtifacts] = useState<ArtifactItem[] | null>(null);
   const esRef = useRef<EventSource | null>(null);
 
@@ -187,11 +189,25 @@ export function OrderTab() {
       es.close();
       refreshHistory();
     });
-    es.onerror = () => es.close();
+    // Обрыв сети больше не убивает консоль: переподключаемся с паузой,
+    // иначе живой журнал заказа замирал навсегда.
+    let retry: ReturnType<typeof setTimeout> | null = null;
+    let closed = false;
+    es.onerror = () => {
+      es.close();
+      if (closed) return;
+      retry = setTimeout(() => {
+        if (!closed) setStreamTick((n) => n + 1);
+      }, 1500);
+    };
 
-    return () => { es.close(); };
+    return () => {
+      closed = true;
+      if (retry) clearTimeout(retry);
+      es.close();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [order?.id, order?.status, order?.verdict, refreshHistory]);
+  }, [order?.id, order?.status, order?.verdict, refreshHistory, streamTick]);
 
   // ---- шаг 1: разбор заказа в план (ничего не выполняется) ------------
   const dryRun = useCallback(async (t?: string) => {
@@ -450,23 +466,8 @@ export function OrderTab() {
             </div>
           )}
 
-          {/* ---------- журнал ---------- */}
-          {order.logs && order.logs.length > 0 && (
-            <div className="border-t border-zone-300">
-              <button
-                onClick={() => setShowLog((v) => !v)}
-                className="w-full flex items-center gap-1.5 px-4 py-2 font-mono text-[9px] uppercase text-zone-600 hover:text-zone-900"
-              >
-                <ScrollText className="w-3 h-3" />
-                журнал ({order.logs.length}) {showLog ? '▾' : '▸'}
-              </button>
-              {showLog && (
-                <pre className="px-4 pb-3 font-mono text-[10px] leading-relaxed text-zone-600 whitespace-pre-wrap max-h-48 overflow-y-auto">
-                  {order.logs.join('\n')}
-                </pre>
-              )}
-            </div>
-          )}
+          {/* ---------- живая консоль заказа ---------- */}
+          <OrderConsole logs={order.logs} running={order.status === 'running'} />
 
           {/* ---------- сданный проект: файлы (все агенты) ---------- */}
           {order.status === 'done' && artifacts && artifacts.length > 0 && (

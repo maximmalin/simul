@@ -14,21 +14,48 @@
 к STL — единственному формату, который и FreeCAD умеет писать, и tscircuit
 умеет читать.
 
-Ориентация. Здесь модель приводится к Zmax = 0, то есть тело уходит в минус
-Z. Это не догадка, а измеренное требование tscircuit: узел модели ставится в
-cad_component.position (Z = толщина платы / 2) и оси переводятся как
-(x, y, z)_STL -> (x, -z, y)_glTF, где glTF-Y смотрит вверх. Проверяется на
-стенде hardware/tscircuit/out/probe3d.circuit.tsx (одна деталь, экспорт glb):
+Ориентация STL зависит от пары эмиссии, и это не косметика. Сборщик glb
+(circuit-json-to-gltf, getDefaultModelTransform) выбирает перевод осей для
+STL по наличию stepUrl у детали:
 
-    STL Z[ 0.00 .. 0.80] -> деталь целиком под платой, Y[-0.10 .. 0.70]
-    STL Z[-0.80 .. 0.00] -> деталь стоит на плате,     Y[ 0.70 .. 1.50]
+  * пара STL+STEP (наш заказ: build_pcb.mjs эмитит оба адреса) — STL
+    читается с переводом STEP-ветки, (x, y, z)_STL -> (x, +z, y)_glTF.
+    Поэтому STL обязан совпадать по ориентации с STEP: тело в плюсе z,
+    низ — на ZMIN (чуть ниже нуля). Плоскость Z=0 модели и есть
+    поверхность платы: узел ставится в cad_component.position.
+  * STL без STEP (зеркало packages3d: у системных корпусов STEP рядом нет)
+    — перевод Z_UP_TO_Y_UP_USB_FIX: (x, y, z)_STL -> (x, -z, y)_glTF,
+    то есть STL должен быть зеркальным (тело в минусе z). Это измерено на
+    стенде hardware/tscircuit/out/probe3d.circuit.tsx (одна деталь, без
+    stepUrl, экспорт glb):
 
-Проверка результата — hardware/tscircuit/check_models3d.py: она сравнивает
-board.glb с circuit.json и требует, чтобы каждая деталь стояла на поверхности
-платы и по центру компонента.
+        STL Z[ 0.00 .. 0.80] -> деталь целиком под платой, Y[-0.10 .. 0.70]
+        STL Z[-0.80 .. 0.00] -> деталь стоит на плате,     Y[ 0.70 .. 1.50]
+
+Перепутанная ориентация видна сразу: деталь уходит внутрь платы. Ловится
+hardware/tscircuit/check_models3d.py (board.glb против circuit.json): каждая
+деталь должна стоять на поверхности и по центру компонента; пары STL+STEP
+сверяются ещё до экспорта в build_pcb.mjs.
 
 Запуск (только freecadcmd, обычный python3 не подходит):
     freecadcmd hardware/tscircuit/step2stl.py
+
+Каталоги берутся из окружения MODELS_DIR (где искать *.step) и STL_DIR
+(куда класть *.stl), по умолчанию — зеркало kicad-packages3d. Так этим же
+скриптом конвертируются и проектные библиотеки заказа: tools/part_fetch.py
+зовёт его с MODELS_DIR=STL_DIR=design/libs/<nick>.3dshapes сразу после
+скачивания детали. Уже сконвертированные и не устаревшие STL пропускаются,
+поэтому повторный вызов безвреден.
+
+NORMALIZE_Z=1 (это ставит part_fetch) добавляет посадку по z: STEP
+выравнивается так, чтобы низ тела был чуть ниже плоскости платы — см.
+комментарий к NORMALIZE_Z. Для зеркала kicad-packages3d режим не нужен и
+не включается.
+
+MIRROR_Z задаёт зеркальную запись STL (z -> -z вместе с нормалями). По
+умолчанию включён ровно тогда, когда NORMALIZE_Z выключен: STL без пары
+STEP (зеркало packages3d) должен быть зеркальным, STL в паре со STEP —
+совпадать с ним по ориентации.
 """
 
 import os
@@ -58,6 +85,55 @@ ANG = float(os.environ.get("MESH_ANGULAR", "0.3"))
 # выше TOL — деталь торчит над уровнем размещения, ниже -TOL — уходит вверх.
 TOL = float(os.environ.get("MESH_Z_TOL", "0.05"))
 
+# Посадка по z для каталогов заказа (NORMALIZE_Z=1; так зовёт part_fetch).
+#
+# Выгрузки EasyEDA приходят кто куда. Примеры, снятые с одной и той же
+# детали: SOD-523 с точками z=[-0.71, 0.00] — тело целиком ниже плоскости
+# платы, и в board.step оно тонет в плате (замер: z=[0.10, 0.80]); та же
+# деталь в другой выгрузке — точки [-0.71, 0.05] при собственном размещении
+# внутри файла, которое поднимает тело на [-0.01, 0.75]. Поэтому посадка
+# считается по ЭФФЕКТИВНОМУ габариту (BoundBox, размещения учтены), а
+# геометрию правит сам FreeCAD: если тело не пересекает z=0, оно
+# сдвигается так, чтобы низ встал на ZMIN, и STEP переписывается.
+#
+# Почему низ на -0.01: у сборщика board.step посадка зависит от того,
+# пересекает ли модель z=0. Пересекающие (низ -0.01 тоже пересекает)
+# садятся переводом boardThickness/2 ровно на верхнюю грань платы: замер
+# board.step R0603 z=[0.79, 1.24] при грани 0.80. Модель целиком выше
+# нуля (C_0603 из кэша, z=[0.00, 0.80]) уходит в другую ветку, где
+# смещение поверхности складывается дважды (t/2 - minZ + position.z, а
+# position.z у tscircuit уже = t/2): низ встаёт на z=1.60 вместо 0.80 —
+# замер board.step z=[1.60, 2.40]. Тела со сквозными выводами пересекают
+# ноль по построению — их не трогаем. Сдвиг идемпотентен.
+NORMALIZE_Z = os.environ.get("NORMALIZE_Z") == "1"
+ZMIN = float(os.environ.get("MESH_Z_MIN", "-0.01"))
+TH_Z_TOL = 0.001
+
+# Зеркальная запись STL (z -> -z вместе с нормалями). Нужна только для
+# STL БЕЗ пары STEP (зеркало packages3d): там glb читает STL через
+# USB-ветку перевода осей (y=-z). В заказе (NORMALIZE_Z=1) STL идёт в
+# паре со STEP и обязан совпадать с ним по ориентации — зеркало
+# перевернуло бы деталь. MIRROR_Z перекрывает выбор при необходимости.
+MIRROR = os.environ.get("MIRROR_Z", "0" if NORMALIZE_Z else "1") == "1"
+
+# Тип детали от part_fetch: "0" — SMD, "1" — со сквозными выводами,
+# пусто — неизвестно. Карта KR_PART_THRU_MAP (строки «имя_модели TAB 0/1»)
+# позволяет одной конвертации каталога обслужить и SMD, и сквозные
+# вперемешку: для SMD с чужим якорем низ переносится на ZMIN, сквозные не
+# трогаются (пересечение нуля у них — выводы, а не середина корпуса).
+PART_THRU_MAP: dict[str, str] = {}
+_pm = os.environ.get("KR_PART_THRU_MAP", "")
+if _pm and Path(_pm).is_file():
+    for _line in Path(_pm).read_text().splitlines():
+        _stem, _, _val = _line.partition("\t")
+        if _stem and _val in ("0", "1"):
+            PART_THRU_MAP[_stem] = _val
+
+
+def part_thru_for(stem: str) -> str:
+    """Тип детали для модели: из карты; иначе общий KR_PART_THRU."""
+    return PART_THRU_MAP.get(stem) or os.environ.get("KR_PART_THRU", "").strip()
+
 
 def stl_bbox(path: Path):
     """Габариты STL: (xmin, xmax, ymin, ymax, zmin, zmax) в мм."""
@@ -83,6 +159,35 @@ def stl_bbox(path: Path):
             zs.append(v[k + 2])
         off += 50
     return (None, None, None, None, min(zs), max(zs)) if zs else None
+
+
+def stl_orientation_ok(path: Path, mirrored: bool) -> bool:
+    """Быстрая сверка ориентации готового STL с конвенцией эмиссии.
+
+    mirrored=False (пара STL+STEP): тело обязано подниматься в плюс z.
+    mirrored=True (STL без STEP): тело в минусе z, то есть -zmin > TOL.
+    Полнота проверки (НЕТ ТЕЛА/ПЕРЕВЕРНУТО) — в main; здесь только то,
+    что нужно для решения «пересобирать или файл уже в конвенции».
+    """
+    bb = stl_bbox(path)
+    if bb is None:
+        return False
+    up = -bb[4] if mirrored else bb[5]
+    return up > TOL
+
+
+def stl_anchor_ok(path: Path, stem: str) -> bool:
+    """Свежий STL уже посажен по текущей конвенции?
+
+    Для SMD-деталей заказа (NORMALIZE_Z=1, тип «0») низ обязан стоять на
+    ZMIN. Без этой сверки смена правила посадки тихо пережила бы
+    пересборку: STL «свежее» STEP и старой ориентации, а якорь у него
+    прежний — так и остался бы полуутопленным C0603 из EasyEDA.
+    """
+    if not (NORMALIZE_Z and not MIRROR and part_thru_for(stem) == "0"):
+        return True
+    bb = stl_bbox(path)
+    return bb is not None and ZMIN - TOL <= bb[4] <= ZMIN + TOL
 
 
 def mirror_stl_z(path: Path) -> bool:
@@ -136,38 +241,54 @@ def main() -> int:
         rel = src.relative_to(MODELS).with_suffix(".stl")
         dst = OUT / rel
         dst.parent.mkdir(parents=True, exist_ok=True)
-        if dst.is_file() and dst.stat().st_size > 0:
+        # STL свежее STEP — оставляем; если STEP перезалили или
+        # перенормализовали (tools/part_fetch.py), конвертируем заново.
+        # Ориентация тоже проверяется: смена конвенции зеркала (STL без
+        # STEP против пары STL+STEP) обязана пересобрать файл, даже если
+        # он «свежее» — иначе старая ориентация тихо доживёт до board.glb.
+        if (dst.is_file() and dst.stat().st_size > 0
+                and dst.stat().st_mtime >= src.stat().st_mtime
+                and stl_orientation_ok(dst, MIRROR)
+                and stl_anchor_ok(dst, src.stem)):
             done += 1
             continue
         try:
             shape = Part.read(str(src))
+            if NORMALIZE_Z:
+                bb = shape.BoundBox
+                straddles = (bb.ZMin < -TH_Z_TOL and bb.ZMax > TH_Z_TOL)
+                # SMD с чужим якорем: EasyEDA отдаёт и тела, отцентрованные
+                # по z (C0603 [-0.40, 0.40] при высоте 0.8) — низ на ZMIN.
+                # Сквозные (тип «1»/неизвестно) при пересечении нуля не
+                # трогаются: у них это выводы, а не середина корпуса.
+                smd_misanchored = (part_thru_for(src.stem) == "0"
+                                   and bb.ZMin < ZMIN - TOL)
+                if ((not straddles or smd_misanchored)
+                        and (bb.ZMax - bb.ZMin) > 1e-6):
+                    dz = ZMIN - bb.ZMin
+                    if abs(dz) > 0.005:
+                        mat = App.Matrix()
+                        mat.move(App.Vector(0, 0, dz))
+                        shape = shape.transformShape(mat, True)
+                        shape.exportStep(str(src))
+                        print(f"  ПОСАДКА {rel.name[:44]:<44} сдвиг {dz:+.2f} мм, "
+                              f"было z[{bb.ZMin:.2f}, {bb.ZMax:.2f}]")
             mesh = MeshPart.meshFromShape(
                 Shape=shape, LinearDeflection=LIN,
                 AngularDeflection=ANG, Relative=False,
             )
-            # Ориентация: отражение по Z, без сдвига.
+            # Ориентация: сдвига нет — плоскость Z=0 модели и есть
+            # поверхность платы (узел ставится в cad_component.position).
+            # Зеркало — только для STL без пары STEP (MIRROR; см.
+            # «Ориентация STL» в заголовке файла).
             #
-            # Каталог kicad-packages3d во всех моделях соблюдает одну
-            # конвенцию: корпус выше Z=0, выводы, проходящие сквозь плату,
-            # ниже. Проверено на выборке: SMD-корпуса Z[0..h] (C_0603
-            # 0..0.80, SOIC-8 0..1.75, LQFP-48 0..1.50), а детали с
-            # выводами пересекают ноль (PinHeader_1x06 -3.11..8.65,
-            # DIP-8 -3.30..3.68, батарейный отсек -3.53..16.30).
-            #
-            # tscircuit переводит оси как (x, y, z)_STL -> (x, -z, y)_glTF,
-            # где glTF-Y вверх, то есть модель оказывается перевёрнутой
-            # относительно конвенции KiCad. Отражение по Z это исправляет.
-            #
-            # Сдвигать ничего не надо: исходная плоскость Z=0 и есть
-            # поверхность платы, она уже совпадает с местом установки узла.
-            # Проверено на стенде probe_orient (PinHeader_1x06, три
-            # варианта на одной плате, поверхность glTF-Y = 0.70):
-            #   сдвиг к Zmax=0 (то, что стояло раньше) -> Y[ 0.70 .. 12.24]
-            #       тело целиком над платой, выводы в плату не заходят;
-            #   отражение Z без сдвига               -> Y[-2.19 ..  9.35]
-            #       тело 8.65 вверх, выводы 2.89 вниз — верно;
-            #   исходник без преобразования           -> Y[-7.95 ..  3.59]
-            #       тело внутри платы — неверно.
+            # Каталог kicad-packages3d и выгрузки EasyEDA соблюдают одну
+            # конвенцию: корпус выше Z=0, выводы сквозь плату — ниже
+            # (C_0603 0..0.80, PinHeader_1x06 -3.11..8.65,
+            # SOD-523 -0.01..0.75). Для пары STL+STEP она сохраняется как
+            # есть; для зеркала packages3d без STEP — отражается, чтобы
+            # компенсировать USB-ветку перевода осей tscircuit
+            # ((x, y, z)_STL -> (x, -z, y)_glTF).
             #
             # Отражение выполняется не через FreeCAD, а записью STL: у
             # FreeCAD 1.0 mesh.transform(Matrix) геометрию разрушает
@@ -175,24 +296,26 @@ def main() -> int:
             # Чистого зеркала Z через Placement не сделать: поворот на 180
             # градусов всегда затрагивает вторую ось.
             mesh.write(str(dst))
-            bb = mesh.BoundBox
-            mirrored = mirror_stl_z(dst)
+            if MIRROR:
+                mirror_stl_z(dst)
             bb2 = stl_bbox(dst)
             if bb2 is None:
                 print(f"  ПУСТО {rel}: не читается получившийся STL")
                 bad.append(rel)
                 continue
-            # Признак верной ориентации: тело должно уходить в плюс Z
-            # платы (после отражения минус), то есть Zmin заметно ниже нуля,
-            # а Zmax около нуля. У деталей с выводами сквозь плату Zmax
-            # положителен — это длина выводов, ушедших под плату.
-            up = -bb2[4]
-            down = bb2[5]
+            # Признак верной ориентации — «корпус вверх»: для пары STL+STEP
+            # это плюс z (Zmax), для зеркального STL — минус z (тогда
+            # «вверх» = -Zmin). «Под плату» — противоположный край: длина
+            # выводов сквозь плату (или ≈0 у SMD).
+            if MIRROR:
+                up, down = -bb2[4], bb2[5]
+            else:
+                up, down = bb2[5], -bb2[4]
             print(f"  {rel.name[:44]:<44} корпус вверх {up:6.2f}, "
                   f"под плату {down:5.2f}")
             if up <= TOL:
                 print(f"  НЕТ ТЕЛА: корпус не поднимается над платой "
-                      f"(Zmin={bb2[4]:.2f}), модель уезжает вниз")
+                      f"(z=[{bb2[4]:.2f}, {bb2[5]:.2f}]), модель лежит не на плоскости")
                 bad.append(rel)
             if up - down > 4 * max(up, 1.0):
                 print(f"  ПЕРЕВЕРНУТО: {down:.2f} мм уходит вниз против "

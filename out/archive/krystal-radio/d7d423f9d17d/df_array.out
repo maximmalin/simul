@@ -1,0 +1,31 @@
+
+
+
+                               __________________________________________
+                              |                                          |
+                              |  NUMERICAL ELECTROMAGNETICS CODE (nec2c) |
+                              |   Translated to 'C' in Double Precision  |
+                              |__________________________________________|
+
+
+
+                               ---------------- COMMENTS ----------------
+                               Krystal Radio DF interferometer array
+                               4 half-wave dipoles, baseline=61.2mm @ 2450.0MHz
+                              
+
+
+
+                               -------- STRUCTURE SPECIFICATION --------
+                                     COORDINATES MUST BE INPUT IN
+                                     METERS OR BE SCALED TO METERS
+                                     BEFORE STRUCTURE INPUT IS ENDED
+
+  WIRE                                                                                 SEG FIRST  LAST  TAG
+   No:        X1         Y1         Z1         X2         Y2         Z2       RADIUS   No:   SEG   SEG  No:
+     1    -0.09180    0.00000    0.00000   -0.09180    0.00000    0.06120    0.00100    11     1    11    1
+     2    -0.03060    0.00000    0.00000   -0.03060    0.00000    0.06120    0.00100    11    12    22    2
+     3     0.03060    0.00000    0.00000    0.03060    0.00000    0.06120    0.00100    11    23    33    3
+     4     0.09180    0.00000    0.00000    0.09180    0.00000    0.06120    0.00100    11    34    44    4
+  GEOMETRY DATA CARD ERROR
+ GN   1     0    0.00000    0.00000    1.00000    0.00000    0.00000    0.00000    0.00000

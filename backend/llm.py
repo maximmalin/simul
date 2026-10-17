@@ -148,6 +148,12 @@ PROVIDERS: dict[str, Provider] = {
         "custom", "Произвольный endpoint",
         os.environ.get("KR_LLM_BASE", "http://127.0.0.1:8080/v1"),
         "KR_LLM_API_KEY", False, "local-model", "указывается явно"),
+    # --- OpenCode: агентный интерфейс с доступными моделями ---
+    "opencode": Provider(
+        "opencode", "OpenCode",
+        os.environ.get("KR_LLM_OPENCODE_HOST", "http://127.0.0.1:3001/v1"),
+        "KR_LLM_OPENCODE_KEY", False, "auto",
+        "локальные модели OpenCode (автоопределение)"),
     # --- Nous Portal: облако с бесплатным тарифом ---
     # OpenAI-совместимый API с моделями, помеченными суффиксом `:free`.
     # Ключ бесплатный, карта не нужна. Это единственное облако, которое
@@ -253,6 +259,9 @@ PRESETS: dict[str, dict[str, str]] = {
               "hint": "Gemma 3 4B — хороший вызов инструментов на CPU"},
     "mistral": {"provider": "ollama", "model": "ministral:3b",
                 "hint": "Mistral 3B — очень быстрый на CPU"},
+    # --- OpenCode: агентный интерфейс с доступными моделями ---
+    "opencode": {"provider": "opencode", "model": "auto",
+                "hint": "OpenCode — агентный сервер с локальными моделями"},
     # --- облако с бесплатным тарифом (ключ бесплатный, карта не нужна) ---
     "nous": {"provider": "nous", "model": "stepfun/step-3.7-flash:free",
              "hint": "Nous Portal, бесплатно. Нужен ключ NOUS_PORTAL_API_KEY"},
@@ -652,6 +661,50 @@ def chat(messages: list[dict], *, tools: list[dict] | None = None,
     if errors and not all("пауза" in e for e in errors):
         print(f"[llm] все маршруты не сработали -> {errors[-1]}")
     return None
+
+
+def chat_one(messages: list[dict], *, pk: str, model: str,
+             tools: list[dict] | None = None,
+             temperature: float = 0.0, max_tokens: int = 900,
+             timeout: float = 120.0) -> Turn | None:
+    """Один ход у конкретного маршрута (провайдер, модель).
+
+    Выделено из chat(), чтобы гонка (backend/llm_race.py) использовала
+    ровно ту же логику запроса: заголовки, парсинг хода, отметка
+    «жив/мёртв» — всё то же, без обходных путей.
+    """
+    if pk not in PROVIDERS:
+        return None
+    if PROVIDERS[pk].key_required and not (
+            provider_key(pk) or (pk == "nous" and _hermes_credential())):
+        return None
+    if _is_dead(pk, model):
+        return None
+    payload: dict = {
+        "model": model, "messages": messages,
+        "temperature": temperature, "max_tokens": max_tokens,
+    }
+    if tools:
+        payload["tools"] = tools
+        payload["tool_choice"] = "auto"
+    try:
+        data = _post(PROVIDERS[pk].base, "/chat/completions",
+                     payload, _headers(pk), timeout)
+        _mark_alive(pk, model)
+        with _LOCK:
+            _LAST_OK[_model_dead_key(pk, model)] = time.time()
+            _LAST_ERR.pop(_model_dead_key(pk, model), None)
+        return Turn(**_parse_turn(data, pk, model))
+    except Exception as exc:                                    # noqa: BLE001
+        msg = f"{pk}/{model}: {exc}"[:200]
+        with _LOCK:
+            _LAST_ERR[pk] = msg
+        low = str(exc).lower()
+        if any(x in low for x in ("connection refused", "no route to host",
+                                  "name or service not known",
+                                  "failed to establish")):
+            _mark_dead(pk, low, model)
+        return None
 
 
 def _parse_turn(data: dict, pk: str, model: str) -> dict:

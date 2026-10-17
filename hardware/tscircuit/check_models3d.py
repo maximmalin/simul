@@ -4,14 +4,16 @@
 
 Зачем. tscircuit выравнивает модель по своему габариту
 (model_origin_alignment: center_of_component_on_board_surface), а не по
-собственному началу координат. Поэтому деталь из каталога, начало которой
-произвольно, всё равно должна встать по центру компонента.
+собственному началу координат: центр габарита модели встаёт в центр
+корпуса. Поэтому деталь из каталога, начало координат которой
+произвольно, всё равно должна встать по центру компонента — и проверять
+это нужно по факту, а не по предположению.
 
-Раньше на это опирался «автосдвиг» в эмиттере (positionOffset, разница
-центров модели и выводов). Он был нужен только потому, что при конвертации
-STEP->STL модель уходила в Z<0, то есть вглубь платы; сам по себе сдвиг
-лечил несуществующую проблему и искажал положение детали. Теперь сдвиг
-убран, и нужно убедиться, что детали встали правильно и без него.
+Раньше на это опирался «автосдвиг» в эмиттере (positionOffset из
+model_offsets.json). Он не нужен: tscircuit центрирует модели сам, а
+любой positionOffset сдвинул бы деталь из центра ровно на свою
+величину. Механизм сдвигов удалён, и эта проверка — единственный
+источник истины о посадке.
 
 Проверка работает по фактическим данным экспорта и потому годится для любой
 схемы, а не только для текущей:
@@ -20,15 +22,17 @@ STEP->STL модель уходила в Z<0, то есть вглубь пла�
 
   * circuit.json -> pcb_component: центр каждого компонента (pcbX/pcbY) и
     его ref;
-  * board.glb    -> узел каждой модели: габарит из POSITION-accessor и
-    матрица узла.
+  * board.glb    -> узел каждой модели: габарит из POSITION-accessor
+    (объединение всех примитивов меша) и матрица узла.
 
 Итог: для каждой детали печатается отклонение центра модели от центра
 компонента и высота над платой. Ненулевое отклонение означает, что деталь
 перекошена; нижняя грань ниже поверхности платы — что деталь уходит вглубь.
 
-Запуск:
-    python3 hardware/tscircuit/check_models3d.py
+Запуск (--out — каталог экспортов, по умолчанию штатный out репозитория;
+run_pcb.py передаёт сюда каталог заказа):
+
+    python3 hardware/tscircuit/check_models3d.py [--out DIR]
 Код возврата 0, если все детали стоят на плате и не смещены.
 """
 
@@ -43,8 +47,9 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-CIRCUIT = ROOT / "hardware/tscircuit/out/circuit.json"
-GLB = ROOT / "hardware/tscircuit/out/board.glb"
+# Штатный каталог экспортов репозитория. В песочнице заказа каталог другой
+# (out/hardware/tscircuit) — его передаёт run_pcb.py аргументом --out.
+DEFAULT_OUT = ROOT / "hardware/tscircuit/out"
 
 # Допуски, мм. По XY модель может торчать за посадочное место (штыри,
 # выводы, радиатор), это нормально; проверяем только положение центра.
@@ -110,8 +115,9 @@ def model_boxes(glb: dict, surface_y: float) -> dict[str, dict]:
     Имя узла -> {center, size} модели в координатах платы.
 
     Габарит берём из accessor min/max позиций вершин (данные glTF так и
-    хранятся), затем переносим в систему координат узла. Размеры не
-    масштабируем по сцене: нас интересует, где физически стоит деталь.
+    хранятся), объединяя ВСЕ примитивы меша, затем переносим в систему
+    координат узла. Размеры не масштабируем по сцене: нас интересует, где
+    физически стоит деталь.
     """
     accessors, meshes, nodes = (glb["accessors"], glb["meshes"], glb["nodes"])
     out: dict[str, dict] = {}
@@ -119,11 +125,22 @@ def model_boxes(glb: dict, surface_y: float) -> dict[str, dict]:
         mi = node.get("mesh")
         if mi is None:
             continue
-        prim = meshes[mi]["primitives"][0]
-        acc = accessors[prim["attributes"]["POSITION"]]
-        if "min" not in acc or "max" not in acc:
+        # Раньше брался только первый примитив. Меш бывает нарезан на
+        # несколько (у PinHeader kicad-mod-cache корпус и выводы приходят
+        # отдельными примитивами): по первому низ/верх показывали только
+        # корпус (0.00…2.54 вместо -3.00…8.54), и выводы сквозь плату не
+        # попадали в проверку ориентации.
+        prims = meshes[mi]["primitives"]
+        los, his = [], []
+        for p in prims:
+            a = accessors[p["attributes"]["POSITION"]]
+            if "min" in a and "max" in a:
+                los.append(a["min"])
+                his.append(a["max"])
+        if not los:
             continue
-        lo, hi = acc["min"], acc["max"]
+        lo = [min(v[i] for v in los) for i in range(3)]
+        hi = [max(v[i] for v in his) for i in range(3)]
         pts = [(x, y, z) for x in (lo[0], hi[0])
                for y in (lo[1], hi[1]) for z in (lo[2], hi[2])]
         m = node_matrix(node)
@@ -142,6 +159,12 @@ def model_boxes(glb: dict, surface_y: float) -> dict[str, dict]:
         # компонента (а это высота) принималась за координату Y, из-за чего
         # все детали выглядели смещёнными.
         lo_y, hi_y = min(ys) - surface_y, max(ys) - surface_y
+        # Число вершин всех примитивов нужно, чтобы отличить настоящую
+        # геометрию от заглушки: если локальную модель прочитать не
+        # удалось, экспортёр подставляет коробку по габаритам корпуса —
+        # у неё ровно 24 вершины. Настоящие меши деталей крупнее.
+        verts = sum(accessors[p["attributes"]["POSITION"]].get("count", 0)
+                    for p in prims)
         out[name] = {
             "kx": -(min(xs) + max(xs)) / 2,
             "ky": (min(zs) + max(zs)) / 2,
@@ -149,26 +172,46 @@ def model_boxes(glb: dict, surface_y: float) -> dict[str, dict]:
             "top": hi_y,
             "mid": (lo_y + hi_y) / 2,
             "size": (max(xs) - min(xs), max(ys) - min(ys), max(zs) - min(zs)),
+            "verts": verts,
         }
     return out
 
 
-def footprints_by_ref() -> dict[str, str]:
+def footprints_by_ref(tsx_dir: Path) -> dict[str, str]:
     """
-    ref -> "Lib:Name" из сгенерированного TSX.
+    ref -> значение поля footprint из сгенерированного TSX.
 
     Берётся из эмиттера, а не из circuit.json: в circuit.json у
     pcb_component поля ref нет, а корпус известен только там.
+
+    Значение встречается в трёх видах, и все три нужны:
+      * "kicad:Capacitor_SMD/C_0603_1608Metric" — стандартный корпус
+        (tscircuit сам берёт для него модель из своего кэша);
+      * абсолютный путь "…/easyeda.pretty/SOD-523_….kicad_mod" — своя
+        посадочная площадка заказа из design/libs (партия part_fetch);
+      * "Lib:Name" — формат нетлиста KiCad.
+
+    Раньше шаблон требовал «kicad:» и, не найдя его, перескакивал к
+    следующему компоненту: D1 с путём к своему .kicad_mod получал корпус
+    J1, и предупреждение об ориентации указывало не на ту деталь.
     """
-    tsx = CIRCUIT.parent / "board.circuit.tsx"
+    tsx = tsx_dir / "board.circuit.tsx"
     out: dict[str, str] = {}
     if not tsx.is_file():
         return out
+    # Порядок свойств у эмиттера фиксирован — name, затем footprint
+    # (build_pcb.mjs, emitTsx), поэтому пары восстанавливаются по порядку
+    # следования: запоминаем имя, следующий footprint после него — корпус.
+    pending: str | None = None
     for m in re.finditer(
-        r'name=\{?"([^"]+)"?\}.*?footprint=\{?"kicad:([^"]+?)"',
-        tsx.read_text(errors="ignore"), re.S,
+        r'name=\{?"([^"]+)"?\}|footprint=\{?"([^"]+?)"\}',
+        tsx.read_text(errors="ignore"),
     ):
-        out[m.group(1)] = m.group(2)
+        if m.group(1) is not None:
+            pending = m.group(1)
+        elif pending is not None:
+            out[pending] = m.group(2)
+            pending = None
     return out
 
 
@@ -194,6 +237,36 @@ def components(circuit: dict) -> dict[str, dict]:
     return out
 
 
+def native_refs(circuit: dict) -> set[str]:
+    """
+    Детали с родным телом tscircuit: у cad_component НЕТ URL модели.
+
+    Такие детали эмитятся строкой генератора (footprint="0603" и т.п.):
+    корпус и 3D-тело строит сам tscircuit, и меш в board.glb — настоящая
+    геометрия. Проверка «коробка-заглушка» относится только к моделям по
+    URL (STL/STEP), поэтому родные детали из неё исключаются.
+    """
+    refs = {e["source_component_id"]: e.get("name", "")
+            for e in circuit if e.get("type") == "source_component"}
+    pcb_ref: dict[str, str] = {}
+    for c in circuit:
+        if c.get("type") == "pcb_component":
+            pcb_ref[c.get("pcb_component_id")] = \
+                refs.get(c.get("source_component_id"), "")
+    out: set[str] = set()
+    for e in circuit:
+        if e.get("type") != "cad_component":
+            continue
+        url = (e.get("model_stl_url") or e.get("model_step_url")
+               or e.get("model_obj_url") or e.get("model_url"))
+        if url:
+            continue
+        ref = pcb_ref.get(e.get("pcb_component_id"), "")
+        if ref:
+            out.add(ref)
+    return out
+
+
 # ── ориентация модели относительно выводов корпуса ────────────────────────
 #
 # Проверка отвечает на вопрос «не перевёрнута ли деталь». Признак берётся
@@ -211,15 +284,31 @@ FP_ROOT = Path("/usr/share/kicad/footprints")
 
 
 def footprint_pads(ref_footprint: str) -> tuple[int, int]:
-    """(всего выводов, выводов сквозь плату) для корпуса Lib:Name или Lib/Name."""
-    # Разделитель бывает и двоеточием (нетлист KiCad), и слешем (формат
-    # kicad:Lib/Name в tscircuit). Берём тот, который реально есть.
-    sep = ":" if ":" in ref_footprint else "/"
-    lib, _, name = ref_footprint.partition(sep)
-    f = FP_ROOT / f"{lib}.pretty" / f"{name}.kicad_mod"
-    if not f.is_file():
+    """
+    (всего выводов, выводов сквозь плату).
+
+    Корпус принимается в любом виде, в каком его пишут наши файлы:
+    "kicad:Lib/Name" и "Lib:Name" ищутся в системной библиотеке KiCad,
+    путь к файлу .kicad_mod (свои площадки заказа из design/libs)
+    читается прямо по пути. Файл не найден — (0, 0): проверка ориентации
+    молча пропустит деталь, ошибок не выдумываем.
+    """
+    txt = None
+    s = ref_footprint.strip()
+    p = Path(s) if s.endswith(".kicad_mod") else None
+    if p and p.is_file():
+        txt = p.read_text(errors="ignore")
+    if txt is None:
+        # Разделитель бывает и двоеточием (нетлист KiCad), и слешем (формат
+        # kicad:Lib/Name в tscircuit). Берём тот, который реально есть.
+        s = s.removeprefix("kicad:")
+        sep = ":" if ":" in s else "/"
+        lib, _, name = s.partition(sep)
+        f = FP_ROOT / f"{lib}.pretty" / f"{name}.kicad_mod"
+        if f.is_file():
+            txt = f.read_text(errors="ignore")
+    if txt is None:
         return 0, 0
-    txt = f.read_text(errors="ignore")
     # Блок (pad ...) в .kicad_mod многострочный, поэтому ищем по блокам,
     # а не по строке: иначе тип вывода в следующей строке не виден.
     pads = thru = 0
@@ -230,54 +319,27 @@ def footprint_pads(ref_footprint: str) -> tuple[int, int]:
     return pads, thru
 
 
-def measure(boxes, comps, by_ref, old):
-    """
-    Сдвиги, приводящие каждую деталь к центру компонента.
-
-    error — измеренное смещение модели относительно центра компонента.
-    tscircuit сдвигает модель ровно на величину positionOffset, поэтому
-    после применения нового сдвига смещение станет
-        error + (offset_new - offset_old),
-    и обнулить его можно только offset_new = offset_old - error.
-
-    Отсюда видна и ошибка, которую пришлось исправлять: при нулевом
-    offset_old формула выглядит как offset = -error, и она сдвигает
-    модель в ПРОТИВОПОЛОЖНУЮ сторону. Проверено на Crystal_AT310: без
-    сдвига смещение было +2.25 мм, при сдвиге +6.025 мм стало
-    +8.27 мм, то есть выросло ровно на величину сдвига.
-    """
-    out = {}
-    for ref in comps:
-        hit = by_ref.get(ref)
-        if not hit:
-            continue
-        box = hit[1]
-        cx, cy = comps[ref]["center"]
-        prev = old.get(ref, {"dx": 0.0, "dy": 0.0})
-        dx = round(prev["dx"] - (box["kx"] - cx), 4)
-        dy = round(prev["dy"] - (box["ky"] - cy), 4)
-        if abs(dx) < 0.01 and abs(dy) < 0.01:
-            continue
-        out[ref] = {"dx": dx, "dy": dy}
-    return out
-
-
 def main() -> int:
     ap = argparse.ArgumentParser(description="проверка посадки 3D-моделей")
-    ap.add_argument("--write-offsets", metavar="ПУТЬ",
-                    help="записать model_offsets.json со сдвигами, "
-                         "приводящими детали к центру компонента, и выйти")
+    ap.add_argument("--out", metavar="КАТАЛОГ",
+                    help="каталог экспортов (circuit.json, board.glb, "
+                         "board.circuit.tsx); по умолчанию "
+                         "hardware/tscircuit/out репозитория")
     args = ap.parse_args()
 
-    if not CIRCUIT.is_file():
-        print(f"НЕТ {CIRCUIT} — сначала соберите плату")
+    out_dir = Path(args.out).resolve() if args.out else DEFAULT_OUT
+    circuit_path = out_dir / "circuit.json"
+    glb_path = out_dir / "board.glb"
+
+    if not circuit_path.is_file():
+        print(f"НЕТ {circuit_path} — сначала соберите плату")
         return 1
-    if not GLB.is_file():
-        print(f"НЕТ {GLB} — 3D не выгружен (нужен экспорт glb)")
+    if not glb_path.is_file():
+        print(f"НЕТ {glb_path} — 3D не выгружен (нужен экспорт glb)")
         return 1
 
-    circuit = json.loads(CIRCUIT.read_text())
-    glb = load_glb(GLB)
+    circuit = json.loads(circuit_path.read_text())
+    glb = load_glb(glb_path)
 
     board = next((e for e in circuit if e.get("type") == "pcb_board"), None)
     if not board:
@@ -289,14 +351,16 @@ def main() -> int:
 
     boxes = model_boxes(glb, surface)
     comps = components(circuit)
-    footprints = footprints_by_ref()
+    footprints = footprints_by_ref(out_dir)
+    native = native_refs(circuit)   # родные тела tscircuit (footprinter)
 
     print("=" * 78)
     print("ПОСАДКА 3D-МОДЕЛЕЙ: board.glb против circuit.json")
     print("=" * 78)
     print(f"  плата: {board['width']} x {board['height']} x {board['thickness']} мм, "
           f"поверхность glTF-Y = {surface:.2f}")
-    print(f"  circuit.json: pcb_component {len(comps)}")
+    print(f"  circuit.json: pcb_component {len(comps)}, "
+          f"из них родных (footprinter) {len(native)}")
     print(f"  board.glb:    узлов с моделями {len(boxes)}")
     print(f"  допуски: центр {CENTER_TOL} мм, низ детали {Z_TOL} мм\n")
 
@@ -308,22 +372,6 @@ def main() -> int:
                         or name.startswith(f"{ref}.") or name.endswith(f"_{ref}")):
                 by_ref[ref] = (name, box)
                 break
-
-    if args.write_offsets:
-        dest = Path(args.write_offsets)
-        old: dict = {}
-        if dest.is_file():
-            try:
-                old = json.loads(dest.read_text()).get("offsets", {})
-            except Exception:                           # noqa: BLE001
-                old = {}
-        offs = measure(boxes, comps, by_ref, old)
-        dest.write_text(json.dumps({"offsets": offs}, indent=1) + "\n")
-        print(f"сдвигов посчитано: {len(offs)} -> {dest}")
-        for ref in sorted(offs):
-            print(f"   {ref:<6} offset=({offs[ref]['dx']:+.3f}, "
-                  f"{offs[ref]['dy']:+.3f})")
-        return 0
 
     print(f"{'ref':<6} {'узел glb':<24} {'dx':>7} {'dy':>7} {'низ':>7} "
           f"{'верх':>7}  размер X x Y x Z")
@@ -359,6 +407,8 @@ def main() -> int:
     print(f"деталей с 3D-моделью: {len(by_ref)} из {len(comps)}")
     if missing:
         print(f"без 3D-модели ({len(missing)}): {', '.join(missing[:20])}")
+        print("   это ошибка: у каждой детали должно быть тело — родное "
+              "(footprinter) или модель из design/libs")
     print(f"смещённых по XY (>{CENTER_TOL} мм): {len(bad_center)}")
     print(f"уходящих в плату (середина < -{Z_TOL}): {len(bad_z)}")
     if bad_center:
@@ -388,8 +438,10 @@ def main() -> int:
         if thru == 0:
             continue
         if hit[1]["bottom"] >= -Z_TOL:
+            fp_short = (fp.rsplit("/", 1)[-1].removeprefix("kicad:")
+                        .removesuffix(".kicad_mod"))
             flipped.append(f"{ref} (низ {hit[1]['bottom']:+.2f} мм, "
-                           f"выводов сквозь: {thru}, корпус {fp.split('/')[-1]})")
+                           f"выводов сквозь: {thru}, корпус {fp_short})")
     thru_total = sum(1 for r in comps
                      if (fp := footprints.get(r)) and footprint_pads(fp)[1])
     print()
@@ -401,7 +453,30 @@ def main() -> int:
         print("   это не обязательно ошибка: у ESP32 боковые площадки, "
               "у клеммников выводы могут не быть отрисованы")
 
-    if bad_center or bad_z:
+    # ---- заглушки: модель в glb — коробка, а не тело детали ----
+    #
+    # tscircuit подставляет коробку по габаритам корпуса (24 вершины),
+    # когда модель по её URL прочитать не удалось. Для локальных STEP это
+    # штатная ситуация: конвертер gltf читает только STL/GLB/OBJ и
+    # сетевые STEP. Поэтому рядом с каждым design/libs/*.step должен
+    # лежать *.stl в той же ориентации (его делает tools/part_fetch.py
+    # зовом step2stl.py) — иначе в board.glb вместо детали будет коробка.
+    # Родные тела (footprinter) исключены: их геометрию строит сам
+    # tscircuit, коробкой-заглушкой там и не пахнет.
+    boxed = [f"{ref} ({hit[1]['verts']} верш.)"
+             for ref in sorted(comps) if ref not in native
+             and (hit := by_ref.get(ref)) and hit[1]["verts"] <= 36]
+    print()
+    print(f"моделей-заглушек (коробка вместо тела): {len(boxed)} "
+          f"(проверяются только модели по URL, родных {len(native)})")
+    for b in boxed:
+        print(f"   {b}")
+    if boxed:
+        print("   для локальных STEP нужен STL рядом (в той же "
+              "ориентации): python3 tools/part_fetch.py --lcsc <C…> "
+              "(довложит) или freecadcmd step2stl.py (NORMALIZE_Z=1)")
+
+    if bad_center or bad_z or boxed or missing:
         print("\nОШИБКА: детали стоят неверно")
         return 1
     print("\nOK: все детали стоят на плате и по центру компонента")

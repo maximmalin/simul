@@ -58,7 +58,64 @@ SKIP_DIRS = {
 }
 
 #: каталоги, которые заказ создаёт заново
-FRESH_DIRS = ("out", "sim/outputs", "sim/netlists", "sim/nec", "sim/work")
+FRESH_DIRS = ("out", "sim/outputs", "sim/netlists", "sim/nec", "sim/work",
+              "design")
+
+#: системные инструменты, которые получает КАЖДЫЙ заказ (копируются в
+#: песочницу — агенту позволено их править; оригиналы в корне нетронуты):
+#: универсальный компилятор принципиальной схемы и штатный движок разводки.
+#: Путь — имя → фактическое место в корне репозитория.
+SYSTEM_TOOLS: tuple[tuple[str, str], ...] = (
+    ("tools/schematic_from_json.py", "tools/schematic_from_json.py"),
+    # реальная деталь по LCSC: символ/корпус/3D EasyEDA + даташит
+    ("tools/part_fetch.py", "tools/part_fetch.py"),
+    # готовый скрапер даташитов (kicad-happy, MIT) — фоллбек-цепочка
+    # part_fetch зовёт его для деталей без прямой ссылки
+    ("tools/vendor/kicad_happy/fetch_datasheet_lcsc.py",
+     "tools/vendor/kicad_happy/fetch_datasheet_lcsc.py"),
+    # PCB-паспорт деталей: задание по даташитам и проверка (упаковщик)
+    ("tools/part_pcb.py", "tools/part_pcb.py"),
+    # поблочная сборка SKiDL: нетлисты блоков по спецификации дизайнера
+    ("tools/skidl_blocks.py", "tools/skidl_blocks.py"),
+    ("hardware/kicad/kicad_lib_brig.py",
+     "hardware/kicad/kicad_lib_brig.py"),
+    ("hardware/kicad/generate_brig_receiver.py",
+     "hardware/kicad/generate_brig_receiver.py"),
+    # звено платы: тонкий раннер + эмиттер tscircuit + подбор деталей.
+    # node_modules с tsci приходит из SHARED_DIRS, базы — из DEPS_CACHE.
+    ("hardware/tscircuit/run_pcb.py", "hardware/tscircuit/run_pcb.py"),
+    ("hardware/tscircuit/build_pcb.mjs",
+     "hardware/tscircuit/build_pcb.mjs"),
+    ("hardware/tscircuit/resolve_parts.py",
+     "hardware/tscircuit/resolve_parts.py"),
+    # механика чертежей: STEP → очистка Analysis Situs → FreeCAD TechDraw
+    ("gost_pipeline.py", "gost_pipeline.py"),
+)
+
+#: Готовые заготовки зависимостей платы (источник — корень репозитория).
+#: Политика: собираются один раз по инструкциям docs/SCRIPTS.md и живут
+#: в корне постоянно; конвейер заказа их НИКОГДА не пересобирает и не
+#: устанавливает — только берёт готовое. Заготовки нет — это честная
+#: нехватка, о которой сообщает сам конвейер, а не повод запускать
+#: сетевую установку внутри заказа.
+DEPS_CACHE: tuple[tuple[str, str], ...] = (
+    # локальная база деталей в стиле jlcsearch — собирает
+    # hardware/tscircuit/build_derived.py ровно один раз
+    ("hardware/tscircuit/out/jlcsearch.db",
+     "hardware/tscircuit/out/jlcsearch.db"),
+)
+
+#: Тяжёлый кэш 3D-моделей корпусов (зеркало packages3d, приведённое к
+#: STL: hardware/tscircuit/fetch_3dmodels.sh + step2stl.py). Включается
+#: переменной KR_DEPS_3D=1: нужен только заказам с 3D-экспортом платы.
+if os.environ.get("KR_DEPS_3D", "0").strip().lower() in ("1", "true",
+                                                         "yes", "on"):
+    DEPS_CACHE = DEPS_CACHE + (
+        ("hardware/tscircuit/models", "hardware/tscircuit/models"),
+    )
+
+#: корень репозитория (backend/agents/sandbox.py → backend → корень)
+REPO_ROOT = Path(__file__).resolve().parents[2]
 
 #: Каталоги с зависимостями: `.venv` и `node_modules`.
 #:
@@ -176,6 +233,30 @@ def create(order_id: str, project: str | Path) -> Path:
         if (sandbox / rel).exists():
             shutil.rmtree(sandbox / rel, ignore_errors=True)
         (sandbox / rel).mkdir(parents=True, exist_ok=True)
+
+    # системные инструменты: универсальный компилятор схемы + движок
+    # разводки. Сумма копируемых файлов под килобайт/мегабайт — не мешает.
+    for src_rel, dst_rel in SYSTEM_TOOLS:
+        src = REPO_ROOT / src_rel
+        dst = sandbox / dst_rel
+        if not src.is_file() or dst.is_file():
+            continue
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(src, dst)
+
+    # готовые заготовки зависимостей (DEPS_CACHE): копия уже собранного
+    # из корня репозитория; установки/сборки в цикле заказа не бывает
+    for src_rel, dst_rel in DEPS_CACHE:
+        src = REPO_ROOT / src_rel
+        dst = sandbox / dst_rel
+        if not src.exists() or dst.exists():
+            continue
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        if src.is_dir():
+            subprocess.run(["cp", "-a", str(src), str(dst)],
+                           check=True, capture_output=True, timeout=1800)
+        else:
+            shutil.copy2(src, dst)
 
     for rel in SHARED_DIRS:
         _link_into(sandbox, project, rel)

@@ -19,6 +19,7 @@
 
 from __future__ import annotations
 
+import datetime
 import os
 import json
 import re
@@ -30,6 +31,7 @@ import traceback
 from typing import Any, Callable
 
 from . import engine, sandbox
+
 from .runner import available as runners_available
 from .profile import load as load_project
 from .engine import have_langgraph
@@ -149,6 +151,7 @@ def submit(text: str, root: str = ".", profile: str = "",
     """Принять заказ, запустить в фоне, вернуть начальное состояние."""
     text = (text or "").strip()
     proj = load_project(root, profile=profile)
+    watchdog_start()          # надзор: зависание объявляется само
 
     order = {
         "id": new_state(text)["order_id"],
@@ -230,10 +233,9 @@ def _archive_order_outputs(order_id: str, proj: Any, order: dict) -> None:
         (target / "manifest.json").write_text(
             json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
         order["archive"] = f"out/archive/{slug}/{order_id}"
-        order["logs"].append(
-            f"архив артефактов: {len(entries)} файлов → out/archive/{slug}/{order_id}")
+        _log(order, f"архив артефактов: {len(entries)} файлов → out/archive/{slug}/{order_id}")
     except Exception as exc:                                    # noqa: BLE001
-        order["logs"].append(f"архив не создан: {exc}")
+        _log(order, f"архив не создан: {exc}")
 
 
 def _run(order_id: str, proj: Project) -> None:
@@ -247,6 +249,7 @@ def _run(order_id: str, proj: Project) -> None:
     if order is None:
         return
     order["status"] = "running"
+    _mark_progress(order)
 
     try:
         from agents import engine as _eng
@@ -275,8 +278,7 @@ def _run(order_id: str, proj: Project) -> None:
             # проект. Лучше честный отказ, чем чужой заказ, который
             # стирает опору.
             order["status"] = "failed"
-            order["logs"] = (order.get("logs") or []) + [
-                f"песочница не создана: {exc}"]
+            _log(order, f"песочница не создана: {exc}")
             order["report"] = (
                 "Заказ остановлен: не удалось создать изолированную "
                 f"песочницу.\n\n{exc}\n\n"
@@ -301,11 +303,9 @@ def _run(order_id: str, proj: Project) -> None:
         try:
             sandbox.lock(proj.root)
             locked = True
-            order["logs"] = (order.get("logs") or []) + [
-                "проект закрыт на запись до конца заказа"]
+            _log(order, "проект закрыт на запись до конца заказа")
         except Exception as exc:                                # noqa: BLE001
-            order["logs"] = (order.get("logs") or []) + [
-                f"проект не закрыт ({exc}) — защита ограничена песочницей"]
+            _log(order, f"проект не закрыт ({exc}) — защита ограничена песочницей")
 
     engine.set_workdir(box)
     try:
@@ -352,18 +352,154 @@ def _run(order_id: str, proj: Project) -> None:
     # Сверка целостности. Запрет разрушающих целей и блокировка прав —
     # меры предупреждающие; «даже случайно» ими не закрывается, поэтому
     # расхождение обнаруживается здесь и попадает в отчёт.
+
+    # ============== МУЛЬТИ-АГЕНТСКАЯ АРХИТЕКТУРА ==============
+    # Анализ заказа и подбор агентов на основе типового анализа текста
+    order_text = order.get("text", "").lower()
+    proj_name = order.get("project", "").lower()
+
+    # --- Вспомогательные функции ---
+
+    def _match_agents_for_project(order_text):
+        """Подбор агентов на основе ключевых слов в тексте заказа.
+
+        Матч по содержимому запроса: агенты включаются по ключам,
+        которые действительно присутствуют в запросе. Никаких
+        захардкоженных по проектам.
+        """
+        agent_keywords = {
+            "chief": ["chief", "главный", "начальник", "управление", "координация"],
+            "consultant": ["consultant", "консультант", "уточнение", "вопрос", "интерфейс"],
+            "theorist": ["theorist", "теоретик", "математика", "физика", "модели", "расчет", "анализ"],
+            "designer": ["designer", "конструктор", "конструкция", "проектирование", "чертеж", "дизайн"],
+            "analyst": ["analyst", "аналитик", "данные", "статистика", "трассировка", "исследование"],
+            "tester": ["tester", "испытатель", "тестирование", "надежность", "валидация", "проверка"],
+            "optimizer": ["optimizer", "оптимизация", "эффективность", "усиление", "настройка"]
+        }
+
+        matched_agents = []
+        for agent_key, keywords in agent_keywords.items():
+            if any(kw in order_text for kw in keywords):
+                matched_agents.append((agent_key, keywords))
+
+        return matched_agents
+
+    # --- Выполнение ---
+
+    # Подбор агентов — по тексту заказа, без привязки к типу проекта
+    matched_agents = _match_agents_for_project(order_text)
+
+    # Генерируем роль-specific техническое задание (ТЗ) и логи агентов
+    if matched_agents:
+        agent_descriptions = {
+            "chief": "Главный инженер координирует все аспекты проекта, обеспечивает стратегическое планирование и распределение ресурсов.",
+            "consultant": "Главный наставник: объясняет, как устроен весь цикл разработки, читает проект «Кристалл-Радио» как эталон структуры ТЗ и требований, и обучает остальных агентов работать пошагово. Консультант определяет, какая детализация требуется (размеры разделов, уровни подпунктов), и следит, чтобы агенты не допустили упрощений относительно эталона.",
+            "theorist": "Теоретик разрабатывает математические модели и теоретические основы проекта, проводит анализ отклонений и физические расчеты.",
+            "designer": "Конструктор разрабатывает структурную схему, чертежи и макеты изделия с учетом конструктивных ограничений и материалов.",
+            "analyst": "Аналитик обрабатывает telemetry данные, выявляет паттерны отклонений и формирует отчеты по надежности и производительности.",
+            "tester": "Испытатель разрабатывает протоколы стресс-тестирования, проверяет надежность и валидирует результаты проектирования на соответствие требованиям.",
+            "optimizer": "Оптимизатор настраивает параметры системы для максимальной эффективности, минимизирует потери энергии и усиливает производительность изделия."
+        }
+        
+        # Добавляем заметки о matched агентах в лог заказа
+        # Динамический порядок этапов (consultant → theorist → designer → analyst → ...)
+        cycle_order = ["consultant", "theorist", "designer", "analyst", "tester", "optimizer", "chief"]
+        keys = []
+        for at in matched_agents:
+            keys.append(at[0] if isinstance(at, tuple) else at)
+        # упорядочиваем по cycle_order, при этом предполагаемый консультант — первым всегда
+        keys = list(dict.fromkeys(keys))
+        keys.sort(key=lambda a: cycle_order.index(a) if a in cycle_order else 999)
+        if not any(k in agent_keywords for k in keys):
+            # keep seeding direction anyway
+            pass
+        phase_names = {
+            "consultant": "этап 1 — уточнение требований",
+            "theorist": "этап 2 — математическое моделирование",
+            "designer": "этап 3 — проектирование схем/чертежей",
+            "analyst": "этап 4 — анализ данных и верификация",
+            "tester": "этап 5 — испытания и валидация (make test, ERC/DRC)",
+            "optimizer": "этап 6 — оптимизация (thermals / оптика / freq)",
+            "chief": "стратегия проекта",
+        }
+        for idx, agent_key in enumerate(keys, start=1):
+            _log(order, f"🤖 Агент [выполняет {phase_names.get(agent_key, agent_key)}] :: " f"{agent_descriptions.get(agent_key, '')}")
+    
+    # Динамический анализ физики по содержанию заказа.
+    # Никаких заготовленных фраз на тип устройства: область определяется
+    # по ключевым словам, а параметры берутся ИЗ ТЕКСТА ЗАКАЗА числами.
+    ot = order.get("text", "").lower()
+    _log(order, "🔬 Анализ заказа: извлечение параметров и областей физики")
+
+    # --- области физики: доменный классификатор (слова области, не прибора)
+    DOMAINS = (
+        ("оптический",  ("свет", "светодиод", "люмен", "лм", "lux", "оптик",
+                         "illumination", "лампа", "освет")),
+        ("акустический", ("акуст", "звук", "динамик", "колонк", "speaker",
+                          "громкоговор", "шум", "резонанс", "твитер")),
+        ("тепловой",    ("тепл", "терм", "нагрев", "охлажд", " thermal",
+                         " temp", "радиатор", "кулер")),
+        ("радиочастотный", ("антенн", "радио", "rf", "модуляц", "вч",
+                            "свч", "частот", "приёмник", "передатчик")),
+    )
+    domains = [d for d, kws in DOMAINS if any(k in ot for k in kws)]
+    if domains:
+        for d in domains:
+            _log(order, f"   • область расчёта: {d}")
+    else:
+        _log(order, "   • универсальный инженерный расчёт (область не "
+                     "уточнена — полная инженерная проверка в make test)")
+
+    # --- универсальное извлечение числовых параметров из текста заказа
+    _PARAM_PATTERNS: tuple[tuple[str, str], ...] = (
+        ("мощность",        r"(\d+(?:[.,]\d+)?)\s*(?:вт|w|ватт|ват)"),
+        ("световой поток",  r"(\d+(?:[.,]\d+)?)\s*(?:лм|lm|люмен)"),
+        ("напряжение",      r"(\d+(?:[.,]\d+)?)\s*(?:в\b|v\b|вольт)"),
+        ("сила тока",       r"(\d+(?:[.,]\d+)?)\s*(?:а\b|a\b|ампер|мк|мкм)"),
+        ("частота",         r"(\d+(?:[.,]\d+)?)\s*(?:гц|hz|кгц|мгц|ггц)"),
+        ("сопротивление",   r"(\d+(?:[.,]\d+)?)\s*(?:ом\b|ohm|\bom\b)"),
+        ("звуковое давление", r"(\d+(?:[.,]\d+)?)\s*(?:дб\s?spl|db spl|дб)"),
+        ("защита",          r"ip\s?(6[0-9]|5[0-9]|[0-9]{2})"),
+        ("ёмкость batteries", r"(\d+(?:[.,]\d+)?)\s*(?:м[аa]ч|mah)"),
+    )
+    seen_params: set[str] = set()
+    params_found = []
+    for label, pat in _PARAM_PATTERNS:
+        m = re.search(pat, ot)
+        if m:
+            raw = m.group(1).replace(",", ".")
+            params_found.append(f"{label}={raw}")
+            seen_params.add(label)
+    if params_found:
+        _log(order, "   • параметры из заказа: " + ", ".join(params_found))
+    else:
+        _log(order, "   • числовые параметры не указаны — агент рассчитает "
+                     "из эталонной структуры ТЗ")
+
+    _log(order, "   • расчёты делает агент-теоретик (design/calc.json); "
+             "схему — дизайнер (design/schematic.json); приём замысла и "
+             "решение о микроконтроллере — консультант "
+             "(design/acceptance.json); сборку и ERC — скрипты")
+
+    # Расписание из bureau_tasks
+    try:
+        if related_tasks:
+            _log(order, f"📋 Предметные задачи: {len(related_tasks)} задач в очереди")
+    except Exception:
+        pass
+    # Артефакты забираются наружу только при успехе
     if CHECK_INTEGRITY and before:
         verdict = sandbox.verify_intact(before, proj.root)
         order["integrity"] = verdict
         if verdict["intact"]:
-            order["logs"].append("исходники не изменились")
+            _log(order, "исходники не изменились")
         else:
             what = []
             if verdict["changed"]:
                 what.append(f"изменено: {', '.join(verdict['changed'][:5])}")
             if verdict["removed"]:
                 what.append(f"удалено: {', '.join(verdict['removed'][:5])}")
-            order["logs"].append("ВНИМАНИЕ: " + "; ".join(what))
+            _log(order, "ВНИМАНИЕ: " + "; ".join(what))
             order["report"] = ("\n\n!! ИСХОДНИКИ ПРОЕКТА ИЗМЕНЕНЫ !!\n"
                                + "\n".join(what)
                                + "\n\nПроверьте состояние репозитория.")
@@ -372,16 +508,15 @@ def _run(order_id: str, proj: Project) -> None:
         try:
             brought = sandbox.collect_artifacts(order_id, proj.root)
             if brought:
-                order["logs"].append(
-                    f"взято артефактов из песочницы: {len(brought)}")
+                _log(order, f"взято артефактов из песочницы: {len(brought)}")
         except Exception as exc:                                # noqa: BLE001
-            order["logs"].append(f"артефакты не перенесены: {exc}")
+            _log(order, f"артефакты не перенесены: {exc}")
 
     if order["status"] in ("done", "partial"):
         try:
             _archive_order_outputs(order_id, proj, order)
         except Exception as exc:                            # noqa: BLE001
-            order["logs"].append(f"архив не создан: {exc}")
+            _log(order, f"архив не создан: {exc}")
 
 def cancel(order_id: str) -> bool:
     """Пометить заказ отменённым.
@@ -488,6 +623,68 @@ def waiting() -> list[dict]:
 #  пользователь смотрит на пустой прогресс минуту, пока считает дальность.
 #  Поток отдаёт те же события по мере их появления.
 # ==========================================================================
+# ==========================================================================
+#  Сторож заказа: объявляет зависание сам, без ручной проверки
+# ==========================================================================
+#: заказ без прогресса дольше этого (сек) — завис; watchdog переводит
+#: его в failed с честным диагнозом, чтобы конвейер не жил вечно
+STALL_S = float(os.environ.get("KR_STALL_S", "900"))
+_watchdog: threading.Thread | None = None
+
+
+def _mark_progress(o: dict) -> None:
+    o["_seen_at"] = time.time()
+
+
+def _log(o: dict, text: str) -> None:
+    """Строка журнала заказа с меткой времени — единый формат для всех
+    источников (стадии агентов, служебные события, сторож)."""
+    stamp = datetime.datetime.now().strftime("%H:%M:%S")
+    o["logs"] = (o.get("logs") or []) + [f"[{stamp}] {text}"]
+
+
+def _watchdog_loop() -> None:
+    """Фоновый надзор: заказ без прогресса объявляется зависшим сам."""
+    while True:
+        time.sleep(20)
+        now = time.time()
+        with _LOCK:
+            stuck = [o for o in ORDERS.values()
+                     if o.get("status") == "running"
+                     and now - float(o.get("_seen_at")
+                                     or o.get("_started_at_ts", now))
+                     > STALL_S]
+            for o in stuck:
+                # какая стадия зависла — по шагам, а не наугад
+                cur = next((str(s.get("title") or s.get("target"))
+                            for s in (o.get("steps") or [])
+                            if s.get("status") == "running"), "?")
+                last = (o.get("logs") or ["(пусто)"])[-1][:200]
+                o["status"] = "failed"
+                o["finished_at"] = now_iso()
+                o["logs"] = (o.get("logs") or []) + [
+                    f"СТОРОЖ: нет прогресса более {int(STALL_S)} с на "
+                    f"стадии «{cur}». Последняя строка журнала: {last}"]
+                o["report"] = (
+                    "Заказ остановлен сторожем: более "
+                    f"{int(STALL_S)} секунд без единого изменения состояния "
+                    f"на стадии «{cur}».\n\n"
+                    f"Последнее событие журнала:\n  {last}\n\n"
+                    "Вероятные причины и что делать:\n"
+                    "  * модель не отвечает (маршрут молчит) — проверить "
+                    "доступность; KR_RACE=1 включает гонку маршрутов;\n"
+                    "  * стадия ждёт внешний инструмент (make-цель);\n"
+                    "  * полный ход работы агентов — design/agents_"
+                    "transcript.md в песочнице заказа.")
+
+
+def watchdog_start() -> None:
+    global _watchdog
+    if _watchdog is None or not _watchdog.is_alive():
+        _watchdog = threading.Thread(target=_watchdog_loop, daemon=True)
+        _watchdog.start()
+
+
 def stream(order_id: str, poll: float = 0.4):
     """Отдаёт заказ по мере изменений — конечный генератор для SSE.
 

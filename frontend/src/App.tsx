@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { supabase, SUPABASE_CONFIGURED } from '@/lib/supabase';
+import { api, SUPABASE_CONFIGURED } from '@/lib/supabase';
 import type { Agent, Project, Task, MessageWithAgents, MessageChannel, TaskStatus, Priority } from '@/lib/supabase';
 import { ZoneHeader } from '@/components/ZoneHeader';
 import { TabNav, type TabKey } from '@/components/TabNav';
@@ -33,18 +33,10 @@ function App() {
     }
     try {
       const [agentsRes, projectsRes, tasksRes, messagesRes] = await Promise.all([
-        supabase.from('bureau_agents').select('*').order('created_at'),
-        supabase.from('bureau_projects').select('*').order('created_at'),
-        supabase.from('bureau_tasks').select('*').order('sort_order'),
-        supabase
-          .from('bureau_messages')
-          .select(`
-            *,
-            from_agent:bureau_agents!from_agent_id(id, codename, role_key),
-            to_agent:bureau_agents!to_agent_id(id, codename, role_key)
-          `)
-          .order('created_at', { ascending: true })
-          .limit(50),
+        api.get('/api/bureau/bureau_agents'),
+        api.get('/api/bureau/bureau_projects'),
+        api.get('/api/bureau/bureau_tasks'),
+        api.get('/api/bureau/bureau_messages'),
       ]);
 
       setAgents(agentsRes.data ?? []);
@@ -72,32 +64,28 @@ function App() {
     const maxOrder = tasks
       .filter((t) => t.project_id === task.project_id)
       .reduce((max, t) => Math.max(max, t.sort_order), 0);
-    const { data, error } = await supabase
-      .from('bureau_tasks')
-      .insert({
-        project_id: task.project_id,
-        agent_id: task.agent_id,
-        title: task.title,
-        directive: task.directive,
-        priority: task.priority,
-        status: 'pending',
-        sort_order: maxOrder + 1,
-      })
-      .select('*')
-      .single();
-    if (!error && data) {
-      setTasks((prev) => [...prev, data as Task]);
+    const data = await api.post<Task>('/api/bureau/bureau_tasks', {
+      project_id: task.project_id,
+      agent_id: task.agent_id,
+      title: task.title,
+      directive: task.directive,
+      priority: task.priority,
+      status: 'pending',
+      sort_order: maxOrder + 1,
+    });
+    if (data) {
+      setTasks((prev) => [...prev, data]);
     }
   }, [tasks]);
 
   const handleUpdateTaskStatus = useCallback(async (taskId: string, status: TaskStatus) => {
     setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, status } : t)));
-    await supabase.from('bureau_tasks').update({ status }).eq('id', taskId);
+    await api.patch(`/api/bureau/bureau_tasks/${taskId}`, { status });
   }, []);
 
   const handleReassignTask = useCallback(async (taskId: string, agentId: string | null) => {
     setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, agent_id: agentId } : t)));
-    await supabase.from('bureau_tasks').update({ agent_id: agentId }).eq('id', taskId);
+    await api.patch(`/api/bureau/bureau_tasks/${taskId}`, { agent_id: agentId });
   }, []);
 
   const handleSendMessage = useCallback(async (
@@ -106,24 +94,15 @@ function App() {
     content: string,
     channel: MessageChannel
   ) => {
-    const { data, error } = await supabase
-      .from('bureau_messages')
-      .insert({
-        from_agent_id: fromId,
-        to_agent_id: toId,
-        content,
-        channel,
-      })
-      .select(`
-        *,
-        from_agent:bureau_agents!from_agent_id(id, codename, role_key),
-        to_agent:bureau_agents!to_agent_id(id, codename, role_key)
-      `)
-      .single();
+    const data = await api.post<MessageWithAgents>('/api/bureau/bureau_messages', {
+      from_agent_id: fromId,
+      to_agent_id: toId,
+      content,
+      channel,
+    });
 
-    if (!error && data) {
-      const typed = data as unknown as MessageWithAgents;
-      setMessages((prev) => [...prev, typed]);
+    if (data) {
+      setMessages((prev) => [...prev, data]);
     }
   }, []);
 

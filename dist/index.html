@@ -1,0 +1,77 @@
+<html>
+    <head>
+      <link rel="icon" type="image/png" href="https://github.com/tscircuit.png">
+      <meta charset="UTF-8" />
+      <title>crystal-radio-sdr</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body>
+      <script>
+        window.TSCIRCUIT_USE_RUNFRAME_FOR_CLI = false;
+        window.TSCIRCUIT_RUNFRAME_STATIC_FILE_LIST = [];
+        window.TSCIRCUIT_PACKAGE_NAME = "crystal-radio-sdr";
+      </script>
+      <script src="https://cdn.tailwindcss.com"></script>
+      <div id="root">
+  <div id="loader" class="loading-overlay">
+    <div class="loading-container">
+      <div class="loading">
+        <div class="loading-bar"></div>
+      </div>
+    </div>
+  </div>
+  
+  <style>
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+  
+    .loading-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1em;
+    }
+  
+    .loading {
+      background-color: lightgrey;
+      height: 2px;
+      overflow: hidden;
+      position: relative;
+      width: 12em;
+      border-radius: 2px;
+    }
+  
+    .loading-bar {
+      animation: side2side 2s ease-in-out infinite;
+      background-color: dodgerblue;
+      height: 100%;
+      position: absolute;
+      width: 45%;
+    }
+  
+    @keyframes side2side {
+      0%,
+      100% {
+        transform: translateX(-50%);
+      }
+      50% {
+        transform: translateX(150%);
+      }
+    }
+  </style>
+</div>
+      <script>
+      globalThis.process = { env: { NODE_ENV: "production" } }
+      </script>
+      <script type="module" src="./standalone.min.js"></script>
+    </body>
+  </html>

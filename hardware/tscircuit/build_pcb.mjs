@@ -29,6 +29,7 @@
  */
 
 import { readFileSync, mkdirSync, writeFileSync, existsSync } from "node:fs"
+import { basename } from "node:path"
 import { createRequire } from "node:module"
 import { dirname, resolve, relative } from "node:path"
 
@@ -40,20 +41,57 @@ const require = createRequire(import.meta.url)
 const HERE = dirname(fileURLToPath(import.meta.url))
 const ROOT = resolve(HERE, "../..")
 
-const NETLIST = process.env.NETLIST ?? resolve(ROOT, "hardware/kicad/sdr_receiver.kicad_sch")
-const OUT = resolve(ROOT, "hardware/tscircuit/out")
+const NETLIST = process.env.NETLIST ?? ""
+if (!NETLIST) {
+  console.error(
+    "  НЕТ входа: задайте NETLIST=<путь к нетлисту или .kicad_sch KiCad>\n" +
+    "  (в конвейере заказа путь приносит run_pcb.py из generate_result.json;\n" +
+    "   вручную: NETLIST=out/hardware/<изделие>.net node hardware/tscircuit/build_pcb.mjs)")
+  process.exit(1)
+}
+// Каталог результатов: по умолчанию — штатный out; для любого другого
+// изделия задаётся переменной OUT_DIR (там же resolve_parts.py пишет
+// resolved_parts.json — каталоги должны совпадать).
+const OUT = process.env.OUT_DIR
+  ? resolve(process.env.OUT_DIR)
+  : resolve(ROOT, "hardware/tscircuit/out")
 const TSX = resolve(OUT, "board.circuit.tsx")
-const OFFSETS_FILE = resolve(OUT, "model_offsets.json")
-const MODELS = resolve(HERE, "models")
+const MODELS_ROOT = process.env.KICAD_MODELS_ROOT ?? resolve(HERE, "models")
 const FP_ROOT = process.env.KICAD_FP_ROOT ?? "/usr/share/kicad/footprints"
+// Библиотеки заказа (design/libs): сюда part_fetch кладёт символ, корпус и
+// 3D EasyEDA под конкретный артикул, выбранный агентом. Корпус отсюда
+// читается прямо файлом, тело — из <lib>.3dshapes, сетевой kicad-mod-cache
+// для таких деталей не нужен.
+const LIBS_ROOT = (() => {
+  const env = process.env.KICAD_LIBS_ROOT
+  if (env && existsSync(env)) return env
+  const near = resolve(OUT, "../../../design/libs")
+  return existsSync(near) ? near : ""
+})()
+
+// ═════════════════════════════════════════════ сети питания и заливки
+//
+// Вопрос «какие сети питание/земля» — семантика изделия, её приносит
+// манифест компилятора (generate_result.json из schematic_from_json):
+// сети с символами питания в спецификации решает агент-схемотехник.
+// Манифеста нет — работает общий фолбэк по электротехнической
+// фонетике имени сети (GND/VSS-семейство — земля; VIN/VBUS/VBAT/VCC/VDD
+// и напряжения вида «+3V3», «5V» — питание). Никаких списков,
+// привязанных к конкретному устройству, здесь нет и быть не должно.
+const MANIFEST_FILE = process.env.MANIFEST ?? ""
 
 // Сети, которые трассируются ПЕРВЫМИ: питание и земля. Остальное идёт
-// последним и само обходит уже проложенную медь.
-const POWER_NETS = new Set(["GND", "+3V3", "+3V3_ANA", "+5V", "VIN"])
+// последним и само обходит уже проложенную медь. Заполняется ниже —
+// после разбора нетлиста (applyPowerNets).
+const POWER_NETS = new Set()
+// Сети с медной заливкой: земля и рельсы из того же манифеста.
+const POURRED = new Set()
+// Имя земли (одна сеть); остальное — рельсы.
+let GROUND_NAME = ""
 
-// Слои: 4 — двух слоёв для 73 компонентов и ~150 соединений мало.
-const BOARD_W = process.env.BOARD_W ?? "170"
-const BOARD_H = process.env.BOARD_H ?? "130"
+// Габарит платы НЕ задаётся константой: computePlacement() выводит
+// его из фактических размеров корпусов, зазоров (IPC) и соотношения
+// сторон sqrt(2) — для любого состава компонентов, без констант.
 
 // ═══════════════════════════════════════════════════ правила проектирования
 //
@@ -97,14 +135,21 @@ const AUTOROUTER_EFFORT = process.env.AUTOROUTER_EFFORT ?? "10x"
 
 // ═══════════════════════════════════════════════════════ разбор нетлиста KiCad
 
-function parseNetlist(text) {
-  const comps = []
+function parseNetlist(text) {  const comps = []
   // KiCad netlist versions differ: brig's "E" puts (ref)(value)(footprint)
   // adjacent, while Kristall's "D" inserts (description) between (value) and
-  // (footprint). Match the nearest value/footprint inside one comp block.
-  for (const m of text.matchAll(
-    /\(comp\s+\(ref\s+"([^"]+)"\)[\s\S]*?\(value\s+"([^"]*)"\)[\s\S]*?\(footprint\s+"([^"]*)"\)/g,
-  )) comps.push({ ref: m[1], value: m[2], footprint: m[3] })
+  // (footprint). Деталь без корпуса — законный случай (модуль вне платы,
+  // placement=offboard): тогда строки (footprint "…") у неё нет вовсе, и
+  // поиск «до ближайшего footprint» притянул бы чужой корпус. Поэтому
+  // блоки режутся по маркеру следующего (comp (ref "…").
+  for (const chunk of text.split(/\(comp\s+\(ref\s+"/).slice(1)) {
+    const q = chunk.indexOf('"')
+    const ref = q >= 0 ? chunk.slice(0, q) : ""
+    const val = chunk.match(/\(value\s+"([^"]*)"\)/)
+    const fp = chunk.match(/\(footprint\s+"([^"]*)"\)/)
+    comps.push({ ref, value: val ? val[1] : "",
+                 footprint: fp ? fp[1] : "" })
+  }
 
   const pinFn = new Map()
   for (const m of text.matchAll(
@@ -164,19 +209,303 @@ function loadResolvedParts() {
     return new Map()
   }
 }
-// Сдвиги 3D-моделей: "<ref>" -> {dx,dy}. Заполняется из model_offsets.json.
-let OFFSETS = new Map()
-// Кого в текущем проходе пришлось сдвинуть (для отчёта).
-let shiftedRefs = []
-// Размещение компонентов: ref -> {x,y}. Заполняется в emitTsx, нужно
-//computeOffsets, чтобы перевести pcb_component.center в локальные
-// координаты корпуса.
-let PLACE = new Map()
-// ref -> {ident, abs, name}
+// ref -> {ident, abs, name} — модели, привязанные к компонентам в TSX.
+// Нужно перед экспортом: нормализовать диалект STEP-файлов (см. ниже).
 let MODELOF = new Map()
+
+// ═════════════════════════════════ PCB-паспорт деталей (агент-читатель)
+//
+// design/parts_pcb.json — что агент-читатель даташитов выяснил о корпусе
+// каждой детали (tools/part_pcb.py, роль упаковщика). Правило линии:
+//   * корпус стандартный (0603, sod523, pinheader2, soic8, lqfp48…) —
+//     эмитим РОДНУЮ строку tscircuit: корпус и 3D-тело строит генератор
+//     footprinter; ни KiCad-файлов, ни чужой модели этой детали не нужно;
+//   * нестандартный или неясный — наш KiCad-путь: локальная пара
+//     символ/корпус/3D из design/libs (part_fetch.py).
+// Строка генератора никогда не принимается на слово: площадки сверяются
+// с локальным .kicad_mod (если он есть) после центрирования — допуск
+// 0.4 мм. Не сошлось — падаем на KiCad-путь с громким предупреждением.
+const PARTS_PCB_FILE = process.env.KR_PARTS_PCB
+  ?? resolve(OUT, "../../../design/parts_pcb.json")
+
+function loadPartsPcb() {
+  if (!existsSync(PARTS_PCB_FILE)) return new Map()
+  try {
+    const parts = JSON.parse(readFileSync(PARTS_PCB_FILE, "utf8")).parts ?? {}
+    return new Map(Object.entries(parts))
+  } catch (e) {
+    console.error(`  ! не читается ${PARTS_PCB_FILE}: ${e}`)
+    return new Map()
+  }
+}
+
+let PARTS_PCB = new Map()   // ref -> паспорт из parts_pcb.json
+let STDOF = new Map()       // ref -> {token, src, box, note} — стандартные
+
+// design/schematic.json — спецификация заказа (рядом с паспортом).
+// Нужна только для одного: модули с "placement": "offboard" в схеме есть,
+// но на плате их нет — провода идут к разъёму/клеммам. Такие refs в
+// эмиссию платы не попадают.
+const SPEC_FILE = process.env.KR_SPEC
+  ?? resolve(OUT, "../../../design/schematic.json")
+
+function loadOffboard() {
+  const off = new Set()
+  if (!existsSync(SPEC_FILE)) return off
+  try {
+    const spec = JSON.parse(readFileSync(SPEC_FILE, "utf8"))
+    for (const p of spec.parts ?? []) {
+      if (String(p.placement ?? "").toLowerCase() === "offboard")
+        off.add(String(p.ref))
+    }
+  } catch (e) {
+    console.error(`  ! не читается ${SPEC_FILE}: ${e}`)
+  }
+  return off
+}
+
+/**
+ * Каноническая строка генератора по свободному имени корпуса (фолбэк,
+ * когда паспорта нет). Правило учебника корпусов EIA/JEDEC, не список
+ * деталей; итог обязан быть строкой, которую принимает footprinter —
+ * иначе кандидат отвергается в fpPads().
+ */
+function normPackage(text) {
+  if (!text) return null
+  const t = String(text).toUpperCase()
+  const eia = t.match(
+    /(?<![0-9A-Z])(0201|0402|0603|0805|1206|1210|1812|2010|2512)(?![0-9])/)
+  if (eia) return eia[1]
+  let m = t.match(/SOD[-\s_]?(\d{2,3})[A-Z]?/)
+  if (m) return "sod" + m[1]
+  if (t.includes("MINIMELF")) return "minimelf"
+  if (/(?<!MINI)MELF/.test(t)) return "melf"
+  for (const name of ["SMA", "SMB", "SMC"]) {
+    if (new RegExp(`(?<![A-Z])${name}(?![A-Z])`).test(t))
+      return name.toLowerCase()
+  }
+  if (/SOT[-\s_]?23[-\s_]?5(?![0-9])/.test(t)) return "sot25"
+  for (const [re, tok] of [
+    ["SOT[-\\s_]?23W(?![0-9])", "sot23w"],
+    ["SOT[-\\s_]?23(?![0-9])", "sot23"],
+    ["SOT[-\\s_]?223(?![0-9])", "sot223"],
+    ["SOT[-\\s_]?323(?![0-9])", "sot323"],
+    ["SOT[-\\s_]?363(?![0-9])", "sot363"],
+    ["SOT[-\\s_]?563(?![0-9])", "sot563"],
+    ["SOT[-\\s_]?89(?![0-9])", "sot89"],
+  ]) if (new RegExp(re).test(t)) return tok
+  for (const [re, pfx] of [[/SOIC[-\s_]?(\d+)/, "soic"],
+    [/TSSOP[-\s_]?(\d+)/, "tssop"], [/QFN[-\s_]?(\d+)/, "qfn"],
+    [/LQFP[-\s_]?(\d+)/, "lqfp"]]) {
+    m = t.match(re)
+    if (m) return pfx + m[1]
+  }
+  if (/DPAK|TO[-\s_]?252/.test(t)) return "dpak"
+  if (/TO[-\s_]?92/.test(t)) return "to92"
+  if (/TO[-\s_]?220/.test(t)) return "to220"
+  if (/PINHEAD|PINROW|HDR/.test(t)) {
+    m = t.match(/(\d+)X(\d+)/)
+    if (m) return (m[1] === "1" ? "pinheader" : "pinrow") + m[2]
+    m = t.match(/(?:PINROW|PINHEAD|HDR|PIN)[-\s_]?(\d+)/)
+    if (m) return "pinheader" + m[1]
+  }
+  return null
+}
+
+let _fpLib
+function footprinterLib() {
+  if (_fpLib === undefined) {
+    try {
+      _fpLib = require("@tscircuit/footprinter")
+    } catch (e) {
+      console.error(`  ! footprinter недоступен: ${e.message}`)
+      _fpLib = null
+    }
+  }
+  return _fpLib
+}
+
+/** Площадки/отверстия строки генератора: [{pin,x,y}] или null. */
+function fpPads(token) {
+  const f = footprinterLib()
+  if (!f) return null
+  try {
+    const cj = f.string(token).circuitJson()
+    const pads = []
+    for (const e of cj) {
+      if (e.type !== "pcb_smtpad" && e.type !== "pcb_plated_hole") continue
+      const pin = String((e.port_hints ?? [])[0] ?? "").replace(/^pin/i, "")
+      if (!/^\d+$/.test(pin)) continue
+      pads.push({ pin, x: +e.x, y: +e.y })
+    }
+    return pads.length ? pads : null
+  } catch (e) {
+    return null
+  }
+}
+
+/** Пронумерованные площадки локального .kicad_mod: [{pin,x,y}] или null. */
+function modPads(lib, name) {
+  const mod = findModPath(lib, name)
+  if (!mod) return null
+  const txt = readFileSync(mod, "utf8")
+  const pads = []
+  for (const m of txt.matchAll(
+    /\(pad\s+"([^"]*)"\s+\S+\s+\S+\s*\(at\s+([-\d.]+)\s+([-\d.]+)/g,
+  )) {
+    if (m[1] !== "") pads.push({ pin: m[1], x: +m[2], y: +m[3] })
+  }
+  return pads.length ? pads : null
+}
+
+const bc = (list) => ({
+  x: (Math.min(...list.map((p) => p.x))
+      + Math.max(...list.map((p) => p.x))) / 2,
+  y: (Math.min(...list.map((p) => p.y))
+      + Math.max(...list.map((p) => p.y))) / 2,
+})
+
+/**
+ * Сверка площадок генератора с локальным корпусом (допуск 0.4 мм).
+ * Нет локального корпуса — принимаем строку как есть: в этом и смысл
+ * родного пути, стандартному корпусу свой файл не нужен.
+ *
+ * Поворот корпуса — свободная величина: footprinter кладёт гребёнку 1x2
+ * вдоль X, а KiCad-корпус — вдоль Y, и это не расхождение посадки.
+ * Поэтому площадки сравниваются в четырёх поворотах на 90° — побеждает
+ * лучший; выводы при повороте не переименовываются.
+ */
+function padGuard(c, fpAds) {
+  const [lib, name] = c.footprint.split(":")
+  const local = modPads(lib, name)
+  if (!local) return { ok: true, note: "локального корпуса нет" }
+  if (local.length !== fpAds.length)
+    return { ok: false, why: `число площадок ${local.length}≠${fpAds.length}` }
+  const a = bc(fpAds), b = bc(local)
+  const byPin = new Map(local.map((p) => [p.pin, p]))
+  const missing = fpAds.filter((p) => !byPin.has(p.pin)).map((p) => p.pin)
+  if (missing.length)
+    return { ok: false, why: `нет выводов ${missing.join(", ")}` }
+  const worst = (rot) => {
+    let m = 0
+    for (const p of fpAds) {
+      const q = byPin.get(p.pin)
+      const dx = p.x - a.x, dy = p.y - a.y
+      const quad = [[dx, dy], [dy, -dx], [-dx, -dy], [-dy, dx]][rot]
+      m = Math.max(m, Math.abs(quad[0] - (q.x - b.x)),
+                   Math.abs(quad[1] - (q.y - b.y)))
+    }
+    return m
+  }
+  let best = Infinity, bestRot = 0
+  for (let rot = 0; rot < 4; rot++) {
+    const w = worst(rot)
+    if (w < best) { best = w; bestRot = rot }
+  }
+  return best <= 0.4
+    ? { ok: true, note: `площадки сошлись (${fpAds.length}, поворот ${bestRot * 90}°)` }
+    : { ok: false, why: `площадки расходятся на ${best.toFixed(2)} мм (лучший поворот ${bestRot * 90}°)` }
+}
+
+/** Габарит окна детали по площадкам/отверстиям генератора. */
+function fpBox(fpAds) {
+  const xs = fpAds.map((p) => p.x), ys = fpAds.map((p) => p.y)
+  const xmin = Math.min(...xs), xmax = Math.max(...xs)
+  const ymin = Math.min(...ys), ymax = Math.max(...ys)
+  return {
+    w: xmax - xmin + 1.2,
+    h: ymax - ymin + 1.2,
+    cx: (xmin + xmax) / 2,
+    cy: (ymin + ymax) / 2,
+  }
+}
+
+/**
+ * Решение «стандартный корпус» по каждой детали: паспорт → подбор →
+ * имя корпуса. Каждый кандидат проверяется генератором и сверкой
+ * площадок. Победил — родной путь; нет — KiCad-путь с предупреждением.
+ * Ответ паспорта авторитетен: не сошёлся по площадкам — не «улучшаем»
+ * эвристикой, а сразу падаем на локальную пару.
+ */
+function collectStandards() {
+  const out = new Map()
+  for (const c of COMPONENTS) {
+    const info = PARTS_PCB.get(c.ref) ?? {}
+    const part = PARTS.get(c.ref) ?? {}
+    const [, name] = c.footprint.split(":")
+    const cands = []
+    if (info.package_std) cands.push(["паспорт", info.package_std])
+    if (part.package) cands.push(["подбор", normPackage(part.package)])
+    cands.push(["корпус", normPackage(name)])
+    for (const [src, tok] of cands) {
+      if (!tok) continue
+      const ads = fpPads(tok)
+      if (!ads) continue
+      const g = padGuard(c, ads)
+      if (!g.ok) {
+        console.warn(`  ! [паспорт] ${c.ref}: строка «${tok}» (${src}) `
+          + `не сошлась с локальным корпусом: ${g.why} — KiCad-путь`)
+        if (src === "паспорт") break
+        continue
+      }
+      out.set(c.ref, { token: tok, src, box: fpBox(ads), note: g.note })
+      break
+    }
+  }
+  return out
+}
 
 const j = (v) => JSON.stringify(String(v))
 const num = (v) => Number(v)
+
+// ═════════════════════════════════════════ заполна сетей питания
+
+/**
+ * Заполнение POWER_NETS / POURRED по факту нетлиста.
+ *
+ * Порядок: (1) манифест компилятора схемы — там сети питания
+ * перечислены агентом-схемотехником (поле power в спецификации);
+ * (2) общий фолбэк по имени сети: земля — это GND/VSS-семейство,
+ * питание — VIN/VBUS/VBAT/VCC/VDD и напряжения вида «+3V3», «12V».
+ * Семантика самая общая электротехническая, привязки к устройству нет.
+ */
+function applyPowerNets(nets) {
+  const names = nets.map((n) => String(n.name))
+  let ground = ""
+  let power = []
+
+  if (MANIFEST_FILE) {
+    try {
+      const mf = JSON.parse(readFileSync(MANIFEST_FILE, "utf8"))
+      ground = String(mf.ground ?? "")
+      power = (mf.power_nets ?? []).map(String).filter((x) => x && x !== ground)
+      if (mf.title) TITLE = String(mf.title)
+      console.log(`  [питание] манифест: земля «${ground || "нет"}», рельсы ${power.length}`)
+    } catch (e) {
+      console.error(`  ! манифест ${MANIFEST_FILE} не читается (${e}) — фолбэк по именам`)
+    }
+  }
+
+  if (!ground) {
+    const gRe = /(^|[^A-Z0-9])(GND|VSS|AGND|PGND)([^A-Z0-9]|$)/i
+    ground = names.find((n) => gRe.test(n)) ?? ""
+  }
+  if (!power.length) {
+    const pRe = /^(vin|vbus|vbat|vcc|vdd)[^A-Z0-9]?|^[+-]?\d+(\.\d+)?v(\d+)?$/i
+    power = names.filter((n) => pRe.test(n) && n !== ground)
+  }
+
+  POWER_NETS.clear()
+  if (ground) POWER_NETS.add(ground)
+  for (const p of power) POWER_NETS.add(p)
+  POURRED.clear()
+  for (const n of POWER_NETS) POURRED.add(tscNetName(n))
+  GROUND_NAME = ground
+  console.log(`  [питание] земля «${ground || "не найдена"}», ` +
+    `рельсы: ${[...power].join(", ") || "нет"}`)
+}
+
+let TITLE = ""
 
 /**
  * Имя сети -> допустимое имя для tscircuit.
@@ -200,89 +529,172 @@ function tscNetName(name) {
  * (SOT-223-3_TabPin2 -> SOT-223), поэтому угадывать нельзя.
  */
 /**
- * STL-модель для корпуса.
+ * Файл корпуса: системные библиотеки KiCad, затем design/libs заказа.
+ */
+function findModPath(lib, name) {
+  for (const r of [FP_ROOT, ...(LIBS_ROOT ? [LIBS_ROOT] : [])]) {
+    const p = resolve(r, `${lib}.pretty`, `${name}.kicad_mod`)
+    if (existsSync(p)) return p
+  }
+  return null
+}
+
+/**
+ * Файлы тела детали для корпуса: {step, stl} — что нашлось.
  *
- * Путь берётся из строки (model ...) файла .kicad_mod. Но у части
- * корпусов её нет вовсе — например TestPoint_Pad_D1.0mm, у которого
- * строка модели просто опущена. Тогда tscircuit подставляет в
- * circuit.json ссылку на kicad-mod-cache.tscircuit.com, и сайт
- * начинает ходить в сеть, чего быть не должно.
+ * Сначала проектные библиотеки заказа (design/libs: EasyEDA кладёт
+ * .step/.wrl рядом с корпусом), затем зеркало packages3d в STL. Путь
+ * берётся из строки (model ...) файла .kicad_mod. Но у части корпусов
+ * её нет вовсе — например TestPoint_Pad_D1.0mm, у которого строка
+ * модели просто опущена. Тогда tscircuit подставляет в circuit.json
+ * ссылку на kicad-mod-cache.tscircuit.com, и сайт начинает ходить в
+ * сеть, чего быть не должно.
  *
  * Поэтому при отсутствии строки модели проверяется соглашение
  * packages3d: <Lib>.3dshapes/<Name>.step. Проверка идёт по факту
  * наличия файла, а не по списку корпусов, так что переносится на
  * любую схему.
+ *
+ * Почему пара. Экспортёры tscircuit читают форматы по-разному:
+ *   * board.glb берёт приоритетом model_stl_url и локальный STL читает
+ *     как настоящую геометрию — а локальный STEP не умеет и рисует
+ *     коробку-заглушку (24 вершины, проверено);
+ *   * board.step собирает настоящие B-Rep тела только из model_step_url,
+ *     STL там превращается в коробку.
+ * Поэтому у детали с STEP и STL в TSX идут оба адреса.
+ *
+ * Ориентация STL в паре обязана совпадать с STEP (тело в +z, низ у нуля):
+ * при наличии stepUrl сборщик glb читает STL переводом STEP-ветки
+ * (y=+z), и зеркальный STL встал бы вверх ногами — деталь ушла бы внутрь
+ * платы. Зеркальные STL — только у системного зеркала packages3d БЕЗ
+ * stepUrl (там действует USB-ветка, y=-z). Файлы заказа готовит
+ * part_fetch.py (NORMALIZE_Z=1, без зеркала); пары сверяются ещё до
+ * экспорта — modelPairOrientation в main.
+ *
+ * .wrl в паре не участвует: его не читает ни один из двух экспортёров.
  */
-function stlModelFor(libId, name) {
-  const mod = resolve(FP_ROOT, `${libId}.pretty`, `${name}.kicad_mod`)
-  if (!existsSync(mod)) return null
-  const rel = readFileSync(mod, "utf8")
-    .match(/KICAD9_3DMODEL_DIR}\/[^"]*\.step/)?.[0]
-    ?.replace("KICAD9_3DMODEL_DIR}/", "")
-  const candidates = rel
-    ? [rel]
-    : [`${libId}.3dshapes/${name}.step`]
-  for (const c of candidates) {
-    const stl = resolve(MODELS, c.replace(/\.step$/i, ".stl"))
-    if (existsSync(stl)) return stl
+function modelFor(libId, name) {
+  const mod = findModPath(libId, name)
+  const cands = []
+  if (mod) {
+    for (const m of readFileSync(mod, "utf8").matchAll(/\(model\s+"([^"]+)"/g)) {
+      cands.push(m[1].replace(/^\$\{[A-Z0-9_]+\}\//, ""))
+    }
   }
-  return null
+  cands.push(`${libId}.3dshapes/${name}.step`)
+  const roots = [
+    ...(LIBS_ROOT ? [LIBS_ROOT, resolve(LIBS_ROOT, "../..")] : []),
+    MODELS_ROOT,
+  ]
+  const find = (exts) => {
+    for (const c of cands) {
+      const base = c.replace(/\.(step|stp|wrl|vrml|stl)$/i, "")
+      for (const ext of exts) {
+        for (const r of roots) {
+          const p = resolve(r, base + ext)
+          if (existsSync(p)) return p
+        }
+      }
+    }
+    return null
+  }
+  const step = find([".step", ".stp"])
+  const stl = find([".stl"])
+  if (!step && !stl) return null
+  return { step, stl }
 }
 
 /** Идентификатор импорта для пути к модели. */
 function importIdent(absPath) {
-  return "m" + relPath(MODELS, absPath).replace(/[^A-Za-z0-9]/g, "_")
+  return "m" + relPath(MODELS_ROOT, absPath).replace(/[^A-Za-z0-9]/g, "_")
 }
 
 /**
- * Габаритный параллелепипед STL: {xmin,xmax,ymin,ymax,zmin,zmax}.
+ * Нормализация STEP-диалекта SolidWorks (его пишет EasyEDA).
  *
- * Читается напрямую, без сторонних библиотек: формат STL-ASCII и
- * STL-binary тут прост, а тяновать за собой загрузчик ради габаритов
- * незачем. Читаются только вершины треугольников (каждая 4-я пара
- * float32 в записи), нормали игнорируются.
+ * Сборщик STEP внутри tsci (circuit-json-to-step) разбирает файл простым
+ * токенизатором и требует закрывающую скобку сущности вплотную к «;»
+ * (`…);`). SolidWorks пишет `) ;` (пробел перед точкой с запятой) и
+ * выгружает файл с CRLF — на таких моделях сборщик падает в
+ * «Could not parse entity», предупреждение «Failed to merge STEP model»
+ * уходит в stderr, и тело детали молча не попадает в board.step
+ * (проверено: R0603 и SOD-523 L1.2-W0.8-H0.7-LS1.6).
+ *
+ * Правка меняет только пробелы и переводы строк — геометрия байт в байт
+ * та же, файл остаётся валидным STEP для KiCad, FreeCAD и любого другого
+ * потребителя. Идемпотентна: уже нормализованный файл не переписывается.
+ *
+ * Возвращает true, если файл изменён.
  */
-function stlBBox(path) {
+function normalizeStepFile(path) {
+  if (!/\.(step|stp)$/i.test(path)) return false
+  let txt
+  try {
+    txt = readFileSync(path, "utf8")
+  } catch {
+    return false
+  }
+  if (!txt.includes("\r") && !/\)[ \t]+;[ \t]*$/m.test(txt)) return false
+  writeFileSync(path, txt.replace(/\r\n?/g, "\n").replace(/\)[ \t]+;[ \t]*$/gm, ");"))
+  return true
+}
+
+/**
+ * Минимум z по «сырым» точкам STEP-модели (null, если точек не нашлось).
+ *
+ * Зачем. Плоскость z=0 модели экспортёры кладут на поверхность платы, а
+ * модель, целиком лежащую выше нуля, сборщик board.step задирает на
+ * толщину платы в воздух — его ветка «top layer» считает
+ * halfThickness − minZ + offsetZ. Модели EasyEDA приходят в нужной
+ * конвенции (низ на ≈−0.01: у R0603 прямо в точках, у SOD-523 — через
+ * внутреннее размещение), поэтому проверка ловит только выбивающиеся
+ * выгрузки. Важно: точки читаются «сырыми», без размещений внутри файла,
+ * — ветку сборщика выбирает ровно их минимум (см. adjustTransformForPlacement).
+ */
+function stepMinZ(path) {
+  let txt
+  try {
+    txt = readFileSync(path, "utf8")
+  } catch {
+    return null
+  }
+  let zmin = null
+  for (const m of txt.matchAll(/CARTESIAN_POINT\s*\(\s*'?[^']*'?\s*,\s*\(([^)]*)\)/g)) {
+    const p = m[1].split(",")
+    if (p.length !== 3) continue
+    const z = Number(p[2])
+    if (Number.isFinite(z) && (zmin === null || z < zmin)) zmin = z
+  }
+  return zmin
+}
+
+/**
+ * Диапазон z бинарного STL: [zmin, zmax] или null, если не разобрать.
+ *
+ * Нужен для сверки ориентации пары STL+STEP до экспорта: дешевле, чем
+ * ждать экспорт и разбирать board.glb. Конвенция пары — STL совпадает
+ * со STEP (тело в +z, низ у нуля), см. modelFor.
+ */
+function stlZRange(path) {
   let buf
   try {
     buf = readFileSync(path)
   } catch {
     return null
   }
-  const add = (x, y, z) => {
-    if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) return
-    if (b.xmin === null || x < b.xmin) b.xmin = x
-    if (b.xmax === null || x > b.xmax) b.xmax = x
-    if (b.ymin === null || y < b.ymin) b.ymin = y
-    if (b.ymax === null || y > b.ymax) b.ymax = y
-    if (b.zmin === null || z < b.zmin) b.zmin = z
-    if (b.zmax === null || z > b.zmax) b.zmax = z
-  }
-  const b = { xmin: null, xmax: null, ymin: null, ymax: null, zmin: null, zmax: null }
-
-  // ASCII- STL начинается со слова "solid"
-  if (buf.subarray(0, 5).toString("ascii") === "solid") {
-    const txt = buf.toString("ascii")
-    for (const m of txt.matchAll(/vertex\s+([-\d.eE+]+)\s+([-\d.eE+]+)\s+([-\d.eE+]+)/g)) {
-      add(+m[1], +m[2], +m[3])
-    }
-    return b.xmin === null ? null : b
-  }
-
-  // binary- STL: 80 байт заголовка, затем uint32 со счётчиком
-  // треугольников, далее по 50 байт на треугольник: 12 float32
-  // (нормаль + 3 вершины) + uint16 атрибута.
+  if (buf.length < 84 || buf.subarray(0, 5).toString() === "solid") return null
   const n = buf.readUInt32LE(80)
-  let off = 84
+  if (84 + n * 50 !== buf.length) return null
+  let zmin = Infinity, zmax = -Infinity
   for (let i = 0; i < n; i++) {
-    if (off + 48 > buf.length) break
-    for (const k of [3, 6, 9]) {
-      const o = off + k * 4
-      add(buf.readFloatLE(o), buf.readFloatLE(o + 4), buf.readFloatLE(o + 8))
+    const off = 84 + 50 * i
+    for (const k of [2, 5, 8, 11]) {          // z нормали и трёх вершин
+      const z = buf.readFloatLE(off + 4 * k)
+      if (z < zmin) zmin = z
+      if (z > zmax) zmax = z
     }
-    off += 50
   }
-  return b.xmin === null ? null : b
+  return Number.isFinite(zmin) ? [zmin, zmax] : null
 }
 
 /**
@@ -293,8 +705,8 @@ function stlBBox(path) {
  * y=6.35, тогда как начало координат — на первом выводе).
  */
 function padCenter(libId, name) {
-  const mod = resolve(FP_ROOT, `${libId}.pretty`, `${name}.kicad_mod`)
-  if (!existsSync(mod)) return null
+  const mod = findModPath(libId, name)
+  if (!mod) return null
   const txt = readFileSync(mod, "utf8")
   const pts = []
   for (const m of txt.matchAll(
@@ -315,8 +727,8 @@ function padCenter(libId, name) {
  * Возвращает {w, h} в мм.
  */
 function footprintSize(libId, name) {
-  const mod = resolve(FP_ROOT, `${libId}.pretty`, `${name}.kicad_mod`)
-  if (!existsSync(mod)) return { w: 5, h: 5, cx: 0, cy: 0 }
+  const mod = findModPath(libId, name)
+  if (!mod) return { w: 5, h: 5, cx: 0, cy: 0 }
   const txt = readFileSync(mod, "utf8")
   const pts = []
   // В .kicad_mod слой указывается ПОСЛЕ start/end, поэтому блоки режем
@@ -369,6 +781,13 @@ const BOARD_ASPECT = Math.SQRT2   // ширина/высота платы
 function computePlacement() {
   const sizes = new Map()
   for (const c of COMPONENTS) {
+    const std = STDOF.get(c.ref)
+    if (std) {
+      // стандартный корпус: габарит по площадкам генератора — своего
+      // .kicad_mod у него может не быть вовсе
+      sizes.set(c.ref, std.box)
+      continue
+    }
     const [lib, name] = c.footprint.split(":")
     sizes.set(c.ref, footprintSize(lib, name))
   }
@@ -389,7 +808,6 @@ function computePlacement() {
   )
 
   const place = new Map()
-  PLACE = place
   let rowX = 0
   let rowY = 0
   let rowH = 0
@@ -446,26 +864,38 @@ function emitTsx() {
   L.push(`const BOARD_H = ${height}`)
   L.push("")
 
-  // ---- 3D-модели: импортируем каждый STL один раз ----
-  // Смещение модели относительно выводов считается автоматически для
-  // каждой детали, поэтому перенос на другую схему ничего не потребует.
+  // ---- 3D-модели: импортируем каждую один раз ----
+  // Позицию и ориентацию tsci считает сам: плоскость z=0 модели ложится
+  // на поверхность платы, тело выравнивается по контакту. Проверка
+  // посадки после экспорта — hardware/tscircuit/check_models3d.py.
+  // Модель эмитится парой URL (STL для glb, STEP для step) — почему, см.
+  // комментарий у modelFor.
   const modelOf = new Map()
   MODELOF = modelOf
-  const imported = new Map()  // abs -> ident  // abs -> {dx,dy}|null, считается один раз
-  for (const c of COMPONENTS) {
-    const [lib, name] = c.footprint.split(":")
-    const abs = stlModelFor(lib, name)
-    if (!abs) continue
+  const imported = new Map()  // abs -> ident
+  const importOf = (abs) => {
     let ident = imported.get(abs)
     if (!ident) {
       ident = importIdent(abs)
       imported.set(abs, ident)
       L.push(`import ${ident} from ${j(relPath(OUT, abs))}`)
     }
-    modelOf.set(c.ref, { ident, abs, name })
+    return ident
+  }
+  for (const c of COMPONENTS) {
+    if (STDOF.has(c.ref)) continue // стандартный: тело строит сам tscircuit
+    const [lib, name] = c.footprint.split(":")
+    const mdl = modelFor(lib, name)
+    if (!mdl) continue
+    modelOf.set(c.ref, {
+      stl: mdl.stl ? importOf(mdl.stl) : null,
+      step: mdl.step ? importOf(mdl.step) : null,
+      stlAbs: mdl.stl,
+      stepAbs: mdl.step,
+      name,
+    })
   }
   L.push("")
-  shiftedRefs.length = 0
 
   L.push("export default () => (")
   L.push("  <board")
@@ -503,7 +933,27 @@ function emitTsx() {
       const fn = (PINFN.get(`${c.ref}.${p}`) ?? "").replace(/[^A-Za-z0-9_]/g, "_").replace(/^(\d)/, "P$1")
       labels[p] = fn || `P${p}`
     }
-    const fp = `kicad:${c.footprint.replace(":", "/")}`
+    // Корпус из проектной библиотеки заказа (EasyEDA): tsci умеет
+    // читать .kicad_mod прямо по пути — сетевой kicad-mod-cache для
+    // таких деталей не нужен. Путь абсолютный: при экспорте статические
+    // пути не привязываются к каталогу запуска (проверено: "./…"
+    // нормализуется и открывается как есть). Системные корпуса идут
+    // как kicad:<lib>/<name>.
+    const [flib, fname] = c.footprint.split(":")
+    const std = STDOF.get(c.ref)
+    let fp
+    if (std) {
+      // Родной путь: строка генератора — корпус и 3D-тело строит
+      // tscircuit (footprinter). Локальные .kicad_mod/.step этой детали
+      // не нужны вовсе; строка прошла guard по площадкам (collectStandards).
+      fp = std.token
+    } else {
+      const fmod = findModPath(flib, fname)
+      fp = `kicad:${c.footprint.replace(":", "/")}`
+      if (fmod && LIBS_ROOT && fmod.startsWith(LIBS_ROOT)) {
+        fp = fmod
+      }
+    }
     const part = PARTS.get(c.ref)
     const m = modelOf.get(c.ref)
     const pos = place.get(c.ref) ?? { x: 0, y: 0 }
@@ -516,30 +966,22 @@ function emitTsx() {
     L.push(`      manufacturerPartNumber={${JSON.stringify(c.value)}}`)
     if (part) L.push(`      supplierPartNumbers={{ jlcpcb: [${JSON.stringify("C" + part.lcsc)}] }}`)
     if (m) {
-      // Сдвиг модели относительно центра компонента.
-      //
-      // tscircuit ставит узел модели в cad_component.position и НЕ
-      // центрирует её по габариту, поэтому модель встаёт ровно там, где
-      // записаны её координаты. У моделей из packages3d начало координат
-      // совпадает с началом корпуса, и сдвиг не нужен. У моделей из
-      // каталога LCSC/EasyEDA начало произвольное, и деталь уезжает
-      // (проверено: ESP32 на 2.99 мм, Crystal_AT310 на 6.03 мм).
-      //
-      // Величина берётся из model_offsets.json, который считается по
-      // данным circuit.json (см. computeOffsets): это
-      //   pcb_component.center − (pcbX, pcbY) − центр габарита STL,
-      // то есть ровно то, что нужно, без предположений о том, как
-      // tscircuit вычисляет центр корпуса.
-      //
-      // z обязателен: в схеме пропов positionOffset требует все три оси,
-      // и без z объект не проходит валидацию — tscircuit падает с
-      // "Could not create cadmodel" и компонент пропадает из платы.
-      const off = OFFSETS.get(c.ref)
-      const offStr = off
-        ? ` positionOffset={{ x: ${off.dx}, y: ${off.dy}, z: 0 }}`
-        : ""
-      if (off) shiftedRefs.push(c.ref)
-      L.push(`      cadModel={<cadmodel modelUrl={${m.ident}}${offStr} />}`)
+      // Тело детали — обоими адресами, потому что экспортёры tscircuit
+      // читают разные форматы:
+      //   * board.glb — приоритетом model_stl_url (локальный STL читается
+      //     как настоящая геометрия; локальный STEP он не конвертирует и
+      //     рисует коробку-заглушку);
+      //   * board.step — настоящие B-Rep тела только из model_step_url
+      //     (STL там тоже коробка).
+      //   * ориентация STL = ориентация STEP (в паре glb применяет к STL
+      //     перевод STEP-ветки; почему — комментарий у modelFor).
+      // Позиционирование целиком на tscircuit: плоскость z=0 модели он
+      // кладёт на поверхность платы (проверено замером GLB против
+      // circuit.json, см. check_models3d.py) — собственные сдвиги
+      // (positionOffset) сдвинули бы модель из центра на свою величину.
+      const props = m.stl ? [`modelUrl={${m.stl}}`] : [`modelUrl={${m.step}}`]
+      if (m.stl && m.step) props.push(`stepUrl={${m.step}}`)
+      L.push(`      cadModel={<cadmodel ${props.join(" ")} />}`)
     }
     L.push(`    />`)
   }
@@ -561,7 +1003,7 @@ function emitTsx() {
   for (const net of NETS) {
     const flags = []
     if (POWER_NETS.has(net.name)) flags.push('routingPhaseIndex={0}')
-    if (net.name === "GND") flags.push("isGroundNet")
+    if (GROUND_NAME && net.name === GROUND_NAME) flags.push("isGroundNet")
     else if (POWER_NETS.has(net.name)) flags.push("isPowerNet")
     L.push(`    <net name=${j(tscNetName(net.name))}${flags.length ? " " + flags.join(" ") : ""} />`)
   }
@@ -571,10 +1013,9 @@ function emitTsx() {
   // заливка соединяет их площадки сама, а трассы лишь добавляют авроутеру
   // работу. Один GND давал 46 трасс, +3V3_DIG — ещё 15; вместе это
   // почти половина задачи и причина исчерпания итераций.
-  const poured = new Set(["GND", "P3V3", "P3V3_ANA"])
   let i = 0
   for (const net of NETS) {
-    if (poured.has(tscNetName(net.name))) continue
+    if (POURRED.has(tscNetName(net.name))) continue
     for (const nd of net.nodes) {
       i++
       L.push(`    <trace name=${j(`${tscNetName(net.name)}_${i}`)} from=${j(`${nd.ref}.pin${nd.pin}`)} to=${j("net." + tscNetName(net.name))} />`)
@@ -582,23 +1023,25 @@ function emitTsx() {
   }
 
   // ---- заливки ----
-  // GND разводится заливкой, а не 45 трассами: это и электрически
+  // Земля разводится заливкой, а не десятками трасс: это и электрически
   // правильнее (низкое сопротивление), и снимает нагрузку с авроутера.
-  if (netNames.includes("GND")) {
-    // Заливка GND: нижний слой — обратная плоскость, inner1 — выделенная
-    // плоскость питания, к которой авроутер выводит силовые соединения
-    // через фазу fanout (см. fanoutPourNetMap выше).
-    L.push(`    <copperpour connectsTo=${j("net.GND")} layer="bottom" />`)
-    L.push(`    <copperpour connectsTo=${j("net.GND")} layer="inner1" />`)
-  }
-  if (netNames.includes("P3V3")) {
-    L.push(`    <copperpour connectsTo=${j("net.P3V3")} layer="inner2" />`)
+  // Какие сети считать землёй и рельсами — решено агентом (манифест):
+  // ground → нижний слой + внутренний слой, остальные рельсы — верхний.
+  // Отступы заливки — из той же таблицы правил, что у платы. По умолчанию
+  // у CopperPour clearance 0.2 мм, а к краю платы правило строже, и DRC
+  // ловит «copper pour violates copper-to-board-edge clearance».
+  const pourMargins = `clearance="${DESIGN_RULES.traceClearance}" `
+    + `boardEdgeMargin="${DESIGN_RULES.minBoardEdgeClearance}"`
+  if (GROUND_NAME) {
+    L.push(`    <copperpour connectsTo=${j("net." + tscNetName(GROUND_NAME))} layer="bottom" ${pourMargins} />`)
+    L.push(`    <copperpour connectsTo=${j("net." + tscNetName(GROUND_NAME))} layer="inner1" ${pourMargins} />`)
   }
   // Остальные силовые сети — на верхний слой, разводятся трассами
   // в фазе 0 (см. routingPhaseIndex выше).
-  for (const n of ["+3V3_ANA"].map(tscNetName)) {
-    if (netNames.includes(n)) {
-      L.push(`    <copperpour connectsTo=${j("net." + tscNetName(n))} layer="top" />`)
+  for (const n of [...POWER_NETS].filter((x) => x !== GROUND_NAME)) {
+    const tn = tscNetName(n)
+    if (netNames.includes(tn)) {
+      L.push(`    <copperpour connectsTo=${j("net." + tn)} layer="top" ${pourMargins} />`)
     }
   }
 
@@ -614,6 +1057,12 @@ function tsci(args) {
     cwd: ROOT, encoding: "utf8", maxBuffer: 64 * 1024 * 1024,
   })
   const out = ((r.stdout ?? "") + (r.stderr ?? "")).trim()
+  // Тела деталей в board.step: если сборщик не разобрал чей-то STEP, tsci
+  // пишет «Failed to merge STEP model …» и молча пропускает модель — код
+  // выхода при этом нулевой. Молчать нельзя: 3D окажется неполным.
+  const mergeWarn = out.split("\n").filter((l) => l.includes("Failed to merge STEP model"))
+  for (const w of mergeWarn.slice(0, 8)) console.error("      ! " + w.trim())
+  if (mergeWarn.length > 8) console.error(`      ! … и ещё ${mergeWarn.length - 8}`)
   const fatal = /SyntaxError|Cannot find module|ERR_MODULE_NOT_FOUND/.test(out)
   if (r.status !== 0 || fatal) {
     console.error(`  ! tsci ${args.join(" ")} -> ${r.status}`)
@@ -625,86 +1074,11 @@ function tsci(args) {
 
 // ═══════════════════════════════════════════════════════ main
 
-/**
- * Чтение кэша сдвигов моделей.
- */
-function loadOffsets() {
-  if (!existsSync(OFFSETS_FILE)) return new Map()
-  try {
-    const j = JSON.parse(readFileSync(OFFSETS_FILE, "utf8"))
-    return new Map(Object.entries(j.offsets ?? {}))
-  } catch {
-    return new Map()
-  }
-}
-
-/**
- * Расчёт сдвигов 3D-моделей по фактическому circuit.json.
- *
- * tscircuit не центрирует модель по габариту: узел встаёт в
- * cad_component.position буквально. Чтобы деталь села по центру
- * компонента, нужно
- *
- *   positionOffset = (pcb_component.center − (pcbX, pcbY)) − центр(STL)
- *
- * где первая скобка — начало координат корпуса в его собственной
- * системе (как его понял tscircuit), вторая — центр габарита модели.
- *
- * Почему не по падам. Центр по падам отличается от того, что использует
- * tscircuit: у PinHeader_1x08 пады дают +8.89 мм, а tscircuit ставит
- * начало корпуса на −8.89 мм, то есть расхождение 17.78 мм. Проверено
- * на 9 корпусах: по circuit.json сдвиг сходится до 0.00 мм, по падам —
- * нет. Поэтому источник истины — экспорт tscircuit, а не разбор
- * посадочного места.
- *
- * Результат кэшируется: смещение зависит только от корпуса, а не от
- * позиции, поэтому второй проход уже не нужен.
- */
-function computeOffsets(place, modelOf) {
-  const cj = resolve(OUT, "circuit.json")
-  if (!existsSync(cj)) {
-    console.error("  ! нет circuit.json — сдвиги посчитать не по чему")
-    return null
-  }
-  const arr = Object.values(JSON.parse(readFileSync(cj, "utf8")))
-  const nameOf = new Map(
-    arr.filter((e) => e.type === "source_component").map((e) => [e.source_component_id, e.name]),
-  )
-  const centerOf = new Map()
-  for (const e of arr) {
-    if (e.type !== "pcb_component") continue
-    centerOf.set(nameOf.get(e.source_component_id), e.center)
-  }
-
-  const out = {}
-  const rows = []
-  for (const [ref, m] of modelOf) {
-    const b = stlBBox(m.abs)
-    const c = centerOf.get(ref)
-    const p = place.get(ref)
-    if (!b || !c || !p) continue
-    const lx = c.x - p.x
-    const ly = c.y - p.y
-    const dx = +(lx - (b.xmin + b.xmax) / 2).toFixed(4)
-    const dy = +(ly - (b.ymin + b.ymax) / 2).toFixed(4)
-    if (Math.abs(dx) < 0.01 && Math.abs(dy) < 0.01) continue
-    out[ref] = { dx, dy }
-    rows.push(`      ${ref.padEnd(6)} d=(${dx.toFixed(3)}, ${dy.toFixed(3)})  ${m.name}`)
-  }
-  if (!rows.length) {
-    console.log("  [сдвиги] ни одной модели не требует сдвига")
-    return out
-  }
-  console.log(`  [сдвиги] сдвинуть моделей: ${rows.length}`)
-  for (const r of rows) console.log(r)
-  return out
-}
-
 function main() {
   mkdirSync(OUT, { recursive: true })
 
   console.log("=".repeat(74))
-  console.log("KRYSTAL RADIO (zero-IF SDR) -> tscircuit (эмиттер TSX + экспорт tsci)")
+  console.log(`${TITLE || "ИЗДЕЛИЕ"} -> tscircuit (эмиттер TSX + экспорт tsci)`)
   console.log("=".repeat(74))
   console.log(`\n  [вход] ${NETLIST}`)
 
@@ -712,6 +1086,19 @@ function main() {
   COMPONENTS = comps.filter((c) => !c.ref.startsWith("#"))
   NETS = nets
   PINFN = pinFn
+
+  // ---- модули вне платы (placement=offboard): снять с эмиссии платы ----
+  const OFFBOARD = loadOffboard()
+  if (OFFBOARD.size) {
+    COMPONENTS = COMPONENTS.filter((c) => !OFFBOARD.has(c.ref))
+    NETS = NETS.map((n) => ({
+      ...n,
+      nodes: n.nodes.filter((nd) => !OFFBOARD.has(nd.ref)),
+    })).filter((n) => n.nodes.length > 0)
+    console.log(`  [offboard] вне платы (на PCB не ставятся): `
+      + `${[...OFFBOARD].join(", ")}`)
+  }
+  applyPowerNets(NETS)
 
   console.log(`  [netlist] компонентов ${COMPONENTS.length}, сетей ${NETS.length}`)
 
@@ -736,62 +1123,99 @@ function main() {
       Object.entries(byHow).map(([k, n]) => `${k} — ${n}`).join("; "))
   }
 
+  // ---- паспорт деталей: стандартные корпуса до расчёта размещения ----
+  PARTS_PCB = loadPartsPcb()
+  STDOF = collectStandards()
+
   // ---- проверка корпусов локально, до эмита ----
+  const custom = COMPONENTS.filter((c) => !STDOF.has(c.ref))
   const missingFp = []
-  for (const c of COMPONENTS) {
+  for (const c of custom) {
     const [lib, name] = c.footprint.split(":")
-    const p = resolve("/usr/share/kicad/footprints", `${lib}.pretty`, `${name}.kicad_mod`)
-    if (!existsSync(p)) missingFp.push(`${c.ref}: ${c.footprint}`)
+    if (!findModPath(lib, name)) missingFp.push(`${c.ref}: ${c.footprint}`)
   }
   if (missingFp.length) {
-    console.error(`\n  ОШИБКА: нет ${missingFp.length} корпусов локально:`)
+    console.error(`\n  ОШИБКА: нет ${missingFp.length} корпусов локально (нестандартные детали):`)
     for (const m of missingFp.slice(0, 20)) console.error("      " + m)
     process.exit(1)
   }
-  console.log(`  [корпуса] все ${new Set(COMPONENTS.map((c) => c.footprint)).size} уникальных найдены локально`)
-
-  // ---- сдвиги 3D-моделей из предыдущего прохода ----
-  OFFSETS = loadOffsets()
-  console.log(
-    `  [сдвиги] ${OFFSETS.size ? `${OFFSETS.size} моделей со сдвигом из ${relPath(ROOT, OFFSETS_FILE)}` : "нет файла со сдвигами — модели встанут как есть"}`,
-  )
+  console.log(`  [паспорт] ${relPath(ROOT, PARTS_PCB_FILE)}`)
+  if (STDOF.size) {
+    console.log(`         стандартных корпусов ${STDOF.size}/${COMPONENTS.length} `
+      + `— родной генератор tscircuit: `
+      + [...STDOF.entries()].map(([r, v]) => `${r}:${v.token}`).join(" "))
+  }
+  if (custom.length) {
+    console.log(`         нестандартных ${custom.length} `
+      + `— наш KiCad-путь (локальная пара)${LIBS_ROOT ? ", включая design/libs" : ""}`)
+  }
 
   // ---- эмитт TSX ----
   writeFileSync(TSX, emitTsx())
   // Трассы создаются не для всех сетей: у сетей с медной заливкой
   // площадки соединяет заливка. Считаем по факту.
-  const pouredNames = new Set(["GND", "P3V3", "P3V3_ANA"])
   const nTraces = NETS
-    .filter((n) => !pouredNames.has(tscNetName(n.name)))
+    .filter((n) => !POURRED.has(tscNetName(n.name)))
     .reduce((a, n) => a + n.nodes.length, 0)
   console.log(`  [эмитт] ${TSX}`)
   console.log(`          компонентов ${COMPONENTS.length}, трасс ${nTraces}`)
-  console.log(`          моделей со сдвигом: ${shiftedRefs.length}`)
 
-  // ---- сдвиги моделей: считаем после circuit.json, переэмитим и повторяем ----
+  // ---- контроль STEP-моделей до экспорта ----
   //
-  // Первый проход нужен только ради circuit.json: из него берётся то
-  // положение, которое tscircuit приписал корпусу. Смещение зависит от
-  // корпуса, а не от позиции, поэтому результат кэшируется в
-  // model_offsets.json и повторный расчёт не нужен.
-  const wantOffsets = process.env.COMPUTE_OFFSETS === "1"
-  if (wantOffsets) {
-    const off = computeOffsets(PLACE, MODELOF)
-    if (off) {
-      writeFileSync(OFFSETS_FILE, JSON.stringify({ offsets: off }, null, 1) + "\n")
-      OFFSETS = new Map(Object.entries(off))
-      console.log(`  [сдвиги] записано ${OUT ? "" : ""}${relPath(ROOT, OFFSETS_FILE)} (${Object.keys(off).length})`)
-      if (shiftedRefs.length) {
-        writeFileSync(TSX, emitTsx())
-        console.log(`  [эмитт] пересобран со сдвигами: ${shiftedRefs.join(", ")}`)
-      }
+  // Диалект SolidWorks (CRLF и «) ;») сборщик STEP в tsci не разбирает —
+  // это правит part_fetch.py при скачивании, здесь страховка на старые
+  // заказы. Вторая проверка: модель, целиком лежащая выше z=0, в
+  // board.step задирается на толщину платы в воздух — низ модели должен
+  // быть чуть ниже нуля (у моделей EasyEDA так и есть).
+  const fixedSteps = []
+  const floatingSteps = []
+  const stepFiles = new Set(
+    [...MODELOF.values()].map((v) => v.stepAbs).filter(Boolean),
+  )
+  for (const p of stepFiles) {
+    if (normalizeStepFile(p)) fixedSteps.push(relPath(ROOT, p))
+    const zmin = stepMinZ(p)
+    if (zmin !== null && zmin >= 0) floatingSteps.push(`${relPath(ROOT, p)} (zmin ${zmin})`)
+  }
+  if (fixedSteps.length) {
+    console.log(`  [STEP] нормализован диалект SolidWorks: ${fixedSteps.length} файл(ов)`)
+    for (const f of fixedSteps.slice(0, 6)) console.log(`         ${f}`)
+  }
+  if (floatingSteps.length) {
+    console.warn(`  ! [STEP] ${floatingSteps.length} моделей целиком выше z=0 — в board.step уедут над платой`)
+    for (const f of floatingSteps.slice(0, 6)) console.warn(`         ${f}`)
+  }
+
+  // ---- сверка ориентации пар STL+STEP до экспорта ----
+  //
+  // Пара эмитится вместе, и glb читает STL переводом STEP-ветки (y=+z):
+  // STL обязан смотреть в ту же сторону, что STEP (тело в +z, низ у
+  // нуля). Проверка ловит старые или чужие файлы, скачанные до смены
+  // конвенции: у пары низ ≈ -0.01, верх тела > 0.05. Пропущенная ошибка
+  // видна в конце (check_models3d: деталь внутри платы), но лучше
+  // сказать об этом до экспорта, с адресом файла.
+  const oriBad = []
+  for (const [ref, m] of MODELOF) {
+    if (!m.stlAbs || !m.stepAbs) continue
+    const rng = stlZRange(m.stlAbs)
+    if (!rng) continue
+    const [szmin, szmax] = rng
+    if (szmax <= 0.05 || szmin > 0.06) {
+      oriBad.push(`${ref}: STL z=[${szmin.toFixed(2)}, ${szmax.toFixed(2)}]`)
     }
+  }
+  if (oriBad.length) {
+    console.warn(`  ! [STL] ${oriBad.length} STL в паре со STEP не в конвенции — в board.glb детали уйдут внутрь платы:`)
+    for (const f of oriBad.slice(0, 6)) console.warn(`         ${f}`)
+    console.warn("         пересоберите: python3 tools/part_fetch.py --lcsc <C…> "
+      + "(или freecadcmd step2stl.py с NORMALIZE_Z=1)")
   }
 
   // ---- нативный экспорт через tsci ----
   // ROUTING_ONLY: прогоняем только circuit.json, чтобы проверять
   // авроутинг за секунды, а не ждать все экспорты по минуте каждый.
   const routingOnly = process.env.ROUTING_ONLY === "1"
+  const stem = basename(NETLIST).replace(/\.[^.]+$/, "") || "board"
   console.log("\n  [tsci] автотрассировка + экспорт …")
   const jobs = routingOnly
     ? [["json", "circuit.json"]]
@@ -799,7 +1223,7 @@ function main() {
         ["json", "circuit.json"],
         ["kicad_pcb", "board.kicad_pcb"],
         ["kicad_sch", "board.kicad_sch"],
-        ["kicad_zip", "krystal-radio-kicad.zip"],
+        ["kicad_zip", `${stem}-kicad.zip`],
         ["step", "board.step"],
         ["glb", "board.glb"],
         ["gltf", "board.gltf"],

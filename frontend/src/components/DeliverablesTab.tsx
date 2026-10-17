@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Download, FileText, FileCode, FileJson, Package, AlertCircle, Search } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { api } from '@/lib/supabase';
 import type { DeliverableWithRelations } from '@/lib/supabase';
 import { ROLE_ICONS } from '@/lib/constants';
 
@@ -28,16 +28,9 @@ export function DeliverablesTab() {
   }, []);
 
   const fetchDeliverables = async () => {
-    const { data } = await supabase
-      .from('bureau_deliverables')
-      .select(`
-        *,
-        project:bureau_projects(id, code, title),
-        agent:bureau_agents!agent_id(id, codename, zone_callsign, role_key)
-      `)
-      .order('created_at', { ascending: false });
+    const data = await api.get('/api/bureau/bureau_deliverables');
 
-    setDeliverables((data ?? []) as unknown as DeliverableWithRelations[]);
+    setDeliverables((data?.rows ?? []) as unknown as DeliverableWithRelations[]);
     setLoading(false);
   };
 

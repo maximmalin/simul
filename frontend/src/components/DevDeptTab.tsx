@@ -4,7 +4,7 @@ import {
   Plus, X, Save, Loader2, Trash2, Edit3,
   CheckCircle2, AlertCircle,
 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { api } from '@/lib/supabase';
 import type { DevAgent, DevAgentStatus } from '@/lib/supabase';
 import {
   DEV_ROLE_ICONS, DEV_ROLE_LABELS, DEV_STATUS_CONFIG,
@@ -42,7 +42,7 @@ export function DevDeptTab() {
   });
 
   const fetchDevs = useCallback(async () => {
-    const { data } = await supabase.from('dev_agents').select('*').order('created_at');
+    const { data } = await api.get('/api/bureau/dev_agents');
     setDevs((data ?? []) as DevAgent[]);
     setLoading(false);
   }, []);
@@ -57,46 +57,39 @@ export function DevDeptTab() {
 
     try {
       if (editingId) {
-        const { error } = await supabase
-          .from('dev_agents')
-          .update({
-            codename: formData.codename,
-            role_key: formData.role_key,
-            role_title: formData.role_title || DEV_ROLE_LABELS[formData.role_key],
-            designation: formData.designation,
-            status: formData.status,
-            specialty: formData.specialty,
-            languages: formData.languages,
-            frameworks: formData.frameworks,
-            current_project: formData.current_project || null,
-            git_branch: formData.git_branch || null,
-            commits_today: formData.commits_today,
-            prs_open: formData.prs_open,
-            code_quality: formData.code_quality,
-            efficiency: formData.efficiency,
-          })
-          .eq('id', editingId);
-        if (error) throw error;
+        await api.patch(`/api/bureau/dev_agents/${editingId}`, {
+          codename: formData.codename,
+          role_key: formData.role_key,
+          role_title: formData.role_title || DEV_ROLE_LABELS[formData.role_key],
+          designation: formData.designation,
+          status: formData.status,
+          specialty: formData.specialty,
+          languages: formData.languages,
+          frameworks: formData.frameworks,
+          current_project: formData.current_project || null,
+          git_branch: formData.git_branch || null,
+          commits_today: formData.commits_today,
+          prs_open: formData.prs_open,
+          code_quality: formData.code_quality,
+          efficiency: formData.efficiency,
+        });
       } else {
-        const { error } = await supabase
-          .from('dev_agents')
-          .insert({
-            codename: formData.codename,
-            role_key: formData.role_key,
-            role_title: formData.role_title || DEV_ROLE_LABELS[formData.role_key],
-            designation: formData.designation,
-            status: formData.status,
-            specialty: formData.specialty,
-            languages: formData.languages,
-            frameworks: formData.frameworks,
-            current_project: formData.current_project || null,
-            git_branch: formData.git_branch || null,
-            commits_today: formData.commits_today,
-            prs_open: formData.prs_open,
-            code_quality: formData.code_quality,
-            efficiency: formData.efficiency,
-          });
-        if (error) throw error;
+        await api.post('/api/bureau/dev_agents', {
+          codename: formData.codename,
+          role_key: formData.role_key,
+          role_title: formData.role_title || DEV_ROLE_LABELS[formData.role_key],
+          designation: formData.designation,
+          status: formData.status,
+          specialty: formData.specialty,
+          languages: formData.languages,
+          frameworks: formData.frameworks,
+          current_project: formData.current_project || null,
+          git_branch: formData.git_branch || null,
+          commits_today: formData.commits_today,
+          prs_open: formData.prs_open,
+          code_quality: formData.code_quality,
+          efficiency: formData.efficiency,
+        });
       }
 
       setSaveStatus('saved');
@@ -139,7 +132,7 @@ export function DevDeptTab() {
   };
 
   const handleDelete = async (id: string) => {
-    await supabase.from('dev_agents').delete().eq('id', id);
+        await api.delete(`/api/bureau/dev_agents/${id}`);
     setDevs((prev) => prev.filter((d) => d.id !== id));
   };
 

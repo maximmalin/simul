@@ -28,6 +28,13 @@ readInductance из пакета jlcparts, а не самописные: там 
 есть, — как и требовалось: сначала MPN, а если под него модели нет,
 подбирается та, под которую модель нашлась. Список таких случаев печатается.
 
+Дружба с part_fetch. Если агент уже выбрал деталь по коду LCSC (part_fetch
+скачал символ, корпус и 3D, а в design/schematic.json записан lcsc), то
+подбор по номиналу не нужен: берётся ровно этот артикул, а паспортные
+данные (MPN, производитель, файл даташита) добавляются из design/datasheets.
+Такие детали не подменяются по модели: корпус, символ и тело скачаны под
+этот артикул, и другой корпус сломал бы согласованность схемы с платой.
+
 Запуск:
     python3 hardware/tscircuit/resolve_parts.py [--report]
 Результат: hardware/tscircuit/out/resolved_parts.json
@@ -50,6 +57,13 @@ OUT = ROOT / "hardware/tscircuit/out/resolved_parts.json"
 # Производные таблицы в стиле jlcsearch; собираются build_derived.py.
 DB = ROOT / "hardware/tscircuit/out/jlcsearch.db"
 JLCPARTS = Path("/mnt/ext4data/jlcparts")
+
+# Дизайн-каталог заказа: явные артикулы агентов и паспорта их деталей.
+# Если не заданы ключами, ищутся сами рядом с нетлистом
+# (…/out/hardware/device.net → …/design/…).
+SPEC: Path | None = None          # design/schematic.json
+DS_INDEX: Path | None = None      # design/datasheets/index.json
+LIBS_DIR: Path | None = None      # design/libs (.kicad_sym/.pretty/.3dshapes)
 
 sys.path.insert(0, str(JLCPARTS))
 try:
@@ -161,19 +175,57 @@ def package_matches(lcsc_package: str, kicad_footprint: str) -> bool:
                for p in package_patterns(kicad_footprint))
 
 
-def footprint_has_model(footprint: str) -> bool:
-    """Есть ли локальная STL для корпуса (с учётом запасного пути)."""
+def find_mod(footprint: str) -> Path | None:
+    """Файл корпуса: системные библиотеки KiCad, затем design/libs заказа."""
     lib, _, name = footprint.partition(":")
-    mod = FP_ROOT / f"{lib}.pretty" / f"{name}.kicad_mod"
+    for root in filter(None, (FP_ROOT, LIBS_DIR)):
+        p = root / f"{lib}.pretty" / f"{name}.kicad_mod"
+        if p.is_file():
+            return p
+    return None
+
+
+def model_roots() -> list[Path]:
+    """Где искать тела деталей.
+
+    design/libs (part_fetch кладёт .step/.wrl рядом с корпусом), корень
+    заказа (в корпусе EasyEDA модель записана относительным путём
+    design/libs/…) и зеркало packages3d в STL.
+    """
+    roots: list[Path] = []
+    if LIBS_DIR:
+        roots += [LIBS_DIR, LIBS_DIR.parent.parent]
+    roots.append(MODELS)
+    return roots
+
+
+def footprint_has_model(footprint: str) -> bool:
+    """Есть ли локальный файл тела для корпуса.
+
+    Сначала проектные библиотеки заказа, затем зеркало packages3d в STL.
+    """
+    lib, _, name = footprint.partition(":")
     cands: list[str] = []
-    if mod.is_file():
-        m = re.search(r'3DMODEL_DIR}/([^"]*\.step)', mod.read_text(errors="ignore"))
-        if m:
-            cands.append(m.group(1))
+    mod = find_mod(footprint)
+    if mod:
+        for m in re.finditer(r'\(model\s+"([^"]+)"',
+                             mod.read_text(errors="ignore")):
+            cands.append(re.sub(r"^\$\{[A-Z0-9_]+\}/", "", m.group(1)))
     # Запасной путь по соглашению packages3d: у части корпусов строки
     # (model ...) в .kicad_mod просто нет.
     cands.append(f"{lib}.3dshapes/{name}.step")
-    return any((MODELS / c.replace(".step", ".stl")).is_file() for c in cands)
+    for c in cands:
+        base = re.sub(r"\.(step|stp|wrl|vrml|stl)$", "", c, flags=re.I)
+        for root in model_roots():
+            for ext in (".step", ".stp", ".wrl", ".stl"):
+                if (root / f"{base}{ext}").is_file():
+                    return True
+        # Строка модели может быть записана полным относительным путём
+        # (design/libs/…): проверяем имя файла в каталоге тела корпуса.
+        if LIBS_DIR and (LIBS_DIR / f"{lib}.3dshapes"
+                         / f"{Path(base).name}.step").is_file():
+            return True
+    return False
 
 
 def parse_netlist() -> list[dict]:
@@ -318,17 +370,135 @@ def find_by_package(con, table: str, pats: list[str]) -> list[dict]:
     return out
 
 
+def discover_design(netlist: Path) -> tuple[Path | None, Path | None, Path | None]:
+    """Дизайн-каталог заказа рядом с нетлистом.
+
+    Нетлист лежит в <заказ>/out/hardware/device.net, а спецификация,
+    даташиты и библиотеки — в <заказ>/design. Ключи перекрывают поиск.
+    """
+    for p in (netlist.parent, *list(netlist.parents)[:4]):
+        d = p / "design"
+        if not d.is_dir():
+            continue
+        spec = d / "schematic.json"
+        ds = d / "datasheets" / "index.json"
+        libs = d / "libs"
+        return (spec if spec.is_file() else None,
+                ds if ds.is_file() else None,
+                libs if libs.is_dir() else None)
+    return None, None, None
+
+
+def load_spec_lcsc(path: Path | None) -> dict[str, dict]:
+    """ref → выбор агента из design/schematic.json (LCSC и паспорт).
+
+    Явный LCSC — единственный достоверный способ связать схему с
+    конкретной деталью: агент скачал под неё символ, корпус и тело,
+    поэтому такой выбор приоритетнее любого подбора по номиналу.
+    """
+    if not path or not path.is_file():
+        return {}
+    try:
+        doc = json.loads(path.read_text(encoding="utf-8"))
+    except ValueError as e:
+        print(f"спецификация {path} не читается: {e}")
+        return {}
+    out: dict[str, dict] = {}
+    for p in doc.get("parts", []):
+        ref = str(p.get("ref") or "").strip()
+        if not ref:
+            continue
+        raw = str(p.get("lcsc") or "").strip().upper().lstrip("C")
+        out[ref] = {
+            "lcsc": f"C{raw}" if raw.isdigit() else "",
+            "mpn": str(p.get("mpn") or ""),
+            "manufacturer": str(p.get("manufacturer") or ""),
+        }
+    return out
+
+
+def load_datasheet_index(path: Path | None) -> dict[str, dict]:
+    """LCSC → паспорт и файл даташита (этот индекс пишет part_fetch)."""
+    if not path or not path.is_file():
+        return {}
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except ValueError:
+        return {}
+
+
+def lcsc_row(con, lcsc: str) -> dict:
+    """Строка каталога по точному коду LCSC — артикул выбран агентом."""
+    if not re.fullmatch(r"C\d+", lcsc or ""):
+        return {}
+    r = con.execute(
+        "SELECT mfr, package, description, stock, price1, in_stock, "
+        "       is_basic, is_preferred FROM part WHERE lcsc = ?",
+        (int(lcsc[1:]),)).fetchone()
+    if not r:
+        return {}
+    return {"mfr": r[0] or "", "package": r[1] or "",
+            "description": (r[2] or "")[:90], "stock": r[3] or 0,
+            "price1": r[4], "in_stock": bool(r[5]),
+            "assembly": bool(r[6]), "preferred": bool(r[7])}
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="подбор замен по локальной базе")
+    ap.add_argument("--netlist", default="",
+                    help="нетлист KiCad (.net); умолчание — бриг-приёмник")
+    ap.add_argument("--out", default="",
+                    help="кудa писать resolved_parts.json")
+    ap.add_argument("--db", default="",
+                    help="локальная база производных таблиц jlcsearch.db")
+    ap.add_argument("--models", default="",
+                    help="каталог STL-моделей корпусов")
+    ap.add_argument("--spec", default="",
+                    help="design/schematic.json: явные LCSC агентов")
+    ap.add_argument("--datasheets", default="",
+                    help="design/datasheets/index.json: паспорта и даташиты")
+    ap.add_argument("--libs", default="",
+                    help="design/libs: символы/корпуса/3D EasyEDA заказа")
     ap.add_argument("--report", action="store_true",
                     help="подробный отчёт по каждому компоненту")
     a = ap.parse_args()
 
+    # Пути — только параметры; их значения по умолчанию задают константы
+    # выше. Всё, что кладут ключи, перекрывает их: скрипт один и тот же
+    # для приёмника, фонаря и любого другого изделия.
+    global NETLIST, OUT, MODELS, FP_ROOT, DB, SPEC, DS_INDEX, LIBS_DIR
+    if a.netlist:
+        NETLIST = Path(a.netlist).resolve()
+    if a.out:
+        OUT = Path(a.out).resolve()
+    if a.db:
+        DB = Path(a.db).resolve()
+    if a.models:
+        MODELS = Path(a.models).resolve()
+
+    # Дизайн-каталог заказа: ключи перекрывают, иначе он ищется сам рядом
+    # с нетлистом (…/out/hardware/device.net → …/design/…).
+    auto_spec, auto_ds, auto_libs = discover_design(NETLIST)
+    SPEC = Path(a.spec).resolve() if a.spec else auto_spec
+    DS_INDEX = Path(a.datasheets).resolve() if a.datasheets else auto_ds
+    LIBS_DIR = Path(a.libs).resolve() if a.libs else auto_libs
+
     if not DB.is_file():
         print(f"НЕТ {DB} — сначала соберите производные таблицы: "
-              f"build_derived.py")
+              f"build_derived.py (заготовка делается один раз, "
+              f"конвейер базы не пересобирает)")
+        return 1
+    if not NETLIST.is_file():
+        print(f"НЕТ нетлиста {NETLIST} — сначала make kicad "
+              f"(компилятор schematic_from_json)")
         return 1
     con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True)
+
+    explicit = load_spec_lcsc(SPEC)
+    ds_index = load_datasheet_index(DS_INDEX)
+    if SPEC or DS_INDEX or LIBS_DIR:
+        print(f"дизайн заказа: {SPEC or '—'} | {DS_INDEX or '—'} | "
+              f"{LIBS_DIR or '—'}")
 
     comps = parse_netlist()
     # Корпуса из этой же схемы, для которых модель нашлась: по ним ищем
@@ -338,9 +508,45 @@ def main() -> int:
     resolved: dict[str, dict] = {}
     unresolved: list[str] = []
     substituted: list[str] = []
+    picked_explicit: list[str] = []
+    no_model_explicit: list[str] = []
 
     for c in comps:
         ref, fp = c["ref"], c.get("footprint", "")
+        choice = explicit.get(ref, {})
+        if choice.get("lcsc"):
+            # Деталь уже выбрана агентом: part_fetch скачал под этот LCSC
+            # символ, корпус и тело. Подбор по номиналу тут вреден — он
+            # мог бы принести чужой корпус и рассогласовать схему с платой.
+            row = lcsc_row(con, choice["lcsc"])
+            dsi = ds_index.get(choice["lcsc"], {})
+            mfr = (row.get("mfr") or choice.get("mpn")
+                   or dsi.get("mpn") or "")
+            has_model = footprint_has_model(fp)
+            resolved[ref] = {
+                "jlcpcb": [choice["lcsc"]],
+                "mfr": mfr,
+                "manufacturer": (dsi.get("manufacturer")
+                                 or choice.get("manufacturer") or ""),
+                "package": row.get("package") or dsi.get("package", ""),
+                "description": row.get("description", ""),
+                "stock": row.get("stock"),
+                "price1": row.get("price1"),
+                "assembly": bool(row.get("assembly")),
+                "preferred": bool(row.get("preferred")),
+                "candidates": 1,
+                "how": "из схемы (выбор агента)",
+                "source": "schematic",
+                "datasheet": dsi.get("file", ""),
+                "footprint_has_model": has_model,
+                "moved_for_model": False,
+            }
+            picked_explicit.append(f"{ref}: {choice['lcsc']} {mfr} ({fp})")
+            if not has_model:
+                no_model_explicit.append(
+                    f"{ref}: {choice['lcsc']} — у корпуса {fp} локального "
+                    f"тела нет (part_fetch его мог не скачать)")
+            continue
         lib = fp.partition(":")[0]
         value = (c.get("value") or "").strip()
         pats = package_patterns(fp)
@@ -421,6 +627,15 @@ def main() -> int:
     ok = len(resolved)
     print(f"подобрано {ok} из {len(comps)}")
     print(f"файл: {OUT}")
+    if picked_explicit:
+        print(f"\nвыбрано агентами — LCSC из схемы ({len(picked_explicit)}):")
+        for s in picked_explicit:
+            print(f"   {s}")
+    if no_model_explicit:
+        print(f"\nвыбранные агентами без локального тела "
+              f"({len(no_model_explicit)}):")
+        for s in no_model_explicit:
+            print(f"   {s}")
     if unresolved:
         print(f"\nне подобрано ({len(unresolved)}):")
         for u in unresolved:

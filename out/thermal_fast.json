@@ -1,0 +1,83 @@
+{
+  "board": {
+    "width": 88.60000000000001,
+    "height": 85.08000000000001,
+    "thickness": 1.6,
+    "layers": 4,
+    "material": "fr4"
+  },
+  "ngspice": {
+    "powers": {
+      "r_mcu": 0.0825,
+      "r_af": 0.0495,
+      "r_mix": 0.033,
+      "r_op": 0.033,
+      "r_ldo": 0.102
+    },
+    "total_w": 0.3,
+    "v_rail": 3.3,
+    "i_total": 0.06,
+    "deck": "/mnt/ext4data/kristall-radio/work/orders/9a9c05107340/sim/work/thermal/thermal_bias.cir"
+  },
+  "fast": {
+    "ta_c": 25.0,
+    "devices": [
+      {
+        "ref": "U_LDO",
+        "p_w": 0.102,
+        "theta_ja": 65.0,
+        "tj_c": 31.63,
+        "tj_max_c": 125.0,
+        "margin_c": 93.37,
+        "pass_": true
+      },
+      {
+        "ref": "U1",
+        "p_w": 0.0825,
+        "theta_ja": 55.0,
+        "tj_c": 29.5375,
+        "tj_max_c": 85.0,
+        "margin_c": 55.4625,
+        "pass_": true
+      },
+      {
+        "ref": "Q_LNA1",
+        "p_w": 0.02475,
+        "theta_ja": 180.0,
+        "tj_c": 29.455,
+        "tj_max_c": 150.0,
+        "margin_c": 120.545,
+        "pass_": true
+      },
+      {
+        "ref": "Q_LNA2",
+        "p_w": 0.02475,
+        "theta_ja": 180.0,
+        "tj_c": 29.455,
+        "tj_max_c": 150.0,
+        "margin_c": 120.545,
+        "pass_": true
+      },
+      {
+        "ref": "U_MIX1",
+        "p_w": 0.033,
+        "theta_ja": 95.0,
+        "tj_c": 28.135,
+        "tj_max_c": 85.0,
+        "margin_c": 56.864999999999995,
+        "pass_": true
+      },
+      {
+        "ref": "U_OP1",
+        "p_w": 0.033,
+        "theta_ja": 120.0,
+        "tj_c": 28.96,
+        "tj_max_c": 125.0,
+        "margin_c": 96.03999999999999,
+        "pass_": true
+      }
+    ],
+    "worst_tj_c": 31.63,
+    "pass_": true
+  }
+}

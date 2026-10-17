@@ -35,7 +35,12 @@ FIG = CAD / "figures"
 WORK = PROJECT / "sim" / "work" / "gost"
 YAML = PROJECT / "sim" / "inputs" / "bragg_inputs.yaml"
 TPL_DIR = "/usr/share/freecad/Mod/TechDraw/Templates"
-ASI = "/mnt/ext4data/home-mirrage/Desktop/analysis-situs/AnalysisSitus-2025.2.AppImage"
+# Заготовка на машине (собирается один раз, конвейер её не скачивает):
+# AppImage Analysis Situs. Путь — настраиваемый, умолчание локальное.
+ASI = os.environ.get(
+    "GOST_ASI",
+    "/mnt/ext4data/home-mirrage/Desktop/analysis-situs/"
+    "AnalysisSitus-2025.2.AppImage")
 # Analysis Situs может подвиснуть на VTK/X; ограничиваем ожидание (сек) и при
 # неудаче переходим на headless-резерв FreeCAD (stage_import_brep).
 ASI_TIMEOUT = int(os.environ.get("GOST_ASITUS_TIMEOUT", "180"))

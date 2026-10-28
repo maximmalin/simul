@@ -1,4 +1,4 @@
-# kristall-radio — code-first zero-IF SDR receiver
+# fULLY AUTOMATED HARDWARE DEVELOPM,ENT PIPILINE.
 
 A zero-IF (direct-conversion) software-defined-radio receiver built around an
 **STM32F103C8T6 "Blue Pill"**. The board, the analog RF chain, the firmware, and
@@ -6,7 +6,7 @@ the antennas are all **described by code** and **verified by simulation**. The
 headline capability is a working **analog/digital co-simulation**: a real ngspice
 netlist wrapped as an **FMI 2.0 FMU**, hard-locked to a firmware model — and, on
 the QEMU path, to the real firmware binary.
-
+lAST TESTED PROJECT IS DEVELOPMENT OF 2WATT LEDF DRIVER 
 ---
 
 **Start here**

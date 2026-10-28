@@ -1,0 +1,23 @@
+{
+  "версия": 8,
+  "описание": "omniroute + opencode-proxy first",
+  "маршруты": [
+    {"провайдер": "opencode-proxy", "модель": "mimo-v2.6-flash-free", "роль": "основная", "примечание": "opencode-proxy fast"},
+    {"провайдер": "opencode-proxy", "модель": "beam-free", "роль": "резерв"},
+    {"провайдер": "opencode-proxy", "модель": "nemotron-3.5-lightning-free", "роль": "резерв"},
+    {"провайдер": "opencode-proxy", "модель": "deepseek-v4.1-flash-free", "роль": "резерв"},
+    {"провайдер": "opencode-proxy", "модель": "flint-40b-free", "роль": "резерв"},
+    {"провайдер": "opencode-proxy", "модель": "glm-5.3-flash-free", "роль": "резерв"},
+    {"провайдер": "omniroute", "модель": "kc/openrouter/free", "роль": "резерв"},
+    {"провайдер": "omniroute", "модель": "kc/reflection/beam-free", "роль": "резерв"},
+    {"провайдер": "omniroute", "модель": "kc/nvidia/nemotron-3.5-lightning:free", "роль": "резерв"},
+    {"провайдер": "pollinations", "модель": "gpt-oss-20b", "роль": "резерв"},
+    {"провайдер": "ovh", "модель": "Qwen3.8-27B", "роль": "резерв"},
+    {"провайдер": "llm7", "модель": "DeepSeek-V4.1-Flash", "роль": "резерв"},
+    {"провайдер": "nous", "модель": "poolside/laguna-xs-2.1:free", "роль": "резерв"}
+  ],
+  "профили": {
+    "творческий": ["opencode-proxy/mimo-v2.6-flash-free", "opencode-proxy/beam-free", "opencode-proxy/deepseek-v4.1-flash-free"],
+    "механический": ["opencode-proxy/mimo-v2.6-flash-free", "opencode-proxy/nemotron-3.5-lightning-free", "opencode-proxy/flint-40b-free"]
+  }
+}

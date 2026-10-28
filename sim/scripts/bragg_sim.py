@@ -5,7 +5,7 @@
 
 Структура проекта:
 
-    PROJECT/                      (Desktop/brig-receiver)
+    PROJECT/                      (Desktop/krystal)
     ├── sim/
     │   ├── README.md             ← как пользоваться (читайте первым)
     │   ├── inputs/
@@ -64,7 +64,7 @@ import msh_to_elmer  # noqa: E402
 
 
 def _default_project():
-    """Корень проекта: Desktop/brig-receiver (родитель папки sim/)."""
+    """Корень проекта: Desktop/krystal (родитель папки sim/)."""
     if _HERE.parent.name == "sim" and (_HERE.parent.parent / "sim").is_dir():
         return _HERE.parent.parent
     # Совместимость: скрипт, лежащий прямо в корне проекта.

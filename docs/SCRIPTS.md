@@ -88,8 +88,8 @@
 | Скрипт | Что делает |
 |---|---|
 | `tools/schematic_from_json.py` | **Компилятор принципиальной схемы.** Единственный вход — JSON-спецификация агента (`design/schematic.json`). Валидирует (уникальность ref, существование символов/пинов, полнота соединений) и выдаёт machine-readable ошибки — они возвращаются агенту. Затем подменяет таблицы движка разводки, строит `.kicad_sch`, экспортирует `.net` и ERC, пишет **`generate_result.json`** — манифест для платы (netlist, stem, `power_nets`, `ground`, title). |
-| `hardware/kicad/generate_brig_receiver.py` | **Движок разводки схемы.** Принципиально не привязан к схеме приёмника: его входы — таблицы `PARTS`/`NETS`/`BLOCKS` (это проверено `test_any_schematic.py`). Строит геометрию листа и пишет `.kicad_sch`. |
-| `hardware/kicad/kicad_lib_brig.py` | Парсер библиотек символов KiCad: список библиотек, символов, выводов. Обслуживает инструмент агента `kicad_libs` — у агента нет другого способа узнать символы/пины. |
+| `hardware/kicad/generate_schematic.py` | **Движок разводки схемы.** Принципиально не привязан к схеме приёмника: его входы — таблицы `PARTS`/`NETS`/`BLOCKS` (это проверено `test_any_schematic.py`). Строит геометрию листа и пишет `.kicad_sch`. |
+| `hardware/kicad/kicad_symbols.py` | Парсер библиотек символов KiCad: список библиотек, символов, выводов. Обслуживает инструмент агента `kicad_libs` — у агента нет другого способа узнать символы/пины. |
 | `hardware/kicad/kicad_lib.py` | Хелпер генерации символов (проект SDR, не в конвейере заказа). |
 | `hardware/kicad/test_any_schematic.py` | Проверка универсальности движка: прогоняет **чужую** схему через тот же pipeline — таблицы являются единственным входом. |
 | `tools/ngspice_measure.py` | Замер: `.cir` → ngspice → `measurements.json`. Измеритель, а не помощник по проектированию: подсхемы **не** заменяются заглушками — модели приборов подключаются, если есть готовые библиотеки (`design/spice_models.lib`, `spice/models.lib`, KiCad `Simulation_SPICE.sp`), а неразрешённое попадает в отчёт `blocked`. Какая модель соответствует символу — решение агента. |
@@ -242,7 +242,7 @@ KiCad-нетлист → код tscircuit → официальный CLI (`tsci`
 
 ## 6. Синхронизация базы компонентов (offline)
 
-- `cp /home/mirrage/Desktop/brig-receiver/hardware/tscircuit/out/jlcsearch.db  hardware/tscircuit/out/jlcsearch.db`
+- `cp /home/mirrage/Desktop/krystal/hardware/tscircuit/out/jlcsearch.db  hardware/tscircuit/out/jlcsearch.db`
   (54 MB, 8 таблиц с category rules).
 - JLCPCB DB covers resistors/capacitors/inductors/diodes/leds/fuses/crystals.
 - Активы/BMS/зарядка — только agent-supplied SKUs (verified через tools.kicad_libs fp_search); assign_footprints checks existence or reports blocked.

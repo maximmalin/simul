@@ -8,7 +8,7 @@
 подходит для RT-циклов при частотах до сотен Гц.
 
 Запуск:
-    cd /home/mirrage/Desktop/brig-receiver
+    cd /home/mirrage/Desktop/krystal
     .venv/bin/python3 sim/scripts/realtime_loop_fmu.py
 
 Семантика шага FMI co-sim: вход удерживается постоянным на протяжении шага,

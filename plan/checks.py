@@ -7,7 +7,7 @@ import sys
 import json
 
 def check():
-    base = "/home/mirrage/Desktop/brig-receiver"
+    base = "/home/mirrage/Desktop/krystal"
     checks = {}
     errors = []
     warnings = []

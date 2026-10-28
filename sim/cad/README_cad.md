@@ -33,7 +33,7 @@ freecad sim/cad/bragg_cell.step           # обычная импорт-моде
 После изменения `sim/inputs/bragg_inputs.yaml` обновите CAD:
 
 ```bash
-cd /home/mirrage/Desktop/brig-receiver
+cd /home/mirrage/Desktop/krystal
 .venv/bin/python3 sim/cad/refresh_cad.py
 ```
 

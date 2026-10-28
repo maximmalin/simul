@@ -296,7 +296,7 @@
       "purpose": "Read/write KiCad symbols and schematics",
       "exists": true
     },
-    "hardware/kicad/generate_brig_receiver.py": {
+    "hardware/kicad/generate_schematic.py": {
       "purpose": "Generate a full single-sheet .kicad_sch from code",
       "exists": true
     },

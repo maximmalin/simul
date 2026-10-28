@@ -74,7 +74,7 @@ App = FreeCAD
 MODELS = Path(os.environ.get("MODELS_DIR", "/mnt/ext4data/kicad3d/9.0.2"))
 OUT = Path(os.environ.get(
     "STL_DIR",
-    "/home/mirrage/Desktop/brig-receiver/hardware/tscircuit/models",
+    "/home/mirrage/Desktop/krystal/hardware/tscircuit/models",
 ))
 
 # Качество сетки: LinearDeflection в мм. 0.05 мм — мельче допуска

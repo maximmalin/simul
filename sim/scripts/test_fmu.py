@@ -2,7 +2,7 @@
 """test_fmu.py — проверка FMU-блока BraggBlock (FMI 2.0 Co-Simulation).
 
 Запуск:
-  cd /home/mirrage/Desktop/brig-receiver
+  cd /home/mirrage/Desktop/krystal
   .venv/bin/python3 sim/scripts/test_fmu.py
 
 Что проверяется:

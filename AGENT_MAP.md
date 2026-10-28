@@ -296,7 +296,7 @@ lacked.
 | Area | Files |
 |---|---|
 | Project manifest & init | `tools/dump_manifest.py`, `tools/init_project.py` |
-| KiCad code-generation & verification | `hardware/kicad/generate_brig_receiver.py`, `test_any_schematic.py`, `verify_nets.py` |
+| KiCad code-generation & verification | `hardware/kicad/generate_schematic.py`, `test_any_schematic.py`, `verify_nets.py` |
 | tscircuit PCB/3D/BOM | `hardware/tscircuit/{build_pcb.mjs,build_derived.py,resolve_parts.py,step2stl.py,check_models3d.py,check_net.py,site_assets.py,fetch_vendor_models.mjs,fetch_3dmodels*.sh}`, `tscircuit.config.{ts,json}` |
 | Part selection / datasheets | `scripts/{download-datasheets.js,convert-kicad-to-circuit-json.js,post-build-datasheets.js}`, `scripts/lib/*` |
 | Antenna geometry (FreeCAD) | `hardware/antenna/**`, `sim/cad/**` |
@@ -333,7 +333,7 @@ different, project-specific content and were deliberately left as kristall's:
   6.90 MHz, S11 −15.7 dB, η 98 %.
 * patch 2.45 GHz — `build_patch`: f<sub>res</sub> 2442.5 MHz, S11 −3.6 dB, η 31 %.
 * meander 200 MHz — `build_meander` (three-arm boustrophedon on a 150 × 150 mm
-  panel over a full bottom ground, mirroring `build_brig_antennas_fc.py`):
+  panel over a full bottom ground, mirroring `build_antennas_fc.py`):
   reactive, no in-band match, η 0 %.
 
 Set `fdtd: false` in the YAML to use the analytic fallback instead.
@@ -353,7 +353,7 @@ content already exists in kristall-radio were deleted rather than copied:
 * `references/brig_project_map.md` → `AGENT_MAP.md` is kristall's own project map.
 * `references/antenna_system_calc.md`, `references/techtask_notes.md` →
   `sim/octave/antenna_system_calc.m`, `technical_task.md`.
-* `firmware/picsimlab_brig_receiver_workspace.xml` → `firmware/picsimlab_sdr.ini`.
+* `firmware/picsimlab_schematic_workspace.xml` → `firmware/picsimlab_sdr.ini`.
 
 ### 4.14 Reliability & thermal (compliance)
 

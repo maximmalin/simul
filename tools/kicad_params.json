@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "описание": "Правила подбора корпуса по символу KiCad. Данные, а не код: дополняются без правки кода.",
+
+  "symbol_type_words": {
+    "R": "Resistor",
+    "RN": "Resistor",
+    "C": "Capacitor",
+    "CP": "Capacitor",
+    "L": "Inductor",
+    "FB": "Inductor",
+    "D": "Diode",
+    "D_Schottky": "Diode",
+    "D_Zener": "Diode",
+    "LED": "LED",
+    "Fuse": "Fuse",
+    "Polyfuse": "Fuse",
+    "Crystal": "Crystal",
+    "Y": "Crystal",
+    "Battery": "Battery",
+    "BT": "Battery",
+    "J": "Connector",
+    "JP": "Connector",
+    "Conn": "Connector",
+    "SW": "Button",
+    "TP": "TestPoint"
+  },
+
+  "prefer_smd": true,
+
+  "skip_words": ["cat", "pad", "wiper", "trim"],
+
+  "rank_notes": "порядок: не набор (cat), не площадка (pad), метрический размер (metric), чип (smd), длина имени"
+}

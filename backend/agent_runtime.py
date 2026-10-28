@@ -275,26 +275,18 @@ YOLO-распознавание сигналов. Не выдумывай чис
 
 
 def llm_complete(user: str, context: str = "") -> str | None:
-    """Вызов OpenAI-совместимого чата. None — если ключа нет или ошибка."""
-    if not LLM_KEY:
+    """Вызов через llm.chat (поддержка всех провайдеров). None — если ключа нет или ошибка."""
+    import llm as llm_mod
+    if not llm_mod.enabled():
         return None
-    try:
-        import httpx
-        msgs = [{"role": "system", "content": SYSTEM_PROMPT}]
-        if context:
-            msgs.append({"role": "user", "content": f"Контекст:\n{context}"})
-        msgs.append({"role": "user", "content": user})
-        with httpx.Client(timeout=60) as c:
-            r = c.post(f"{LLM_BASE}/chat/completions",
-                       headers={"Authorization": f"Bearer {LLM_KEY}"},
-                       json={"model": LLM_MODEL, "messages": msgs,
-                             "temperature": 0.2, "max_tokens": 700})
-        if r.status_code != 200:
-            return None
-        return r.json()["choices"][0]["message"]["content"].strip()
-    except Exception as exc:                                    # noqa: BLE001
-        print(f"[llm] error: {exc}")
-        return None
+    msgs = [{"role": "system", "content": SYSTEM_PROMPT}]
+    if context:
+        msgs.append({"role": "user", "content": f"Контекст:\n{context}"})
+    msgs.append({"role": "user", "content": user})
+    turn = llm_mod.chat(msgs, temperature=0.2, max_tokens=700, timeout=60.0)
+    if turn and turn.text:
+        return turn.text.strip()
+    return None
 
 
 def offline_answer(prompt: str, agent: dict) -> str:

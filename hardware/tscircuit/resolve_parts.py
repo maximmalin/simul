@@ -50,7 +50,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-NETLIST = ROOT / "hardware/kicad/brig_receiver.net"
+NETLIST = ROOT / "hardware/kicad/schematic.net"
 MODELS = ROOT / "hardware/tscircuit/models"
 FP_ROOT = Path("/usr/share/kicad/footprints")
 OUT = ROOT / "hardware/tscircuit/out/resolved_parts.json"

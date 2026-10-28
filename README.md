@@ -230,7 +230,7 @@ Blocked upstream: with the QEMU backend running, rcontrol never binds (0.9.2);
   the three channels (`sim/nec/channel_{a,b,c}.nec`, `run_nec.py`).
 * **`hardware/antenna/**`** — FreeCAD panel geometry (150 × 150 mm FR-4 0.8 mm):
   * Channel A: meander 200 MHz, Channel B: 2×2 patch @ 2.45 GHz, Channel C: 4×4
-    patch @ 5.8 GHz; `geometry/build_brig_antennas_fc.py` rebuilds and exports
+    patch @ 5.8 GHz; `geometry/build_antennas_fc.py` rebuilds and exports
     STEP/STL.
 * Results (`sim/outputs/*.json`, all `model: fdtd`):
   * dipole 7 MHz — f<sub>res</sub> 6.90 MHz, S11 −15.7 dB, η<sub>rad</sub> 98 %.
@@ -292,7 +292,7 @@ patch antenna. Kept as the reproducible evidence trail, not scratch.
   by the generators.
 * `hardware/pipeline.py` — hardware build-pipeline orchestrator.
 * `hardware/kicad/kicad_lib.py` — KiCad symbol / schematic helper;
-  `hardware/kicad/generate_brig_receiver.py` — full single-sheet `.kicad_sch`
+  `hardware/kicad/generate_schematic.py` — full single-sheet `.kicad_sch`
   generation from code; `test_any_schematic.py` — prove the generator is
   schematic-agnostic; `verify_nets.py` — cross-check the KiCad netlist against the
   generator tables.
@@ -503,7 +503,7 @@ ships no `libqemu-stm32.so`). See `sim/COSIM_STATUS.md`.
 6. `docs/` is empty; `AGENT_MAP.md` + `sim/COSIM_STATUS.md` + `manifest.json` are
    the authoritative documentation.
 7. **Meander 200 MHz does not match in full-wave simulation.** Modelled over its
-   full ground plane (matching `hardware/antenna/geometry/build_brig_antennas_fc.py`)
+   full ground plane (matching `hardware/antenna/geometry/build_antennas_fc.py`)
    it is a low-Q reactive resonator — S11 ≈ 0 dB across 50–800 MHz, no net
    radiation (η = 0 %). The project's own definitions also disagree: the YAML/CAD
    use 3 × 63.5 mm arms (220 mm), while `sim/nec/run_nec.py` uses 3 × 130 mm arms
@@ -675,6 +675,9 @@ make agents-ask  TEXT="нужен водопад"   # разобрать зак�
 make agents-run  TEXT="собери всё"      # выполнить заказ
 make run                                # мост + интерфейс по одному адресу
 ```
+
+Порядок живого прогона (что поднять, куда постить заказ, где песочница
+и архив, какие env-ручки) — в [`docs/RUN_LIVE_ORDER.md`](docs/RUN_LIVE_ORDER.md).
 
 ---
 

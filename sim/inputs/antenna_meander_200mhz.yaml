@@ -29,7 +29,7 @@ substrate:
   thickness_mm: 0.8 # mm, FR-4 panel (hardware/antenna/band_a/task.md)
 
 # --- Element geometry --------------------------------------------------------
-# Matches hardware/antenna/geometry/build_brig_antennas_fc.py:build_channel_a
+# Matches hardware/antenna/geometry/build_antennas_fc.py:build_channel_a
 # (square FR-4 panel, full bottom ground, 3-arm boustrophedon fed at the lower
 # edge). The FDTD model reads these same numbers.
 geometry:

@@ -132,6 +132,9 @@ TARGET_OWNER: dict[str, str] = {
     "erc": "AGENT-MK-01",
     "drc": "AGENT-TST-02",
     "manifest": "AGENT-DOC-03",
+    "schematics": "AGENT-SCH-01",
+    "schematics_check": "AGENT-SCH-01",
+    "schematics_bom": "AGENT-SCH-01",
 }
 
 #: Ключевые слова -> шаги. Первый подходящий шаблон побеждает.
@@ -178,6 +181,14 @@ INTENTS: list[tuple[str, list[tuple[str, str]]]] = [
     ("gost", [("make", "cad"), ("make", "drawings")]),
     ("чертеж", [("make", "cad"), ("make", "drawings")]),
 
+    ("schematics", [
+        ("make", "schematics"),
+        ("make", "schematics_check"),
+        ("make", "schematics_bom"),
+    ]),
+    ("схемотек", [("make", "schematics")]),
+    ("схема", [("make", "schematics")]),
+
     ("tests", [("make", "test")]),
     ("test", [("make", "test")]),
     ("проверк", [("make", "test")]),
@@ -198,6 +209,7 @@ KEYWORDS = {
     "enclosure": r"корпус|коробк|кейс|enclosure|shell|экран",
     "pcb": r"\bpcb\b|плата|board|gerber|гepбер|разводк|трассир",
     "drawings": r"чертеж|чертеж|gost|гост|dxf|drawing",
+    "schematics": r"схемотек|схемотехник|схема|circuit|sch\b|eskd|ескд",
     "tests": r"тест|проверк|test|pytest|прогон",
     "erc": r"\berc\b",
     "drc": r"\bdrc\b",
@@ -257,11 +269,9 @@ def plan_by_rules(text: str) -> tuple[str, list[tuple[str, str]]]:
     return "+".join(intents[:3]), merged
 
 
-PLANNER_SYSTEM = """Ты — планировщик заказов проекта Krystal Radio (zero-IF SDR).
-Ты получаешь заказ оператора и список ДОСТУПНЫХ целей сборки.
-Ответь ТОЛЬКО JSON без пояснений:
+PLANNER_SYSTEM = """Ответь ТОЛЬКО JSON-объектом. Без пояснений, без markdown-обёртки, без ```json.
 
-{"intent": "<короткий тег>", "steps": [{"kind":"make","target":"<цель>","title":"<что делает>","depends_on":[< индексы предыдущих шагов >]}]}
+{"intent": "<короткий тег>", "steps": [{"kind":"make","target":"<цель>","title":"<что делает>","depends_on":[<индексы предыдущих шагов>]}]}
 
 Правила:
 - kind: "make" (цель из списка) либо "script" (имя из списка скриптов)
@@ -280,11 +290,13 @@ def plan_by_llm(text: str) -> tuple[str, list[dict]] | None:
     out = llm_complete(text, ctx)
     if not out:
         return None
-    m = re.search(r"\{.*\}", out, re.S)
-    if not m:
+    # Извлекаем JSON: ищем первый { и последний }
+    start = out.find('{')
+    end = out.rfind('}')
+    if start == -1 or end == -1 or end <= start:
         return None
     try:
-        data = json.loads(m.group(0))
+        data = json.loads(out[start:end+1])
     except json.JSONDecodeError:
         return None
     steps = data.get("steps")
@@ -321,13 +333,17 @@ def build_plan(text: str) -> tuple[str, str, list[Step]]:
         return "llm", intent, steps
 
     intent, targets = plan_by_rules(text)
-    steps = []
-    for i, (kind, target) in enumerate(targets):
-        steps.append(Step(
-            id=f"s{i}", title=_step_title(kind, target),
-            agent_id=TARGET_OWNER.get(target, "AGENT-MK-01"),
-            kind=kind, target=target))
-    return "rules", intent, steps
+    if targets:
+        steps = []
+        for i, (kind, target) in enumerate(targets):
+            steps.append(Step(
+                id=f"s{i}", title=_step_title(kind, target),
+                agent_id=TARGET_OWNER.get(target, "AGENT-MK-01"),
+                kind=kind, target=target))
+        return "rules", intent, steps
+
+    # Fallback: все стадии через make all
+    return "rules", "generic", [Step(id="s0", title="Полная сборка", agent_id="AGENT-MK-01", kind="make", target="all")]
 
 
 def _step_title(kind: str, target: str) -> str:

@@ -2,7 +2,7 @@
 """NEC-2: расчёт 3 антенн + диаграммы + дальность.
 
 Запуск:
-    cd /home/mirrage/Desktop/brig-receiver
+    cd /home/mirrage/Desktop/krystal
     .venv/bin/python sim/nec/run_nec.py
 """
 import subprocess

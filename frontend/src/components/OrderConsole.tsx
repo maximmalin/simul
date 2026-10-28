@@ -15,7 +15,9 @@ function classify(raw: string): ConsoleLine['level'] {
   if (s.includes('сторож') || s.includes('эскалац') || s.includes('отклонена') || s.includes('не хватило')) return 'warn';
   if (s.includes('опубликовано') || s.includes('архив') || s.includes('записан') || s.includes('замечания нет')) return 'good';
   if (s.includes('стадии') || s.includes('конвейер запущен') || s.includes('песочница')) return 'stage';
-  if (s.includes('агент →') || s.includes('лог агентов')) return 'agent';
+  if (s.includes('агент →') || s.includes('лог агентов') || s.includes('→')) return 'agent';
+  // имена агентов конвейера — их живое общение
+  if (/(консультант|расчётчик|расчетчик|библиотекарь|писатель|контролёр|контролер|дизайнер|критик|размерщик|упаковщик|оптимизатор|отладчик)/.test(s)) return 'agent';
   return 'info';
 }
 

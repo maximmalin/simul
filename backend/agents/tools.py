@@ -181,11 +181,15 @@ def _ALL_SCHEMAS(project: Project) -> list[dict]:
                     "и корпуса. action=pins → выводы lib_id; action=search → "
                     "символы библиотеки по фрагменту имени; action=footprints "
                     "→ проверка корпуса; action=libs → список библиотек. "
+                    "action=fp_search → поиск корпуса по подстроке. "
+                    "action=create_symbol → создать символ в local_symbols "
+                    "(symbol_name, symbol_value, symbol_footprint). "
                     "Всегда сверяйте сюда каждое имя символа из спецификации."),
                 "parameters": _schema(
                     {"action": {"type": "string",
                                 "enum": ["libs", "search", "pins",
-                                         "footprints", "fp_search"],
+                                         "footprints", "fp_search",
+                                         "create_symbol"],
                                 "description": "тип запроса"},
                      "lib": {"type": "string",
                              "description": "имя библиотеки: Device, Relay реестр"},
@@ -194,7 +198,13 @@ def _ALL_SCHEMAS(project: Project) -> list[dict]:
                      "pattern": {"type": "string",
                                  "description": "фильтр поиска (для search/fp_search): подстрока в имя"},
                      "fp": {"type": "string",
-                            "description": "для footprints: lib:Имя"}},
+                            "description": "для footprints: lib:Имя"},
+                     "symbol_name": {"type": "string",
+                                     "description": "для create_symbol: имя символа (Q5001)"},
+                     "symbol_value": {"type": "string",
+                                      "description": "для create_symbol: значение символа (BSS138)"},
+                     "symbol_footprint": {"type": "string",
+                                          "description": "для create_symbol: корпус (Package_TO_SOT_SMD:SOT-23)"}},
                     ["action"]),
             },
         },
@@ -403,8 +413,16 @@ def make_bindings(project: Project, run_one: Callable[[str], dict],
         return f"записано: {rel} ({size:,} байт)"
 
     def kicad_libs(action: str, lib: str = "", lib_id: str = "",
-                   pattern: str = "", fp: str = "") -> str:
-        """Ответы на запросы к реальным библиотекам KiCad."""
+                   pattern: str = "", fp: str = "",
+                   symbol_name: str = "", symbol_value: str = "",
+                   symbol_footprint: str = "") -> str:
+        """Ответы на запросы к реальным библиотекам KiCad.
+
+        action=create_symbol — создать новый символ в локальной библиотеке.
+        Требуется symbol_name (имя символа), symbol_value (значение/номер
+        детали) и symbol_footprint (корпус). Символ создаётся в каталоге
+        local_symbols/ с базовыми выводами для транзистора (G, D, S).
+        """
         import json as _json
         import sys as _sys
         from pathlib import Path as _Path
@@ -506,7 +524,47 @@ def make_bindings(project: Project, run_one: Callable[[str], dict],
                             break
                 return _json.dumps({"query": q, "count": len(rows),
                                     "footprints": rows}, ensure_ascii=False)
-            return "action: libs | search | pins | footprints | fp_search"
+            if action == "create_symbol":
+                # Create a new symbol in local_symbols library
+                if not symbol_name:
+                    return _json.dumps({"error": "symbol_name обязателен"}, ensure_ascii=False)
+                local_dir = _Path("/mnt/ext4data/kristall-radio/local_symbols")
+                local_dir.mkdir(parents=True, exist_ok=True)
+                symbol_file = local_dir / f"{symbol_name}.kicad_sym"
+                # Check if symbol already exists
+                if symbol_file.exists():
+                    return _json.dumps({"created": False,
+                                        "path": str(symbol_file),
+                                        "message": "символ уже существует"},
+                                       ensure_ascii=False)
+                symbol_lines = [
+                    f'(symbol "{symbol_name}"',
+                    '  (in_bus)',
+                    '  (on_board)',
+                    '  (dnp no)',
+                    f'  (property "Reference" "U")',
+                    f'  (property "Value" "{symbol_value}")',
+                    f'  (property "Footprint" "{symbol_footprint}")',
+                    '  (property "Datasheet" "~")',
+                    '  (pins',
+                    '    (pin passive line (at -2.54 0 90) (length 1.27) (name "1"))',
+                    '    (pin passive line (at 0 2.54 180) (length 1.27) (name "2"))',
+                    '    (pin passive line (at 0 -2.54 0) (length 1.27) (name "3"))',
+                    '  )',
+                    ')',
+                ]
+                symbol_text = '\n'.join(symbol_lines) + '\n'
+                try:
+                    symbol_file.write_text(symbol_text, encoding="utf-8")
+                    return _json.dumps({"created": True,
+                                        "path": str(symbol_file),
+                                        "symbol": symbol_name,
+                                        "footprint": symbol_footprint},
+                                       ensure_ascii=False)
+                except Exception as exc:
+                    return _json.dumps({"error": f"не удалось создать символ: {exc}"},
+                                       ensure_ascii=False)
+            return "action: libs | search | pins | footprints | fp_search | create_symbol"
         except Exception as exc:                              # noqa: BLE001
             return f"ошибка справочника: {exc}"
 
@@ -570,3 +628,49 @@ def is_ask_human(text: str) -> str | None:
     if text.startswith(ASK_MARKER):
         return text[len(ASK_MARKER):].strip()
     return None
+
+# ==========================================================================
+#  SPICE-библиотека (добавлено для совместимости с _stage_spice_models)
+# ==========================================================================
+def _spice_lib_dir() -> "Path":
+    """Каталог с моделями SPICE: песочница заказа или корень проекта."""
+    try:
+        from . import engine as _eng
+        wd = _eng.current_workdir()
+    except Exception:  # noqa: BLE001
+        wd = None
+    if wd:
+        p = Path(wd) / "design" / "spice_lib"
+        if p.is_dir():
+            return p
+    # fallback: корень проекта
+    from .types import Project as _P  # noqa: F401
+    root = Path(__file__).resolve().parents[2]
+    return root / "design" / "spice_lib"
+
+
+# module-level alias used as T.SPICE_LIB_DIR (Path-like). We expose a
+# lightweight proxy object so attribute access returns a fresh Path.
+class _SpiceLibDirProxy:
+    def __fspath__(self):
+        return str(_spice_lib_dir())
+    def __str__(self):
+        return str(_spice_lib_dir())
+    def __truediv__(self, other):
+        return _spice_lib_dir() / other
+    def is_dir(self):
+        return _spice_lib_dir().is_dir()
+    def rglob(self, *a, **kw):
+        return _spice_lib_dir().rglob(*a, **kw)
+
+
+SPICE_LIB_DIR = _SpiceLibDirProxy()
+
+
+def _spice_model_text(model: str) -> str:
+    """Текст модели SPICE по имени (через spice_models)."""
+    try:
+        from . import spice_models as SM
+        return SM.model_text(str(model or "").strip(), _spice_lib_dir())
+    except Exception:  # noqa: BLE001
+        return ""

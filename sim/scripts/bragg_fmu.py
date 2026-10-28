@@ -45,7 +45,7 @@ from pythonfmu.fmi2slave import (
 )
 
 # Работаем с реальным экземпляром проекта на этой машине.
-_PROJECT = "/home/mirrage/Desktop/brig-receiver"
+_PROJECT = "/home/mirrage/Desktop/krystal"
 _SCRIPTS = os.path.join(_PROJECT, "sim", "scripts")
 os.environ["BRAGG_SIM_PROJECT"] = _PROJECT
 for _p in (_SCRIPTS, _PROJECT):

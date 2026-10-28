@@ -646,7 +646,7 @@ def build_patch(cfg: Config, sim_dir: Path, clean: bool = True) -> dict:
 def build_meander(cfg: Config, sim_dir: Path, clean: bool = True) -> dict:
     """openEMS FDTD for the Channel-A printed meander on a square panel.
 
-    Geometry mirrors ``hardware/antenna/geometry/build_brig_antennas_fc.py``:
+    Geometry mirrors ``hardware/antenna/geometry/build_antennas_fc.py``:
     a boustrophedon meander (horizontal arms, ``arm_gap_mm`` pitch) on the top
     copper of a square FR-4 panel over a *full* bottom ground plane, fed at the
     bottom edge through the substrate by a lumped port (the GCPW transition).
@@ -681,7 +681,7 @@ def build_meander(cfg: Config, sim_dir: Path, clean: bool = True) -> dict:
     sub_cells = int(sim.get("substrate_cells", 2))
 
     # Meander centreline in panel coordinates (0..panel), mirroring
-    # hardware/antenna/geometry/build_brig_antennas_fc.py: arm i runs along x at
+    # hardware/antenna/geometry/build_antennas_fc.py: arm i runs along x at
     # y = cy0 + i*gap and alternates direction; consecutive arms share a vertical
     # connector at their common end. pts[0] is the feed foot.
     cx0 = (panel - arm) / 2.0

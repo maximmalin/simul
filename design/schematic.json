@@ -1,0 +1,325 @@
+{
+  "name": "УСИЛИТЕЛЬ 2-КАСКАДНЫЙ НА LM358",
+  "paper": "A2",
+  "parts": [
+    {
+      "ref": "U1",
+      "lib_id": "Opamp_Analog:LM358",
+      "value": "LM358",
+      "footprint": "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm"
+    },
+    {
+      "ref": "Q1",
+      "lib_id": "Transistor_FET:2N7002",
+      "value": "2N7002",
+      "footprint": "Package_TO_SOT_SMD:SOT-23"
+    },
+    {
+      "ref": "D1",
+      "lib_id": "Diode:1N4148W",
+      "value": "1N4148W",
+      "footprint": "Diode_SMD:D_SOD-123"
+    },
+    {
+      "ref": "R1",
+      "lib_id": "Device:R",
+      "value": "10k",
+      "footprint": "Resistor_SMD:R_0603_1608Metric"
+    },
+    {
+      "ref": "R2",
+      "lib_id": "Device:R",
+      "value": "1k",
+      "footprint": "Resistor_SMD:R_0603_1608Metric"
+    },
+    {
+      "ref": "R3",
+      "lib_id": "Device:R",
+      "value": "10k",
+      "footprint": "Resistor_SMD:R_0603_1608Metric"
+    },
+    {
+      "ref": "R4",
+      "lib_id": "Device:R",
+      "value": "1k",
+      "footprint": "Resistor_SMD:R_0603_1608Metric"
+    },
+    {
+      "ref": "R5",
+      "lib_id": "Device:R",
+      "value": "100k",
+      "footprint": "Resistor_SMD:R_0603_1608Metric"
+    },
+    {
+      "ref": "R6",
+      "lib_id": "Device:R",
+      "value": "4.7k",
+      "footprint": "Resistor_SMD:R_0603_1608Metric"
+    },
+    {
+      "ref": "C1",
+      "lib_id": "Device:C",
+      "value": "1u",
+      "footprint": "Capacitor_SMD:C_0603_1608Metric"
+    },
+    {
+      "ref": "C2",
+      "lib_id": "Device:C",
+      "value": "1u",
+      "footprint": "Capacitor_SMD:C_0603_1608Metric"
+    },
+    {
+      "ref": "C3",
+      "lib_id": "Device:C",
+      "value": "100n",
+      "footprint": "Capacitor_SMD:C_0603_1608Metric"
+    },
+    {
+      "ref": "C4",
+      "lib_id": "Device:C",
+      "value": "10u",
+      "footprint": "Capacitor_SMD:C_0603_1608Metric"
+    },
+    {
+      "ref": "LED1",
+      "lib_id": "Device:LED",
+      "value": "1W",
+      "footprint": "LED_SMD:LED_0603_1608Metric"
+    }
+  ],
+  "nets": [
+    {
+      "name": "VIN",
+      "conns": [
+        [
+          "C1",
+          "1"
+        ]
+      ]
+    },
+    {
+      "name": "IN_A",
+      "conns": [
+        [
+          "C1",
+          "2"
+        ],
+        [
+          "R3",
+          "2"
+        ],
+        [
+          "U1",
+          "3"
+        ]
+      ]
+    },
+    {
+      "name": "FB_A",
+      "conns": [
+        [
+          "R1",
+          "2"
+        ],
+        [
+          "R2",
+          "1"
+        ],
+        [
+          "U1",
+          "2"
+        ]
+      ]
+    },
+    {
+      "name": "OUT_A",
+      "conns": [
+        [
+          "U1",
+          "1"
+        ],
+        [
+          "R1",
+          "1"
+        ],
+        [
+          "C2",
+          "1"
+        ],
+        [
+          "R6",
+          "1"
+        ]
+      ]
+    },
+    {
+      "name": "GATE_Q1",
+      "conns": [
+        [
+          "R5",
+          "1"
+        ],
+        [
+          "Q1",
+          "1"
+        ],
+        [
+          "D1",
+          "1"
+        ]
+      ]
+    },
+    {
+      "name": "IN_B",
+      "conns": [
+        [
+          "R5",
+          "2"
+        ],
+        [
+          "U1",
+          "6"
+        ],
+        [
+          "C4",
+          "1"
+        ]
+      ]
+    },
+    {
+      "name": "FB_B",
+      "conns": [
+        [
+          "R6",
+          "2"
+        ],
+        [
+          "U1",
+          "5"
+        ]
+      ]
+    },
+    {
+      "name": "OUT_B",
+      "conns": [
+        [
+          "U1",
+          "7"
+        ],
+        [
+          "C2",
+          "2"
+        ],
+        [
+          "LED1",
+          "1"
+        ]
+      ]
+    },
+    {
+      "name": "VOUT",
+      "conns": [
+        [
+          "LED1",
+          "2"
+        ]
+      ]
+    },
+    {
+      "name": "DRAIN_Q1",
+      "conns": [
+        [
+          "Q1",
+          "3"
+        ],
+        [
+          "D1",
+          "2"
+        ],
+        [
+          "C4",
+          "2"
+        ]
+      ]
+    },
+    {
+      "name": "VCC",
+      "power": "power:+5V",
+      "conns": [
+        [
+          "U1",
+          "8"
+        ],
+        [
+          "C3",
+          "1"
+        ]
+      ]
+    },
+    {
+      "name": "GND",
+      "power": "power:GND",
+      "conns": [
+        [
+          "R2",
+          "2"
+        ],
+        [
+          "R3",
+          "1"
+        ],
+        [
+          "U1",
+          "4"
+        ],
+        [
+          "C3",
+          "2"
+        ],
+        [
+          "Q1",
+          "2"
+        ]
+      ]
+    }
+  ],
+  "blocks": [
+    {
+      "title": "ВХОДНОЙ УСИЛИТЕЛЬ",
+      "sub": "усиление в 10 раз, смещение по входу",
+      "refs": [
+        "U1",
+        "R1",
+        "R2",
+        "R3",
+        "C1"
+      ]
+    },
+    {
+      "title": "ПРЕОБРАЗОВАТЕЛЬ УРОВНЯ",
+      "sub": "полевой транзистор в качестве коммутатора",
+      "refs": [
+        "Q1",
+        "D1",
+        "R5",
+        "R6"
+      ]
+    },
+    {
+      "title": "ВЫХОДНОЙ КАСКАД",
+      "sub": "второй каскад и нагрузка",
+      "refs": [
+        "C2",
+        "C4",
+        "LED1"
+      ]
+    },
+    {
+      "title": "ПИТАНИЕ",
+      "sub": "развязка по питанию",
+      "refs": [
+        "C3"
+      ]
+    }
+  ]
+}

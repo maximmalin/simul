@@ -16,7 +16,7 @@ gost_pipeline.py — полный пайплайн: STEP → очистка (Ana
      ГОСТ-шаблонами и шрифтами OpenGOST).
 
 Запуск:
-    cd /home/mirrage/Desktop/brig-receiver
+    cd /home/mirrage/Desktop/krystal
     .venv/bin/python3 gost_pipeline.py                      # параметрическая модель
     .venv/bin/python3 gost_pipeline.py file.step            # очистить свой STEP
     .venv/bin/python3 gost_pipeline.py file.FCStd           # взять геометрию из FCStd

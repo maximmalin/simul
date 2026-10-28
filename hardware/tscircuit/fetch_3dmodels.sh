@@ -19,7 +19,7 @@ set -euo pipefail
 
 TAG="${1:-9.0.2}"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-NETLIST="$ROOT/hardware/kicad/brig_receiver.net"
+NETLIST="$ROOT/hardware/kicad/schematic.net"
 DEST="${MODELS_DIR:-/mnt/ext4data/kicad3d/$TAG}"
 BASE="https://gitlab.com/kicad/libraries/kicad-packages3d/-/raw/$TAG"
 

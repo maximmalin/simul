@@ -311,9 +311,9 @@ agents:
 
   - id: AGENT-KICAD-01
     name: "Сгенерировать полную принципиальную схему KiCad одним листом"
-    goal: "Проверить, что `generate_brig_receiver.py` produces a valid `.kicad_sch` with empty Errors/Violations via `kicad-cli sch check`."
-    command: "`cd /mnt/ext4data/kristall-radio && .venv/bin/python3 hardware/kicad/generate_brig_receiver.py && kicad-cli sch check hardware/kicad/brig_receiver.kicad_sch 2>&1 | tail -5`"
-    files: ["hardware/kicad/generate_brig_receiver.py", "hardware/kicad/kicad_lib_brig.py", "hardware/kicad/kicad_lib.py"]
+    goal: "Проверить, что `generate_schematic.py` produces a valid `.kicad_sch` with empty Errors/Violations via `kicad-cli sch check`."
+    command: "`cd /mnt/ext4data/kristall-radio && .venv/bin/python3 hardware/kicad/generate_schematic.py && kicad-cli sch check hardware/kicad/schematic.kicad_sch 2>&1 | tail -5`"
+    files: ["hardware/kicad/generate_schematic.py", "hardware/kicad/kicad_symbols.py", "hardware/kicad/kicad_lib.py"]
     role: agent.pcb
 
   - id: AGENT-KICAD-02
@@ -326,7 +326,7 @@ agents:
   - id: AGENT-KICAD-03
     name: "Проверить электрическую связность (netlist) схемы"
     goal: "Сравнить сгенерированный netlist и tscircuit-экспортированный, убедиться в отсутствии расхождений."
-    command: "`cd /mnt/ext4data/kristall-radio && diff <(.venv/bin/python3 hardware/kicad/generate_brig_receiver.py 2>/dev/null || true) <cat hardware/tscircuit/out/circuit.json 2>/dev/null | head -20 || echo \"compare manually\"`"
+    command: "`cd /mnt/ext4data/kristall-radio && diff <(.venv/bin/python3 hardware/kicad/generate_schematic.py 2>/dev/null || true) <cat hardware/tscircuit/out/circuit.json 2>/dev/null | head -20 || echo \"compare manually\"`"
     files: ["hardware/kicad/sdr_receiver.kicad_sch", "hardware/tscircuit/out/circuit.json"]
     role: agent.pcb
 

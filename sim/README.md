@@ -71,7 +71,7 @@ sim/inputs/bragg_inputs.yaml
 **Запуск** (одна команда):
 
 ```bash
-cd /home/mirrage/Desktop/brig-receiver
+cd /home/mirrage/Desktop/krystal
 .venv/bin/python3 sim/scripts/bragg_sim.py
 ```
 
@@ -125,7 +125,7 @@ sim/outputs/elmer_results.json
 ```python
 import fmpy, numpy as np
 
-fmu = "/home/mirrage/Desktop/brig-receiver/sim/fmu/BraggBlock.fmu"
+fmu = "/home/mirrage/Desktop/krystal/sim/fmu/BraggBlock.fmu"
 
 res = fmpy.simulate_fmu(
     fmu,
@@ -141,14 +141,14 @@ print(res[-1]["delta_n_mean"])
 ### Проверка блока
 
 ```bash
-cd /home/mirrage/Desktop/brig-receiver
+cd /home/mirrage/Desktop/krystal
 .venv/bin/python3 sim/scripts/test_fmu.py     # → "ALL FMU TESTS PASSED"
 ```
 
 ### Пересборка FMU (после правки `bragg_fmu.py`)
 
 ```bash
-cd /home/mirrage/Desktop/brig-receiver
+cd /home/mirrage/Desktop/krystal
 .venv/bin/python -m pythonfmu build -f sim/scripts/bragg_fmu.py -d sim/fmu
 ```
 
@@ -162,7 +162,7 @@ RT-циклы с частотами до сотен Гц (инициализац
 Готовый пример замкнутого цикла:
 
 ```bash
-cd /home/mirrage/Desktop/brig-receiver
+cd /home/mirrage/Desktop/krystal
 .venv/bin/python3 sim/scripts/realtime_loop_fmu.py
 ```
 
@@ -174,7 +174,7 @@ cd /home/mirrage/Desktop/brig-receiver
 Что именно вычисляется и по каким формулам — в подпапке `sim/octave/`:
 
 ```bash
-cd /home/mirrage/Desktop/brig-receiver/sim/octave
+cd /home/mirrage/Desktop/krystal/sim/octave
 octave --quiet bragg_formulas.m
 ```
 
@@ -202,7 +202,7 @@ freecad sim/cad/bragg_cell.FCStd
 После правки геометрии в `bragg_inputs.yaml` перегенерировать CAD:
 
 ```bash
-cd /home/mirrage/Desktop/brig-receiver
+cd /home/mirrage/Desktop/krystal
 .venv/bin/python3 sim/cad/refresh_cad.py
 ```
 
@@ -213,7 +213,7 @@ cd /home/mirrage/Desktop/brig-receiver
 - **Окружение:** все команды запускаются из venv проекта (`.venv/bin/python3`).
 - **Привязка к машине:** FMU и скрипты используют пути этой сборки Elmer
   (`/home/mirrage/Desktop/elmer_installed/bin/ElmerSolver_mpi`) и жёстко
-  привязаны к корню `/home/mirrage/Desktop/brig-receiver` (можно переопределить
+  привязаны к корню `/home/mirrage/Desktop/krystal` (можно переопределить
   через `BRAGG_SIM_PROJECT`).
 - **Косметика:** pythonfmu при завершении процесса может печатать
   `corrupted double-linked list` — известная особенность выгрузки встроенного

@@ -94,12 +94,12 @@ AUTOMATION: dict[str, str] = {
     "sim/scripts/test_ngspice_nets.py": "Smoke tests for the ngspice decks",
     # firmware
     "firmware/scripts/hex.py": "Emit Intel HEX for PicSimLab loadhex",
-    # hardware / manufacturing (transferred from brig-receiver)
+    # hardware / manufacturing
     "tools/dump_manifest.py": "Build this manifest",
     "tools/init_project.py": "Create a fresh project from tracked files",
     "hardware/pipeline.py": "Hardware build pipeline",
     "hardware/kicad/kicad_lib.py": "Read/write KiCad symbols and schematics",
-    "hardware/kicad/generate_brig_receiver.py": "Generate a full single-sheet .kicad_sch from code",
+    "hardware/kicad/generate_schematic.py": "Generate a full single-sheet .kicad_sch from code",
     "hardware/kicad/test_any_schematic.py": "Prove the generator is schematic-agnostic",
     "hardware/kicad/verify_nets.py": "Cross-check KiCad netlist against the generator tables",
     "hardware/tscircuit/build_pcb.mjs": "Netlist -> TSX, placement, 3D export",

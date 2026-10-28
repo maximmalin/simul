@@ -1053,9 +1053,18 @@ function emitTsx() {
 // ═══════════════════════════════════════════════════════ экспорт через tsci
 
 function tsci(args) {
+  // лимит времени обязателен: tscircuit умеет зависать (ждёт сеть или
+  // модель), и без лимита стадия сборки молчит бесконечно
   const r = spawnSync("npx", ["--no-install", "tsci", ...args], {
     cwd: ROOT, encoding: "utf8", maxBuffer: 64 * 1024 * 1024,
+    timeout: Number(process.env.KR_TSCI_TIMEOUT_MS || 600000),
+    killSignal: "SIGKILL",
   })
+  if (r.error && /ETIMEDOUT/.test(String(r.error))) {
+    console.error(`  ! tsci ${args.join(" ")} — не ответил за ${Math.round(
+      Number(process.env.KR_TSCI_TIMEOUT_MS || 600000) / 1000)} с`)
+    return false
+  }
   const out = ((r.stdout ?? "") + (r.stderr ?? "")).trim()
   // Тела деталей в board.step: если сборщик не разобрал чей-то STEP, tsci
   // пишет «Failed to merge STEP model …» и молча пропускает модель — код

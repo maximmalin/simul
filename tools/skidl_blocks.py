@@ -3,7 +3,7 @@
 
 Каждый блок design/schematic.json собирается отдельным «прибором» SKiDL:
   * парты блока — реальные символы KiCad/EasyEDA (выводы читает
-    kicad_lib_brig, наследование extends развёрнуто);
+    kicad_symbols, наследование extends развёрнуто);
   * внутренние сети блока — узлы спецификации, в которых ≥2 вывода блока;
   * одиночные выводы — клеммы блока (куда блок стыкуется с остальными).
 
@@ -37,7 +37,7 @@ _KIT = None
 
 
 def load_kit(kit_dir=None):
-    """Модуль kicad_lib_brig (чтение символов KiCad/EasyEDA)."""
+    """Модуль kicad_symbols (чтение символов KiCad/EasyEDA)."""
     global _KIT
     if _KIT is not None:
         return _KIT
@@ -46,13 +46,13 @@ def load_kit(kit_dir=None):
         cands.append(Path(kit_dir))
     cands += [ROOT / "hardware" / "kicad", Path.cwd() / "hardware" / "kicad"]
     for cand in cands:
-        if (cand / "kicad_lib_brig.py").is_file():
+        if (cand / "kicad_symbols.py").is_file():
             sys.path.insert(0, str(cand))
-            import kicad_lib_brig as K                     # noqa: PLC0415
+            import kicad_symbols as K                     # noqa: PLC0415
             _KIT = K
             return K
     raise FileNotFoundError(
-        "нет hardware/kicad/kicad_lib_brig.py — укажите --kit-dir")
+        "нет hardware/kicad/kicad_symbols.py — укажите --kit-dir")
 
 
 def _add_box_libs(K, box) -> None:

@@ -18,9 +18,9 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-import generate_brig_receiver as G   # noqa: E402
+import generate_schematic as G   # noqa: E402
 
-NETFILE = HERE / "brig_receiver.net"
+NETFILE = HERE / "schematic.net"
 
 
 def parse_netlist(path: Path) -> dict[str, set[tuple[str, str]]]:

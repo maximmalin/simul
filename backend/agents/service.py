@@ -116,14 +116,94 @@ def _order_view(o: dict) -> dict:
     }
 
 
-def get(order_id: str) -> dict | None:
+#: заказы переживают перезапуск моста — иначе после рестарта нечего
+#: продолжать: список пуст, и пауза/продолжение теряют смысл
+_ORDERS_FILE = ".krystal/orders.json"
+
+
+def _root_dir() -> Path:
+    """Корень, где лежат заказы (там же бутстрап моста держит проекты)."""
+    return Path(os.environ.get("KR_PROJECT_ROOT")
+                or Path(__file__).resolve().parents[2])
+
+
+def _persist_orders() -> None:
+    """Записать заказы на диск. Молча: это страховка, а не результат."""
+    try:
+        p = _root_dir() / _ORDERS_FILE
+        p.parent.mkdir(parents=True, exist_ok=True)
+        with _LOCK:
+            data = {k: {kk: vv for kk, vv in v.items() if kk != "logs"}
+                    for k, v in ORDERS.items()}
+        p.write_text(json.dumps(data, ensure_ascii=False, indent=1,
+                                default=str), encoding="utf-8")
+    except OSError:
+        pass
+
+
+def load_orders() -> int:
+    """Поднять заказы после перезапуска. Возвращает, сколько поднято."""
+    with _LOCK:
+        return _load_orders_locked()
+
+
+def _load_orders_locked() -> int:
+    """То же без захвата _LOCK: вызывается изнутри уже запертых мест.
+
+    _LOCK — обычный Lock, он не реентрантный: взять его дважды в одной
+    нитке означает встать насмерть. Поэтому вариант «с замком» и вариант
+    «без замка» раздельны.
+    """
+    p = _root_dir() / _ORDERS_FILE
+    if not p.is_file():
+        return 0
+    try:
+        data = json.loads(p.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return 0
+    if not isinstance(data, dict):
+        return 0
+    n = 0
+    for oid, o in data.items():
+        if not isinstance(o, dict) or not o.get("text"):
+            continue
+        o.setdefault("logs", [])
+        o.setdefault("steps", [])
+        # заказ, оставшийся «работающим», после рестарта не работает:
+        # честно помечаем, чтобы продолжение шло из его точки отсчёта
+        if o.get("status") in ("running", "queued"):
+            o["status"] = "interrupted"
+            o["note"] = "прерван перезапуском — продолжите с места остановки"
+        ORDERS[oid] = o
+        n += 1
+    return n
+
+
+def _order(order_id: str) -> dict | None:
+    """Заказ из памяти; если мост перезапустился — с диска.
+
+    Без этого продолжение заказа после перезапуска моста не работает:
+    заказ лежит в файле, но в памяти его нет.
+    """
     with _LOCK:
         o = ORDERS.get(order_id)
+        if o is None:
+            _load_orders_locked()
+            o = ORDERS.get(order_id)
+    return o
+
+
+def get(order_id: str) -> dict | None:
+    o = _order(order_id)
     return _order_view(o) if o else None
 
 
 def list_orders(limit: int = 20) -> list[dict]:
     with _LOCK:
+        if not ORDERS:
+            # мост перезапустился — поднимаем заказы с диска, чтобы
+            # пауза/продолжение нашли свою точку отсчёта
+            _load_orders_locked()
         items = sorted(ORDERS.values(), key=lambda o: o["created_at"],
                        reverse=True)[:limit]
     return [{"id": o["id"], "text": o["text"], "status": o.get("status"),
@@ -271,6 +351,7 @@ def _run(order_id: str, proj: Project) -> None:
         try:
             box = str(sandbox.create(order_id, proj.root))
             order["sandbox"] = box
+            _apply_project_makefile(project_id, box)
         except Exception as exc:                                # noqa: BLE001
             # Откатываться к корню проекта нельзя. Именно этим путём
             # заказ однажды выполнил distclean и снёс out/, .venv и
@@ -410,9 +491,6 @@ def _run(order_id: str, proj: Project) -> None:
         # упорядочиваем по cycle_order, при этом предполагаемый консультант — первым всегда
         keys = list(dict.fromkeys(keys))
         keys.sort(key=lambda a: cycle_order.index(a) if a in cycle_order else 999)
-        if not any(k in agent_keywords for k in keys):
-            # keep seeding direction anyway
-            pass
         phase_names = {
             "consultant": "этап 1 — уточнение требований",
             "theorist": "этап 2 — математическое моделирование",
@@ -481,12 +559,6 @@ def _run(order_id: str, proj: Project) -> None:
              "решение о микроконтроллере — консультант "
              "(design/acceptance.json); сборку и ERC — скрипты")
 
-    # Расписание из bureau_tasks
-    try:
-        if related_tasks:
-            _log(order, f"📋 Предметные задачи: {len(related_tasks)} задач в очереди")
-    except Exception:
-        pass
     # Артефакты забираются наружу только при успехе
     if CHECK_INTEGRITY and before:
         verdict = sandbox.verify_intact(before, proj.root)
@@ -526,10 +598,10 @@ def cancel(order_id: str) -> bool:
     показываться как активный — результат, если он появится, не
     перезапишет отмену.
     """
+    o = _order(order_id)
+    if not o or o.get("status") in ("done", "failed", "partial"):
+        return False
     with _LOCK:
-        o = ORDERS.get(order_id)
-        if not o or o.get("status") in ("done", "failed", "partial"):
-            return False
         o["status"] = "cancelled"
         o["finished_at"] = now_iso()
         return True
@@ -538,6 +610,96 @@ def cancel(order_id: str) -> bool:
 # ==========================================================================
 #  Прерывание и возобновление
 # ==========================================================================
+def pause(order_id: str) -> bool:
+    """Пауза: конвейер дорабатывает текущую стадию и не начинает следующую."""
+    from . import stages                                      # поздний импорт
+    with _LOCK:
+        o = ORDERS.get(order_id)
+    if not o or o.get("status") != "running":
+        return False
+    stages.request_pause()
+    with _LOCK:
+        o["note"] = "пауза по запросу оператора"
+    return True
+
+
+def continue_order(order_id: str, root: str = ".",
+                   answer: str = "") -> dict:
+    """Продолжить заказ с места остановки (в фоне, как при подаче заказа).
+
+    Уже выполненные стадии берутся из design/_pipeline.json и повторно
+    НЕ выполняются: агентам не приходится заново переписывать ТЗ, расчёты
+    и схему. Упавшие и не начатые стадии проходят заново — иначе заказ
+    не сдвинется с места, где остановился.
+    """
+    with _LOCK:
+        o = ORDERS.get(order_id)
+        if o is None:
+            # мост перезапустился — заказ лежит на диске
+            _load_orders_locked()
+            o = ORDERS.get(order_id)
+    if o is None:
+        return {"error": "unknown order", "id": order_id}
+    box = _existing_sandbox(order_id, o, root) or root
+    if not str(o.get("text") or ""):
+        return {"error": "у заказа нет текста — продолжать нечего"}
+    o["status"] = "running"
+    o["note"] = "продолжение с места остановки"
+    try:
+        from . import sandbox as SB
+        updated = SB.sync(root, box)
+        updated += _apply_project_makefile(o.get("project_id"), box)
+        if updated:
+            o["logs"] = (o.get("logs") or []) + [
+                "песочница: обновлены инструменты (" +
+                ", ".join(updated[:6]) + ")"]
+    except Exception as exc:                              # noqa: BLE001
+        o["logs"] = (o.get("logs") or []) + [
+            f"песочница: не удалось обновить инструменты: {exc}"]
+    threading.Thread(target=_run_continue,
+                     args=(order_id, box, answer), daemon=True).start()
+    return {"ok": True, "id": order_id, "status": "running",
+            "note": o["note"],
+            "sandbox": box}
+
+
+def _run_continue(order_id: str, box: str, answer: str = "") -> None:
+    """Фоновое продолжение: конвейер идёт, запрос уже вернул оператору."""
+    from . import stages                                      # поздний импорт
+    with _LOCK:
+        o = ORDERS.get(order_id)
+    if o is None:
+        return
+    text = str(o.get("text") or "")
+    engine.set_workdir(box)
+    try:
+        # заказ должен быть виден движку: иначе состояние стадий не
+        # публикуется наружу и заказ кажется «висящим» без прогресса
+        engine.set_order(o)
+        engine.set_active_state(None)
+        proj = engine.load_profile(box)
+        out = stages.continue_pipeline(text, proj, order_id=order_id,
+                                      answer=answer)
+    except Exception as exc:                                  # noqa: BLE001
+        # след ошибки — в лог заказа: иначе тихий обрыв конвейера
+        # выглядит как «ничего не происходит»
+        import traceback
+        tb = traceback.format_exc()
+        with _LOCK:
+            o["status"] = "failed"
+            o["note"] = f"продолжение не удалось: {exc}"[:200]
+            o["logs"] = (o.get("logs") or []) + [tb[-1500:]]
+        return
+    finally:
+        engine.set_workdir(None)
+    with _LOCK:
+        o.update({k: out.get(k) for k in
+                  ("status", "progress", "note", "report", "steps", "log",
+                   "решение_менеджера")
+                  if k in out})
+        o["finished_at"] = out.get("finished_at")
+
+
 def question_of(order_id: str) -> str:
     """Вопрос, на котором граф стоит, — для интерфейса."""
     o = get(order_id)
@@ -547,43 +709,73 @@ def question_of(order_id: str) -> str:
 def resume(order_id: str, answer: str, root: str = ".") -> dict:
     """Продолжить прерванный заказ после ответа оператора.
 
-    Граф сохранил состояние в чекпоинте, поэтому работа продолжается
-    с места остановки: уже собранные цели не пересобираются заново,
-    а модели уходит ответ оператора как вводные.
+    Заказ ведётся конвейером стадий, и он помнит, что уже выполнено
+    (design/_pipeline.json в песочнице заказа). Поэтому продолжение
+    идёт с места остановки: уже написанные ТЗ, расчёты и схема не
+    переписываются заново, а ответ оператора уходит агенту как вводные.
 
-    Если чекпоинта нет (мост перезапустился до того, как состояние
-    записалось, или langgraph не установлен), заказ перезапускается
-    целиком — об этом честно сообщаем в ответе.
+    Если песочницы нет (заказ не начинали) — заказ запускается целиком.
     """
-    with _LOCK:
-        o = ORDERS.get(order_id)
+    o = _order(order_id)
     if o is None:
         return {"error": "unknown order", "id": order_id}
-
     box = _existing_sandbox(order_id, o, root)
-    engine.set_workdir(box)
+    if not box:
+        # песочницы нет — запускаем заказ заново
+        return submit(str(o.get("text") or ""), root=root,
+                      project_id=o.get("project_id"))
+    o["status"] = "running"
+    o["note"] = "продолжение с места остановки"
+    # инструменты песочницы синхронизируются с проектом: скрипты мы
+    # правим по ходу работы, и заказ должен считать на свежей версии
     try:
-        res = engine.resume(order_id, answer, root=root)
-    except Exception as exc:                                    # noqa: BLE001
-        engine.set_workdir(None)
-        return {"error": f"возобновление не удалось: {exc}"}
-    finally:
-        engine.set_workdir(None)
+        from . import sandbox as SB
+        updated = SB.sync(root, box)
+        updated += _apply_project_makefile(o.get("project_id"), box)
+        if updated:
+            o["logs"] = (o.get("logs") or []) + [
+                "песочница: обновлены инструменты (" +
+                ", ".join(updated[:6]) + ")"]
+    except Exception as exc:                              # noqa: BLE001
+        o["logs"] = (o.get("logs") or []) + [
+            f"песочница: не удалось обновить инструменты: {exc}"]
+    threading.Thread(target=_run_continue,
+                     args=(order_id, box, answer), daemon=True).start()
+    return {"ok": True, "id": order_id, "status": "running",
+            "note": o["note"], "sandbox": box}
 
-    with _LOCK:
-        o.update({
-            "status": res.get("status", "done"),
-            "intent": res.get("intent", o.get("intent", "")),
-            "progress": res.get("progress", o.get("progress", 0)),
-            "verdict": res.get("verdict", ""),
-            "question": res.get("question", ""),
-            "note": res.get("note", ""),
-            "steps": res.get("steps", o.get("steps", [])),
-            "report": res.get("report", ""),
-            "logs": res.get("log", o.get("logs", [])),
-            "finished_at": res.get("finished_at") or now_iso(),
-        })
-    return _order_view(o)
+
+def _project_dir(project_id: str | None) -> Path | None:
+    """Каталог проекта заказа (там лежит его Makefile с целями сборки)."""
+    pid = str(project_id or "").strip()
+    if not pid:
+        return None
+    base = Path(__file__).resolve().parents[2] / ".krystal" / "projects"
+    d = base / pid
+    return d if d.is_dir() else None
+
+
+def _apply_project_makefile(project_id: str | None, box: str) -> list[str]:
+    """Положить в песочницу Makefile проекта заказа.
+
+    Сборка заказа идёт по целям проекта (tz, kicad, spice, sim, gost,
+    all, test). Если в песочнице окажется Makefile чужого проекта, эти
+    цели просто не найдутся — и сборка не запустится.
+    """
+    src_dir = _project_dir(project_id)
+    if src_dir is None:
+        return []
+    src = src_dir / "Makefile"
+    if not src.is_file():
+        return []
+    dst = Path(box) / "Makefile"
+    try:
+        if dst.is_file() and dst.read_bytes() == src.read_bytes():
+            return []
+        shutil.copy2(src, dst)
+    except OSError:
+        return []
+    return ["Makefile"]
 
 
 def _existing_sandbox(order_id: str, order: dict, root: str) -> str | None:
@@ -598,8 +790,19 @@ def _existing_sandbox(order_id: str, order: dict, root: str) -> str | None:
     recorded = order.get("sandbox")
     if recorded and Path(recorded).is_dir():
         return recorded
-    candidate = Path(root).resolve() / "work" / "orders" / order_id
-    return str(candidate) if candidate.is_dir() else None
+    base = Path(root).resolve()
+    # песочница живёт рядом с проектом заказа: её путь строится от
+    # project_id, а не от корня репозитория
+    candidates = [base / "work" / "orders" / order_id]
+    project_id = str(order.get("project_id") or "").strip()
+    if project_id:
+        candidates.append(base / ".krystal" / "projects" / project_id
+                         / "work" / "orders" / order_id)
+    for candidate in candidates:
+        if candidate.is_dir():
+            order["sandbox"] = str(candidate)
+            return str(candidate)
+    return None
 
 
 def waiting() -> list[dict]:
@@ -632,8 +835,19 @@ STALL_S = float(os.environ.get("KR_STALL_S", "900"))
 _watchdog: threading.Thread | None = None
 
 
+#: как часто заказы сбрасываются на диск (защита от рестарта моста).
+#: Пишем не на каждое обновление: прогон идёт быстро, а файл большой.
+_PERSIST_EVERY = 2.0
+_last_persist = 0.0
+
+
 def _mark_progress(o: dict) -> None:
+    global _last_persist
     o["_seen_at"] = time.time()
+    now = time.time()
+    if now - _last_persist >= _PERSIST_EVERY:
+        _last_persist = now
+        threading.Thread(target=_persist_orders, daemon=True).start()
 
 
 def _log(o: dict, text: str) -> None:
@@ -676,6 +890,31 @@ def _watchdog_loop() -> None:
                     "  * стадия ждёт внешний инструмент (make-цель);\n"
                     "  * полный ход работы агентов — design/agents_"
                     "transcript.md в песочнице заказа.")
+
+
+def resume_interrupted(root: str = ".") -> list[str]:
+    """Продолжить заказы, прерванные перезапуском моста.
+
+    Мост может перезапуститься посреди заказа (перезагрузка машины,
+    правка кода). Заказ не должен от этого рассыпаться: он помнит
+    сделанное в песочнице, поэтому достаточно продолжить его с места
+    остановки.
+    """
+    with _LOCK:
+        if not ORDERS:
+            _load_orders_locked()
+        items = [(oid, o) for oid, o in ORDERS.items()
+                 if o.get("status") in ("running", "interrupted", "queued")
+                 and str(o.get("text") or "")]
+    started: list[str] = []
+    for oid, o in items:
+        try:
+            res = continue_order(oid, root=root)
+        except Exception:                             # noqa: BLE001
+            continue
+        if not res.get("error"):
+            started.append(oid)
+    return started
 
 
 def watchdog_start() -> None:

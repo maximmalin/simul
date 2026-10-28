@@ -1,0 +1,9 @@
+[console_scripts]
+asc_to_qsch=spicelib.scripts.asc_to_qsch:main
+histogram=spicelib.scripts.histogram:main
+ltsteps=spicelib.scripts.ltsteps:main
+raw_convert=spicelib.scripts.raw_convert:main
+rawplot=spicelib.scripts.rawplot:main
+readme_update=spicelib.scripts.readme_update:main
+run_server=spicelib.scripts.run_server:main
+

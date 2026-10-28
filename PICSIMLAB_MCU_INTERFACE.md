@@ -453,8 +453,8 @@ w.close()
 ```
 brig-receiver/
 ├── picsimlab_rt_wrapper.py    # Main wrapper script (optimized)
-├── picsimlab_brig_receiver.ini  # picsimlab configuration
-├── picsimlab_brig_receiver_workspace.xml  # Workspace XML
+├── picsimlab_schematic.ini  # picsimlab configuration
+├── picsimlab_schematic_workspace.xml  # Workspace XML
 └── README.md                  # Project overview (separate)
 ```
 

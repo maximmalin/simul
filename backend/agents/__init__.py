@@ -32,9 +32,16 @@
 from __future__ import annotations
 
 import os
+import sys
 import threading
 from pathlib import Path
 from typing import Any
+
+#: вендорённые открытые библиотеки (разбор SPICE: spicelib) — рядом с
+#: пакетом, чтобы не тянуть их в системный python
+_VENDOR = Path(__file__).resolve().parent.parent / "vendor"
+if _VENDOR.is_dir() and str(_VENDOR) not in sys.path:
+    sys.path.insert(0, str(_VENDOR))
 
 from .engine import (REGISTRY, ORDER, agent, graph_shape, have_langgraph,
                     run as _run, run_plain, build)

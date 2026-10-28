@@ -50,7 +50,7 @@ u_max   = b1·Lx² / (2·E_q)            [м]   — перемещение ко�
 ## Запуск
 
 ```bash
-cd /home/mirrage/Desktop/brig-receiver/sim/octave
+cd /home/mirrage/Desktop/krystal/sim/octave
 octave --quiet bragg_formulas.m
 ```
 

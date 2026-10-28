@@ -7,7 +7,7 @@
   * cad_dims.json     — текущие размеры (промежуточный файл)
 
 Запуск:
-    cd /home/mirrage/Desktop/brig-receiver
+    cd /home/mirrage/Desktop/krystal
     .venv/bin/python3 sim/cad/refresh_cad.py
 
 Единицы CAD — миллиметры (привычно для FreeCAD); физический размер сохраняется

@@ -1,0 +1,469 @@
+{
+  "version": 1,
+  "описание": "Параметры и правила подбора деталей движка parts.py. Файл открыт для дополнения: ключи можно добавлять, ничего не ломается. Переопределение целиком — переменная окружения KR_PARTS_PARAMS (путь к JSON).",
+  "tables": {
+    "r": "resistor",
+    "resistor": "resistor",
+    "резистор": "resistor",
+    "c": "capacitor",
+    "capacitor": "capacitor",
+    "конденсатор": "capacitor",
+    "l": "inductor",
+    "inductor": "inductor",
+    "индуктивность": "inductor",
+    "d": "diode",
+    "diode": "diode",
+    "диод": "diode",
+    "led": "led",
+    "светодиод": "led",
+    "fuse": "fuse",
+    "предохранитель": "fuse",
+    "crystal": "crystal",
+    "кварц": "crystal",
+    "q": "part",
+    "mosfet": "part",
+    "транзистор": "part",
+    "u": "part",
+    "микросхема": "part",
+    "ic": "part",
+    "part": "part"
+  },
+  "category_hint": {
+    "resistor": "resistor",
+    "capacitor": "capacitor",
+    "inductor": "inductor",
+    "diode": "diode",
+    "led": "led",
+    "fuse": "fuse",
+    "crystal": "crystal"
+  },
+  "value_col": {
+    "resistor": "resistance",
+    "capacitor": "capacitance_farads",
+    "inductor": "inductance_henries",
+    "diode": "current_avg",
+    "led": "current_avg",
+    "fuse": "current_avg",
+    "crystal": "frequency_hz"
+  },
+  "filters": {
+    "resistor": [
+      "resistance",
+      "tolerance_fraction",
+      "power_watts"
+    ],
+    "capacitor": [
+      "capacitance_farads",
+      "tolerance_fraction",
+      "voltage_rating"
+    ],
+    "inductor": [
+      "inductance_henries",
+      "dc_resistance_ohms",
+      "current_rating_amps"
+    ],
+    "diode": [
+      "voltage_dc",
+      "current_avg"
+    ],
+    "led": [
+      "wavelength_nm"
+    ],
+    "fuse": [
+      "current_rating_amps",
+      "voltage_rating"
+    ],
+    "crystal": [
+      "frequency_hz",
+      "frequency_tolerance_ppm",
+      "load_capacitance_f"
+    ],
+    "part": []
+  },
+  "ranges": {
+    "resistance": [
+      0.0001,
+      10000000.0
+    ],
+    "tolerance_fraction": [
+      0.0,
+      0.5
+    ],
+    "power_watts": [
+      0.0,
+      100.0
+    ],
+    "capacitance_farads": [
+      1e-12,
+      1.0
+    ],
+    "voltage_rating": [
+      0.0,
+      2000.0
+    ],
+    "inductance_henries": [
+      1e-09,
+      10.0
+    ],
+    "current_rating_amps": [
+      0.0,
+      500.0
+    ],
+    "dc_resistance_ohms": [
+      0.0,
+      100.0
+    ],
+    "voltage_dc": [
+      0.0,
+      2000.0
+    ],
+    "current_avg": [
+      0.0,
+      500.0
+    ],
+    "wavelength_nm": [
+      0.0,
+      20000.0
+    ],
+    "frequency": [
+      0.0,
+      1000000000.0
+    ],
+    "load_capacitance": [
+      0.0,
+      1e-06
+    ],
+    "frequency_tolerance": [
+      0.0,
+      1.0
+    ],
+    "frequency_hz": [
+      0.0,
+      1000000000.0
+    ],
+    "frequency_tolerance_ppm": [
+      0.0,
+      100000.0
+    ],
+    "load_capacitance_f": [
+      0.0,
+      1e-06
+    ]
+  },
+  "columns": {
+    "resistor": {
+      "r": "resistance",
+      "resistance": "resistance",
+      "tol": "tolerance_fraction",
+      "tolerance": "tolerance_fraction",
+      "tolerancefraction": "tolerance_fraction",
+      "power": "power_watts",
+      "powerwatts": "power_watts"
+    },
+    "capacitor": {
+      "c": "capacitance_farads",
+      "capacitance": "capacitance_farads",
+      "capacitancefarads": "capacitance_farads",
+      "tol": "tolerance_fraction",
+      "tolerance": "tolerance_fraction",
+      "tolerancefraction": "tolerance_fraction",
+      "v": "voltage_rating",
+      "voltage": "voltage_rating",
+      "voltagerating": "voltage_rating"
+    },
+    "inductor": {
+      "l": "inductance_henries",
+      "inductance": "inductance_henries",
+      "inductancehenries": "inductance_henries",
+      "i": "current_rating_amps",
+      "current": "current_rating_amps",
+      "currentratingamps": "current_rating_amps",
+      "r": "dc_resistance_ohms",
+      "dcr": "dc_resistance_ohms",
+      "dcresistanceohms": "dc_resistance_ohms"
+    },
+    "diode": {
+      "vr": "voltage_dc",
+      "voltage": "voltage_dc",
+      "voltagedc": "voltage_dc",
+      "i": "current_avg",
+      "if": "current_avg",
+      "current": "current_avg",
+      "currentavg": "current_avg"
+    },
+    "led": {
+      "wl": "wavelength_nm",
+      "wavelength": "wavelength_nm",
+      "wavelengthnm": "wavelength_nm"
+    },
+    "fuse": {
+      "i": "current_rating_amps",
+      "if": "current_rating_amps",
+      "current": "current_rating_amps",
+      "vr": "voltage_rating",
+      "voltage": "voltage_rating"
+    },
+    "crystal": {
+      "f": "frequency_hz",
+      "freq": "frequency_hz",
+      "frequency": "frequency_hz",
+      "tol": "frequency_tolerance_ppm",
+      "tolerance": "frequency_tolerance_ppm",
+      "c": "load_capacitance_f"
+    }
+  },
+  "aliases": {
+    "requirement": {
+      "r": "r",
+      "resistance": "r",
+      "resistanceohm": "r",
+      "c": "c",
+      "capacitance": "c",
+      "capacity": "c",
+      "capacitancefarads": "c",
+      "l": "l",
+      "inductance": "l",
+      "inductancehenries": "l",
+      "f": "f",
+      "frequency": "f",
+      "freq": "f",
+      "tol": "tol",
+      "tolerance": "tol",
+      "tolerancefraction": "tol",
+      "power": "power",
+      "pd": "power",
+      "powerrating": "power",
+      "totalpower": "power",
+      "wattage": "power",
+      "powerwatts": "power",
+      "i": "i",
+      "if": "i",
+      "forwardcurrent": "i",
+      "ifaverage": "i",
+      "current": "i",
+      "currentavg": "i",
+      "currentrated": "i",
+      "ic": "ic",
+      "collectorcurrent": "ic",
+      "id": "id",
+      "idmax": "id",
+      "draincurrent": "id",
+      "continuousdraincurrent": "id",
+      "draincurrentid": "id",
+      "icharge": "icharge",
+      "chargecurrent": "icharge",
+      "iout": "iout",
+      "outputcurrent": "iout",
+      "iripple": "iripple",
+      "ripplecurrent": "iripple",
+      "v": "v",
+      "voltage": "v",
+      "ratedvoltage": "v",
+      "voltagerated": "v",
+      "vr": "vr",
+      "reversevoltage": "vr",
+      "vrrm": "vr",
+      "voltagedc": "vr",
+      "vf": "vf",
+      "forwardvoltage": "vf",
+      "droput": "vf",
+      "vds": "vds",
+      "vdss": "vds",
+      "vdsmax": "vds",
+      "drain sourcenvoltage": "vds",
+      "drain source voltage": "vds",
+      "vth": "vth",
+      "vto": "vth",
+      "vgsthresholdvoltage": "vth",
+      "threshold voltage": "vth",
+      "gatethresholdvoltagevth": "vth",
+      "vout": "vout",
+      "outputvoltage": "vout",
+      "vin": "vin",
+      "inputvoltage": "vin",
+      "vsupply": "vsupply",
+      "supplyvoltage": "vsupply",
+      "rdson": "rdson",
+      "rds": "rdson",
+      "rdsonmaxidvgs": "rdson",
+      "rds on max": "rdson",
+      "rds on max id vgs": "rdson",
+      "drain sourceonresistance": "rdson",
+      "on resistance": "rdson",
+      "rth": "rth",
+      "thermalresistance": "rth",
+      "cjo": "cjo",
+      "junctioncapacitance": "cjo",
+      "cj": "cjo",
+      "tja": "tja",
+      "junctiontemperature": "tja",
+      "temp": "temp",
+      "operatingtemperature": "temp",
+      "wl": "wl",
+      "wavelength": "wl",
+      "wavelengthnm": "wl",
+      "wavelenghtnm": "wl",
+      "wavelength nm": "wl",
+      "esr": "esr",
+      "equivalent series resistance": "esr",
+      "srf": "srf",
+      "selfresonantfrequency": "srf",
+      "gm": "gm",
+      "transconductance": "gm",
+      "fc": "fc",
+      "cutoff frequency": "fc",
+      "package": "package",
+      "ileak": "ileak",
+      "iq": "iq"
+    },
+    "attribute": {
+      "resistance": "r",
+      "resistanceohm": "r",
+      "capacitance": "c",
+      "capacitancefarads": "c",
+      "inductance": "l",
+      "inductancehenries": "l",
+      "tolerance": "tol",
+      "tolerancefraction": "tol",
+      "powerwatts": "power",
+      "powerwatt": "power",
+      "powerdissipation": "power",
+      "ratedpower": "power",
+      "powerrating": "power",
+      "totalpower": "power",
+      "currentavg": "i",
+      "forwardcurrent": "i",
+      "current": "i",
+      "currentrated": "i",
+      "ratedcurrent": "i",
+      "collectorcurrent": "ic",
+      "draincurrentid": "id",
+      "id": "id",
+      "continuousdraincurrent": "id",
+      "chargecurrent": "icharge",
+      "outputcurrent": "iout",
+      "ripplecurrent": "iripple",
+      "voltagedc": "vr",
+      "voltagerc": "vr",
+      "voltagereverse": "vr",
+      "voltagerated": "v",
+      "voltage": "v",
+      "voltageac": "v",
+      "forwardvoltage": "vf",
+      "drain source voltage vdss": "vds",
+      "drainsourcevoltagevdss": "vds",
+      "vdss": "vds",
+      "drain source voltage": "vds",
+      "vds": "vds",
+      "rds on max id vgs": "rdson",
+      "rdsonmaxidvgs": "rdson",
+      "rds on max": "rdson",
+      "rdson": "rdson",
+      "on resistance": "rdson",
+      "gate threshold voltage vth": "vth",
+      "gatethresholdvoltagevth": "vth",
+      "vth": "vth",
+      "threshold voltage": "vth",
+      "wavelength nm": "wl",
+      "wavelenghtnm": "wl",
+      "wavelength": "wl",
+      "wavelengthnm": "wl",
+      "junction capacitance": "cjo",
+      "capacitancecj": "cjo",
+      "thermal resistance": "rth",
+      "thermalresistance": "rth",
+      "operating temperature": "temp",
+      "operatingtemperature": "temp",
+      "supply voltage": "vsupply",
+      "supplyvoltage": "vsupply",
+      "output voltage": "vout",
+      "outputvoltage": "vout",
+      "input voltage": "vin",
+      "inputvoltage": "vin",
+      "cutoff frequency": "fc",
+      "transconductance": "gm",
+      "equivalent series resistance": "esr",
+      "self resonant frequency": "srf",
+      "vdsmax": "vds",
+      "drain sourcenvoltagemax": "vds",
+      "reverseleakagecurrentir": "ileak",
+      "reverseleakagecurrent": "ileak",
+      "leakagecurrent": "ileak",
+      "quiescentcurrent": "iq",
+      "quiescentcurrentiq": "iq",
+      "standbycurrent": "ileak",
+      "diodeconfiguration": "config",
+      "diode type": "config",
+      "operatingjunctiontemperaturerange": "temp",
+      "temperaturecoefficient": "tc",
+      "numberofcircuits": "channels",
+      "numberofchannels": "channels"
+    }
+  },
+  "direction": {
+    "min": [
+      "gm",
+      "i",
+      "ic",
+      "icharge",
+      "id",
+      "if",
+      "iout",
+      "iripple",
+      "power",
+      "vds",
+      "vf",
+      "vin",
+      "vout",
+      "vr",
+      "vsupply",
+      "vth"
+    ],
+    "max": [
+      "esr",
+      "ileak",
+      "iq",
+      "rdson",
+      "rth",
+      "tol",
+      "tolerance"
+    ],
+    "eq": [
+      "c",
+      "f",
+      "l",
+      "r",
+      "temp",
+      "v",
+      "wl"
+    ]
+  },
+  "fraction_keys": [
+    "tol",
+    "tolerance",
+    "tolerancefraction"
+  ],
+  "model_param_alias": {
+    "rdson": [
+      "rd",
+      "rs"
+    ],
+    "vth": [
+      "vto"
+    ],
+    "id": [
+      "is",
+      "bf"
+    ],
+    "vf": [
+      "is"
+    ],
+    "rth": [
+      "theta"
+    ],
+    "power": [
+      "pd"
+    ]
+  },
+  "model_param_tolerance": 0.5
+}

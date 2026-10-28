@@ -233,8 +233,22 @@ def _minimise(targets: list[str], proj: Project) -> list[str]:
 
 
 def _extract_json(raw: str) -> dict | None:
-    """Достать JSON: сначала целиком, потом первый {...} в тексте."""
-    for cand in (raw.strip(), _braces(raw)):
+    """Достать JSON: сначала целиком, потом из markdown-блоков,
+    потом последний {...} в тексте.
+
+    Модели с рассуждением пишут reasoning до JSON, и в reasoning
+    могут быть JSON-подобные фрагменты. Поэтому ищем с конца: последний
+    '{' — скорее всего начало настоящего ответа. Также пробуем
+    извлечь JSON из markdown-блоков ```json ... ```.
+    """
+    if not raw:
+        return None
+    # управляющие символы внутри JSON ломают разбор (модель иногда
+    # вставляет их в строку) — убираем, содержимое при этом не страдает
+    raw = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f]", " ", raw)
+    # 0) markdown-блоки ```json ... ```
+    for m in re.finditer(r"```(?:json)?\s*\n?(.*?)```", raw, re.DOTALL):
+        cand = m.group(1).strip()
         if not cand:
             continue
         try:
@@ -243,7 +257,86 @@ def _extract_json(raw: str) -> dict | None:
                 return data
         except ValueError:
             continue
+    # 1) весь текст
+    try:
+        data = json.loads(raw.strip())
+        if isinstance(data, dict):
+            return data
+    except ValueError:
+        pass
+    # 2) ищем с конца: последний '{' → первый '}' после него
+    last_brace = raw.rfind("{")
+    if last_brace >= 0:
+        for start in range(last_brace, -1, -1):
+            if raw[start] != "{":
+                continue
+            end = raw.rfind("}", start)
+            if end <= start:
+                continue
+            cand = raw[start:end + 1]
+            try:
+                data = json.loads(cand)
+                if isinstance(data, dict):
+                    return data
+            except ValueError:
+                continue
+    # 3) fallback: первый '{' → последний '}'
+    a, b = raw.find("{"), raw.rfind("}")
+    if a >= 0 and b > a:
+        try:
+            data = json.loads(raw[a:b + 1])
+            if isinstance(data, dict):
+                return data
+        except ValueError:
+            pass
+    # 4) ответ мог оборваться по лимиту ответа: закрываем обрезанный
+    # JSON — недостающие скобки и незакрытую строку
+    # сперва с начала объекта: там длиннее и полезнее
+    for a in (raw.find("{"), raw.rfind("{")):
+        if a < 0:
+            continue
+        fixed = _close_truncated(raw[a:])
+        if not fixed:
+            continue
+        try:
+            data = json.loads(fixed)
+            if isinstance(data, dict):
+                return data
+        except ValueError:
+            continue
     return None
+
+
+def _close_truncated(text: str) -> str:
+    """Закрыть обрезанный JSON: строки, массивы и объекты.
+
+    Ответ модели часто обрывается по лимиту длины. Разбор становится
+    возможен, если дописать недостающие закрывающие скобки.
+    """
+    s = str(text or "")
+    stack: list[str] = []
+    in_str = False
+    esc = False
+    for ch in s:
+        if in_str:
+            if esc:
+                esc = False
+            elif ch == "\\":
+                esc = True
+            elif ch == '"':
+                in_str = False
+            continue
+        if ch == '"':
+            in_str = True
+        elif ch in "{[":
+            stack.append(ch)
+        elif ch in "}]" and stack:
+            stack.pop()
+    if in_str:
+        s += '"'
+    for ch in reversed(stack):
+        s += "}" if ch == "{" else "]"
+    return s
 
 
 def _braces(raw: str) -> str:

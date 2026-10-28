@@ -10,7 +10,7 @@
 | `band_a.step` / `.stl` | A | Змейка 200 МГц — 3 плеча по 63.5 мм, шаг 15 мм, дорожка 1.2 мм |
 | `band_b.step` / `.stl` | B | Решётка 2×2 @ 2.45 ГГц — патч 36.89 × 28.35 мм, шаг 91.7 мм |
 | `band_c.step` / `.stl` | C | Решётка 4×4 @ 5.8 ГГц — патч 15.59 × 11.62 мм, шаг 38.77 мм |
-| `build_brig_antennas_fc.py` | — | Макрос FreeCAD: строит и экспортирует всё заново |
+| `build_antennas_fc.py` | — | Макрос FreeCAD: строит и экспортирует всё заново |
 
 Состав каждой модели: нижняя медь (земля), подложка FR-4, верхняя медь (излучатели/дорожки).
 
@@ -42,7 +42,7 @@
 
 **Пересобрать из макроса:**
 ```bash
-freecadcmd hardware/antenna/geometry/build_brig_antennas_fc.py
+freecadcmd hardware/antenna/geometry/build_antennas_fc.py
 ```
 Скрипт создаст все 6 файлов заново в этой папке.
 

@@ -41,7 +41,7 @@ lighting → xyz".**
 
 <|constrain|> Скрипт (Прородитель) | Что делает | Для нашего агента |
 |---|---|---|
-| `hardware/kicad/generate_brig_receiver.py` | генерирует kicad-схему | адаптируем к flashlighht (только видимость листа, нет hardcoded naming). |
+| `hardware/kicad/generate_schematic.py` | генерирует kicad-схему | адаптируем к flashlighht (только видимость листа, нет hardcoded naming). |
 | `tools/build_page.py` | html страницу | уже воспроизводится в scripts/generate.py (`page`) |
 | `sdr_skidl_circuit_sklib.py` | скрипты для SKiDL | адаптируем с параметрами ordering parameter |
-| `kicad_lib_brig.py` | для KiCad-проекты | без hardcode
+| `kicad_symbols.py` | для KiCad-проекты | без hardcode

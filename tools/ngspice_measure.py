@@ -82,6 +82,113 @@ def model_libs(cir: Path) -> list[Path]:
     return [c for c in cands if c.is_file()]
 
 
+def _targets_from_tz(cir: Path) -> list[dict]:
+    """Требования из ТЗ на узлы (design/block_tz.json) — цели для замера.
+
+    Берутся входные и выходные параметры узлов: имя параметра, единица и
+    диапазон. Имя цепи в ТЗ и имя узла в деке могут не совпадать, поэтому
+    сопоставление идёт по единице и по величине.
+    """
+    box = cir.resolve().parent.parent.parent      # out/hardware -> BOX
+    tz_path = box / "design" / "block_tz.json"
+    if not tz_path.is_file():
+        return []
+    try:
+        data = json.loads(tz_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+    out: list[dict] = []
+    for blk in (data.get("блоки") or []):
+        if not isinstance(blk, dict):
+            continue
+        for fld in ("входные_параметры", "выходные_параметры"):
+            for v in (blk.get(fld) or []):
+                if not isinstance(v, dict):
+                    continue
+                rng = str(v.get("диапазон") or "")
+                lo = hi = None
+                if ".." in rng:
+                    a, _, b = rng.partition("..")
+                    lo, hi = _num(a), _num(b)
+                else:
+                    lo = hi = _num(rng)
+                if lo is None and hi is None:
+                    continue
+                out.append({
+                    "имя": str(v.get("имя") or ""),
+                    "цепь": str(v.get("обозначение") or ""),
+                    "единица": str(v.get("единица") or "").strip(),
+                    "min": lo, "max": hi,
+                    "узел": str(blk.get("код") or ""),
+                })
+    return out
+
+
+def _num(text: str) -> float | None:
+    m = re.search(r"(-?\d+(?:[.,]\d+)?)", str(text or ""))
+    if not m:
+        return None
+    try:
+        return float(m.group(1).replace(",", "."))
+    except ValueError:
+        return None
+
+
+def _unit_key(text: str) -> str:
+    """Каноническая единица измерения («А» и «A» — одна единица).
+
+    Справочник — общий с движком подбора деталей (data/units.json).
+    """
+    f = Path(__file__).resolve().parents[1] / "data" / "units.json"
+    try:
+        canon = json.loads(f.read_text(encoding="utf-8")).get("canonical") or {}
+    except (OSError, ValueError):
+        canon = {}
+    s = re.sub(r"[^a-zа-я%ωΩ]+", "", str(text or "").lower())
+    if not s:
+        return ""
+    if s in canon:
+        return canon[s]
+    best = ""
+    for k, v in canon.items():
+        if len(k) < 2 or not k:
+            continue
+        if (s.startswith(k) or s.endswith(k)) and len(k) > len(best):
+            best = k
+            best = v
+    return best or s
+
+
+def _match_target(meas: dict, targets: list[dict]) -> tuple | None:
+    """Цель для измеренной величины: по единице и по попаданию в диапазон."""
+    unit = _unit_key(meas.get("unit") or "")
+    val = meas.get("value")
+    try:
+        val = float(val)
+    except (TypeError, ValueError):
+        return None
+    best = None
+    for tg in targets:
+        tu = _unit_key(tg.get("единица") or "")
+        if unit and tu and unit != tu:
+            continue
+        lo, hi = tg.get("min"), tg.get("max")
+        if lo is not None and hi is not None and lo <= val <= hi:
+            return (f"{tg['узел']}: {tg['имя']}", tg.get("единица"), lo, hi)
+        if best is None and lo is not None and hi is not None:
+            best = (f"{tg['узел']}: {tg['имя']}", tg.get("единица"), lo, hi)
+    return best
+
+
+def _margin(val: float, low: float | None, high: float | None) -> float | None:
+    """Запас: насколько значение внутри требования (в единицах измерения)."""
+    if low is not None and val >= low:
+        return round(val - low, 9)
+    if high is not None and val <= high:
+        return round(high - val, 9)
+    return None
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="измеритель: .cir → ngspice → json")
     ap.add_argument("--cir", required=True, help="SPICE-дека")
@@ -126,6 +233,22 @@ def main() -> int:
     log.write_text(out_text, encoding="utf-8")
 
     measured, blocked = parse_out(out_text)
+    # запас относительно требований: измеренное значение, цель и разница.
+    # Без цели «прошло/не прошло» — обман: значение может быть внутри
+    # диапазона, но с худшим запасом, чем требуется.
+    targets = _targets_from_tz(cir)
+    for m in measured:
+        want = _match_target(m, targets)
+        if want is None:
+            continue
+        target, unit, low, high = want
+        val = m.get("value")
+        try:
+            val = float(val)
+        except (TypeError, ValueError):
+            continue
+        m["цель"] = target
+        m["запас"] = _margin(val, low, high)
     report = {
         "deck": cir.name,
         "measured": measured,

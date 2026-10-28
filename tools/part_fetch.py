@@ -93,14 +93,14 @@ def e2k_cmd() -> list[str]:
     return [sys.executable, "-m", "easyeda2kicad"]
 
 
-def load_brig():
+def load_kicad_symbols():
     """Парсер библиотек KiCad (тот же, что у компилятора)."""
     for start in (Path(__file__).resolve(), Path.cwd().resolve()):
         for p in (start, *start.parents):
-            kit = p / "hardware" / "kicad" / "kicad_lib_brig.py"
+            kit = p / "hardware" / "kicad" / "kicad_symbols.py"
             if kit.is_file():
                 sys.path.insert(0, str(kit.parent))
-                import kicad_lib_brig as K             # noqa: PLC0415
+                import kicad_symbols as K             # noqa: PLC0415
                 return K
     return None
 
@@ -653,7 +653,7 @@ def main() -> int:
     if not args.lcsc:
         ap.error("нужен --lcsc (или --datasheet-only с --lcsc/--mpn)")
 
-    K = load_brig()
+    K = load_kicad_symbols()
     lcscs = [norm_lcsc(x) for x in args.lcsc]
     out_stem = Path(args.out)
     nick = out_stem.name

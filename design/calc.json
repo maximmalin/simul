@@ -1,0 +1,62 @@
+{
+  "name": "Схемотехнический расчет",
+  "components": [
+    {
+      "ref": "PLC0415",
+      "type": "plc"
+    },
+    {
+      "ref": "BLE001",
+      "type": "ble"
+    },
+    {
+      "ref": "PLC0415",
+      "type": "plc"
+    },
+    {
+      "ref": "PLC0415",
+      "type": "plc"
+    },
+    {
+      "ref": "PLC0415",
+      "type": "plc"
+    },
+    {
+      "ref": "PLC0415",
+      "type": "plc"
+    },
+    {
+      "ref": "PLC0415",
+      "type": "plc"
+    },
+    {
+      "ref": "PLC0415",
+      "type": "plc"
+    },
+    {
+      "ref": "PLC0415",
+      "type": "plc"
+    },
+    {
+      "ref": "BLE001",
+      "type": "ble"
+    },
+    {
+      "ref": "BLE001",
+      "type": "ble"
+    },
+    {
+      "ref": "BLE001",
+      "type": "ble"
+    },
+    {
+      "ref": "BLE001",
+      "type": "ble"
+    },
+    {
+      "ref": "BLE001",
+      "type": "ble"
+    }
+  ],
+  "status": "generated_by_librarian"
+}

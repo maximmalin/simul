@@ -18,8 +18,8 @@
 - **Докстринги и дефолты** (`tools/several`, `*.py`). Это не используется
   в заказной линии: `make kicad`/`run_pcb.py` принимают `--manifest`,
   `--spec`, без жёстких шаблонов.
-- **Имена модулей/директорий**: `generate_brig_receiver.py`, `kicad_lib_brig.py`,
-  `brig_receiver.net` — проект-специфичные, но **не частью агентного
+- **Имена модулей/директорий**: `generate_schematic.py`, `kicad_symbols.py`,
+  `schematic.net` — проект-специфичные, но **не частью агентного
   конвейера** (это исходный приёмник-эталон для KiCad-шаблона; в
   `SCRIPTS.md` обозначено как "эталонный документ ТЗ"). Агентский конвейер
   экспортирует чистый `$name.netlist`/`$name.kicad_sch`, без строгой в
@@ -48,7 +48,7 @@
 
 ## Вывод
 Агентно Universal (не hardcode) верен, кроме residual строительных имён
-(`kicad_lib_brig.py`, `brig_receiver.net`) — они reference baseline
+(`kicad_symbols.py`, `schematic.net`) — они reference baseline
 (L-them RKPlan, не pipeline's iterable). Everything remaining is honest
 bad-vendor; `blocked` (no guesses) reported.<|end|><|start|>write to=assistant<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="content">
 # CODE_AUDIT — проверка универсальности, хардкода и инженерных актов

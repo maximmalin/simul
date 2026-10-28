@@ -86,6 +86,9 @@ ALLOWED_TARGETS: dict[str, str] = {
     "thermal": "fast + FEM тепловой расчёт",
     "test": "pytest tests/requirements + netlist + pin contract",
     "manifest": "manifest.json",
+    "schematics": "проектирование схемотехники: ESKD → ТЗ блоков → SKiDL → KiCad",
+    "schematics_check": "проверка схемотехники: ERC, соответствие блоков",
+    "schematics_bom": "библиотекарь: подбор реальных компонентов по SKiDL схеме",
 }
 
 # python-скрипты: имя -> (путь относительно ROOT, описание).
@@ -100,6 +103,12 @@ ALLOWED_SCRIPTS: dict[str, tuple[str, str]] = {
                    "GNU Radio виртуальный приём"),
     "ml_dataset": ("ml/dataset.py", "генерация YOLO-датасета"),
     "build_animation": ("animations/build_animation.py", "анимация сборки"),
+    "schematics_design": ("hardware/kicad/schematics_design.py",
+                          "проектирование схемотехники: ESKD → ТЗ блоков → SKiDL"),
+    "schematics_check": ("hardware/kicad/schematics_check.py",
+                         "проверка схемотехники: ERC, соответствие блоков"),
+    "schematics_bom": ("hardware/kicad/schematics_bom.py",
+                       "библиотекарь: подбор реальных компонентов по SKiDL"),
 }
 
 
@@ -1298,6 +1307,26 @@ class Handler(BaseHTTPRequestHandler):
             oid = path[len("/api/order/"):-len("/cancel")]
             return self._json({"cancelled": svc.cancel(oid), "id": oid})
 
+        if path.endswith("/pause"):
+            """Поставить заказ на паузу: текущая стадия доходит до конца."""
+            svc = _agents()
+            if not svc:
+                return self._json({"error": "agents unavailable"}, 503)
+            oid = path[len("/api/order/"):-len("/pause")]
+            svc.pause(oid)
+            return self._json({"paused": True, "id": oid,
+                               "note": "текущая стадия доработается, "
+                                       "следующая не начнётся"})
+
+        if path.endswith("/continue"):
+            """Продолжить заказ с места остановки — выполненные стадии
+            повторно не прогоняются (design/_pipeline.json)."""
+            svc = _agents()
+            if not svc:
+                return self._json({"error": "agents unavailable"}, 503)
+            oid = path[len("/api/order/"):-len("/continue")]
+            return self._json(svc.continue_order(oid, root=_project_root()))
+
         if path == "/api/agent/run":
             aid = str(payload.get("agent_id", "")).strip()
             target = str(payload.get("target", "")).strip()
@@ -1445,6 +1474,15 @@ def main() -> None:
     print(f"[bridge] krystal-radio agent bridge on "
           f"http://{args.host}:{args.port}  root={ROOT}")
     print(f"[bridge] targets: {', '.join(ALLOWED_TARGETS)}")
+    # заказы, прерванные перезапуском моста, продолжаются сами: заказ
+    # помнит сделанное в песочнице, терять работу нельзя
+    try:
+        from agents import service as _svc
+        started = _svc.resume_interrupted(str(ROOT))
+        if started:
+            print(f"[bridge] продолжены заказы: {', '.join(started)}")
+    except Exception as exc:                             # noqa: BLE001
+        print(f"[bridge] не удалось продолжить заказы: {exc}")
     try:
         srv.serve_forever()
     except KeyboardInterrupt:

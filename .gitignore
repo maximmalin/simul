@@ -100,3 +100,25 @@ skidl_REPL.erc
 skidl_REPL.log
 technical_task.docx
 technical_task.html
+
+# Heavy/generated data — not for VCS
+design/spice_lib/
+work/
+out/
+.krystal/
+local_symbols/
+local_footprints/
+design/passports/
+design/.model_check/
+*.net
+*.cir
+*.raw
+
+# Secrets — never commit
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*secret*
+*credentials*

@@ -77,10 +77,10 @@ SYSTEM_TOOLS: tuple[tuple[str, str], ...] = (
     ("tools/part_pcb.py", "tools/part_pcb.py"),
     # поблочная сборка SKiDL: нетлисты блоков по спецификации дизайнера
     ("tools/skidl_blocks.py", "tools/skidl_blocks.py"),
-    ("hardware/kicad/kicad_lib_brig.py",
-     "hardware/kicad/kicad_lib_brig.py"),
-    ("hardware/kicad/generate_brig_receiver.py",
-     "hardware/kicad/generate_brig_receiver.py"),
+    ("hardware/kicad/kicad_symbols.py",
+     "hardware/kicad/kicad_symbols.py"),
+    ("hardware/kicad/generate_schematic.py",
+     "hardware/kicad/generate_schematic.py"),
     # звено платы: тонкий раннер + эмиттер tscircuit + подбор деталей.
     # node_modules с tsci приходит из SHARED_DIRS, базы — из DEPS_CACHE.
     ("hardware/tscircuit/run_pcb.py", "hardware/tscircuit/run_pcb.py"),
@@ -210,6 +210,46 @@ def _find_links_into(sandbox: Path, project: Path) -> list[str]:
                 bad.append(str(p.relative_to(sandbox)))
                 p.unlink()
     return bad
+
+
+def sync(project: str | Path, sandbox: str | Path) -> list[str]:
+    """Обновить песочницу заказа свежими инструментами проекта.
+
+    Песочница создаётся копией проекта, и с того момента её скрипты
+    живут своей жизнью. Но инструменты мы правим по ходу работы (и
+    править их нужно: иначе заказ считает на старой версии сборщика).
+
+    Поэтому при продолжении заказа инструменты синхронизируются с
+    проектом. Артефакты заказа (design/, out/) не трогаются: это
+    результат работы агентов.
+    """
+    project = Path(project).resolve()
+    sandbox = Path(sandbox).resolve()
+    updated: list[str] = []
+    for src_rel, dst_rel in SYSTEM_TOOLS:
+        src = REPO_ROOT / src_rel
+        dst = sandbox / dst_rel
+        if not src.is_file():
+            continue
+        try:
+            if dst.is_file() and dst.read_bytes() == src.read_bytes():
+                continue
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(src, dst)
+            updated.append(dst_rel)
+        except OSError:
+            continue
+    # Makefile проекта: в нём цели сборки, он тоже должен быть свежим
+    mk = project / "Makefile"
+    if mk.is_file():
+        dst = sandbox / "Makefile"
+        try:
+            if not dst.is_file() or dst.read_bytes() != mk.read_bytes():
+                shutil.copy2(mk, dst)
+                updated.append("Makefile")
+        except OSError:
+            pass
+    return updated
 
 
 def create(order_id: str, project: str | Path) -> Path:

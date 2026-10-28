@@ -20,8 +20,8 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-import generate_brig_receiver as G          # noqa: E402
-import kicad_lib_brig as K                  # noqa: E402  # brig-receiver's KiCad lib
+import generate_schematic as G          # noqa: E402
+import kicad_symbols as K                  # noqa: E402
 
 TMP = Path("/tmp/opencode/other_sch")
 

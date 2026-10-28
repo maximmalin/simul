@@ -128,10 +128,10 @@
 
 - **ID**: `AGENT-KICAD-01`
 - **Название**: Сгенерировать полную принципиальную схему KiCad одним листом
-- **Цель**: Проверить, что `generate_brig_receiver.py` produces a valid `.kicad_sch` with empty Errors/Violations via `kicad-cli sch check`.
+- **Цель**: Проверить, что `generate_schematic.py` produces a valid `.kicad_sch` with empty Errors/Violations via `kicad-cli sch check`.
 - **Роль**: `agent.pcb`
-- **Ключевые файлы**: `hardware/kicad/generate_brig_receiver.py`, `hardware/kicad/kicad_lib_brig.py`, `hardware/kicad/kicad_lib.py`
-- **Команда**: ``cd /mnt/ext4data/kristall-radio && .venv/bin/python3 hardware/kicad/generate_brig_receiver.py && kicad-cli sch check hardware/kicad/brig_receiver.kicad_sch 2>&1 | tail -5``
+- **Ключевые файлы**: `hardware/kicad/generate_schematic.py`, `hardware/kicad/kicad_symbols.py`, `hardware/kicad/kicad_lib.py`
+- **Команда**: ``cd /mnt/ext4data/kristall-radio && .venv/bin/python3 hardware/kicad/generate_schematic.py && kicad-cli sch check hardware/kicad/schematic.kicad_sch 2>&1 | tail -5``
 
 - **ID**: `AGENT-KICAD-02`
 - **Название**: Собрать PCB и экспортировать gerbers/3D через tscircuit + kicad-cli
@@ -145,7 +145,7 @@
 - **Цель**: Сравнить сгенерированный netlist и tscircuit-экспортированный, убедиться в отсутствии расхождений.
 - **Роль**: `agent.pcb`
 - **Ключевые файлы**: `hardware/kicad/sdr_receiver.kicad_sch`, `hardware/tscircuit/out/circuit.json`
-- **Команда**: ``cd /mnt/ext4data/kristall-radio && diff <(.venv/bin/python3 hardware/kicad/generate_brig_receiver.py 2>/dev/null || true) <cat hardware/tscircuit/out/circuit.json 2>/dev/null | head -20 || echo "compare manually"``
+- **Команда**: ``cd /mnt/ext4data/kristall-radio && diff <(.venv/bin/python3 hardware/kicad/generate_schematic.py 2>/dev/null || true) <cat hardware/tscircuit/out/circuit.json 2>/dev/null | head -20 || echo "compare manually"``
 
 - **ID**: `AGENT-KICAD-04`
 - **Название**: Создать TZ-документацию (техническое задание) по антенной системе

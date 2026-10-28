@@ -54,6 +54,8 @@ from __future__ import annotations
 
 import json
 import os
+import re
+from concurrent.futures import ThreadPoolExecutor
 import threading
 import time
 import urllib.error
@@ -63,6 +65,28 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "out"
+
+
+def _load_dotenv() -> None:
+    """Прочитать .env корня в os.environ (не затирая заданное снаружи).
+
+    Ключи живут в `.env` (в .gitignore): они меняются каждые пару часов,
+    и каждый процесс — мост, сервис, CLI — должен брать их оттуда.
+    """
+    p = ROOT / ".env"
+    if not p.is_file():
+        return
+    for line in p.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        k, _, v = line.partition("=")
+        k, v = k.strip(), v.strip().strip('"').strip("'")
+        if k and k not in os.environ:
+            os.environ[k] = v
+
+
+_load_dotenv()
 
 #: главный выключатель
 ENABLED = os.environ.get("KR_LLM_ENABLED", "1").strip().lower() not in (
@@ -165,6 +189,38 @@ PROVIDERS: dict[str, Provider] = {
         "NOUS_PORTAL_API_KEY", True, NOUS_FREE_DEFAULT,
         "stepfun/step-3.7-flash:free · poolside/laguna-s-2.1:free · "
         "meituan/longcat-2.5-preview:free · upstage/solar-mini4:free"),
+    # --- фри-провайдеры без ключа: работают сразу, без регистрации ---
+    "pollinations": Provider(
+        "pollinations", "Pollinations (анонимный фри-тариф)",
+        "https://text.pollinations.ai/openai",
+        "KR_LLM_POLLINATIONS_KEY", False, "gpt-oss-20b",
+        "gpt-oss-20b · openai-fast"),
+    "ovh": Provider(
+        "ovh", "OVHcloud AI Endpoints (анонимный фри-тариф)",
+        "https://oai.endpoints.kepler.ai.cloud.ovh.net/v1",
+        "KR_LLM_OVH_KEY", False, "Qwen3.8-27B",
+        "Qwen3.8-27B · gpt-oss-20b · gpt-oss-120b · Qwen3.5-9B"),
+    "llm7": Provider(
+        "llm7", "LLM7 (нужен ключ для этой модели)",
+        "https://api.llm7.io/v1",
+        "KR_LLM_LLM7_KEY", True, "gpt-4.1",
+        "DeepSeek-V4.1-Flash · Inkling-Small · L3-8B-Lunaris-v1-Turbo"),
+    # --- OmniRoute: локальный омни-шлюз, пробрасывает модели провайдеров ---
+    # Живёт рядом с машиной (порт 20128), ключ — из opencode-конфига
+    # (~/.config/opencode/config.json). REST — OpenAI-совместимый /v1.
+    "omniroute": Provider(
+        "omniroute", "OmniRoute (локальный омни-шлюз)",
+        os.environ.get("KR_LLM_OMNIROUTE_HOST", "http://127.0.0.1:20128/v1"),
+        "KR_OMNIROUTE_API_KEY", True, "kc/openrouter/free",
+        "kc/openrouter/free · auto/best-coding · auto/reasoning · "
+        "auto/fast · auto/chat"),
+    "opencode-proxy": Provider(
+        "opencode-proxy", "OpenCode Proxy (:8788)",
+        os.environ.get("KR_LLM_OPENCODE_PROXY_HOST", "http://127.0.0.1:8788/v1"),
+        "KR_LLM_OPENCODE_PROXY_KEY", False, "mimo-v2.6-flash-free",
+        "mimo-v2.6-flash-free · beam-free · flint-40b-free · "
+        "nemotron-3.5-lightning-free · deepseek-v4.1-flash-free · "
+        "glm-5.3-flash-free · nemotron-3.5-super-vl-free"),
 }
 
 #: провайдеры без ключа — их имеет смысл пробовать при авто-откате
@@ -287,7 +343,94 @@ def apply_preset(name: str) -> dict | None:
 
 
 def provider_key(pk: str) -> str:
-    return os.environ.get(PROVIDERS[pk].key_env, "").strip()
+    """Ключ провайдера.
+
+    Явно заданная переменная окружения важнее всего. Если ключа нет,
+    берём его из уже настроенного на машине конфига opencode: отдельная
+    учётная запись не нужна, всё уже есть рядом.
+    """
+    env = os.environ.get(PROVIDERS[pk].key_env, "").strip()
+    if env:
+        return env
+    if pk == "omniroute":
+        return _opencode_key()
+    return ""
+
+
+def _opencode_key() -> str:
+    """Ключ из конфига opencode (там уже настроен локальный омни-шлюз)."""
+    path = Path(os.environ.get(
+        "KR_OPENCODE_CONFIG",
+        str(Path.home() / ".config" / "opencode" / "config.json")))
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return ""
+    def _find(node, depth: int = 0) -> str:
+        """Искать ключ вглубь: в конфиге он лежит во вложенных узлах."""
+        if depth > 4 or not isinstance(node, dict):
+            return ""
+        for k, v in node.items():
+            if isinstance(v, str) and v.strip().startswith("sk-"):
+                return v.strip()
+        for k, v in node.items():
+            if isinstance(v, dict):
+                got = _find(v, depth + 1)
+                if got:
+                    return got
+        return ""
+
+    for section in ("providers", "provider"):
+        block = data.get(section) or {}
+        if not isinstance(block, dict):
+            continue
+        for name, v in block.items():
+            if not isinstance(v, dict):
+                continue
+            if "omni" in str(name).lower():
+                key = _find(v)
+                if key:
+                    return key
+    return _find(data)
+
+
+def _ensure_omniroute() -> bool:
+    """Поднять локальный омни-шлюз, если он не отвечает.
+
+    Шлюз даёт доступ к моделям opencode (в том числе к бесплатным
+    маршрутам openrouter), поэтому заказ не должен зависеть от одного
+    только бесплатного портала: поднимаем шлюз сами.
+    """
+    import socket
+    import subprocess
+    host = os.environ.get("KR_LLM_OMNIROUTE_HOST",
+                          "http://127.0.0.1:20128/v1")
+    port = 20128
+    for part in host.split("/"):
+        if part.isdigit():
+            port = int(part)
+            break
+    try:
+        with socket.create_connection(("127.0.0.1", port), timeout=1.5):
+            return True
+    except OSError:
+        pass
+    exe = os.environ.get("KR_OMNIROUTE_BIN", "omniroute")
+    try:
+        subprocess.Popen([exe, "serve", "--no-open"],
+                         stdout=subprocess.DEVNULL,
+                         stderr=subprocess.DEVNULL,
+                         start_new_session=True)
+    except Exception:                                        # noqa: BLE001
+        return False
+    for _ in range(30):
+        time.sleep(1.0)
+        try:
+            with socket.create_connection(("127.0.0.1", port), timeout=1.5):
+                return True
+        except OSError:
+            continue
+    return False
 
 
 # ==========================================================================
@@ -308,20 +451,23 @@ def _hermes_credential() -> str:
     """Токен Nous Portal из локального входа Hermes.
 
     В файле два токена: access_token и agent_key. Оба короткоживущие
-    (порядка часа), поэтому результат кэшируется на время жизни процесса,
-    а перед использованием проверяется срок — иначе запрос уйдёт с
-    заведомо мёртвым токеном и молча уйдёт в паузу.
+    (порядка часа), поэтому результат кэшируется — но кэш живёт только
+    до конца срока токена. Как только он истёк, файл читается заново:
+    Hermes сам обновляет токен на диске, и следующий запрос обязан
+    взять свежий, иначе уйдёт 401 и агент замрёт.
+
+    Файл перечитывается и когда Hermes обновил токен раньше срока —
+    поэтому сравниваем не только срок, но и сам токен в файле.
     """
     if not HERMES_AUTH.is_file():
         return ""
     cached = _CRED_CACHE.get("nous")
-    if cached:
-        return cached
+    cached_exp = _CRED_CACHE.get("nous_exp") or ""
     try:
         data = json.loads(HERMES_AUTH.read_text(encoding="utf-8"))
         nous = data.get("providers", {}).get("nous", {})
     except (OSError, ValueError):
-        return ""
+        return cached or ""
 
     # agent_key живёт дольше access_token, берём его первым
     for field in ("agent_key", "access_token"):
@@ -331,13 +477,60 @@ def _hermes_credential() -> str:
             continue
         if exp and _expired(exp):
             continue
+        # файл обновился (новый токен) или кэш протух — берём из файла
+        if cached and cached == tok and not (cached_exp and _expired(cached_exp)):
+            return cached
         _CRED_CACHE["nous"] = tok
+        _CRED_CACHE["nous_exp"] = exp or ""
         return tok
     # срок неизвестен или истёк — отдаём как есть: лучше 401, чем «нет ключа»
     tok = nous.get("agent_key") or nous.get("access_token") or ""
     if tok:
         _CRED_CACHE["nous"] = tok
-    return tok
+        _CRED_CACHE["nous_exp"] = ""
+    return tok or cached or ""
+
+
+def _refresh_hermes_credential() -> str:
+    """Обновить токен Nous через гейтвей Hermes и вернуть свежий.
+
+    Токен живёт около часа, а заказ длится дольше. Держать в руках
+    протухший ключ бессмысленно: Hermes умеет обновить его сам
+    (`hermes auth refresh nous`), и обновлённый токен сразу оказывается
+    в auth.json. Ошибка обновления не молчит — она возвращается тем же
+    текстом, что был, чтобы вызов упал с настоящей причиной.
+    """
+    if not HERMES_AUTH.is_file():
+        return ""
+    try:
+        import subprocess
+        subprocess.run(["hermes", "auth", "refresh", "nous"],
+                       capture_output=True, timeout=45, check=False)
+    except Exception:                                        # noqa: BLE001
+        pass
+    _CRED_CACHE.pop("nous", None)
+    _CRED_CACHE.pop("nous_exp", None)
+    return _hermes_credential()
+
+
+def _nous_key() -> str:
+    """Ключ Nous Portal: сначала живой вход Hermes, потом переменная окружения.
+
+    Переменная окружения — запасной путь, но ставить её выше нельзя:
+    токен Hermes обновляется на диске каждый час, а записанный в .env
+    ключ устаревает и молча уводит агентов в 401. Поэтому источник
+    выбирается по живости, а не по порядку объявления.
+
+    Если вход Hermes протух — обновляем его через гейтвей и берём
+    свежий токен. Только после этого пробуем переменную окружения.
+    """
+    hermes = _hermes_credential()
+    if hermes:
+        return hermes
+    refreshed = _refresh_hermes_credential()
+    if refreshed:
+        return refreshed
+    return provider_key("nous")
 
 
 def _expired(stamp: str) -> bool:
@@ -354,12 +547,14 @@ def _expired(stamp: str) -> bool:
 
 def credential_source(pk: str) -> str:
     """Откуда взят ключ провайдера — для честного отчёта о настройках."""
+    if pk == "nous":
+        if _hermes_credential():
+            return f"{HERMES_AUTH} (вход Hermes, обновляется автоматически)"
+        if provider_key(pk):
+            return f"{PROVIDERS[pk].key_env} (переменная окружения)"
+        return "не задан — войдите через Hermes или задайте NOUS_PORTAL_API_KEY"
     if provider_key(pk):
         return f"{PROVIDERS[pk].key_env} (переменная окружения)"
-    if pk == "nous":
-        if HERMES_AUTH.is_file():
-            return f"{HERMES_AUTH} (вход Hermes, найден автоматически)"
-        return "не задан — войдите через Hermes или задайте NOUS_PORTAL_API_KEY"
     return "не задан"
 
 
@@ -392,18 +587,486 @@ def _resolve_model(pk: str, wanted: str) -> str:
     return have[0]
 
 
-def routes() -> list[tuple[str, str]]:
+#: реестр маршрутов: data/llm_routes.json (дополняется без правки кода)
+_ROUTES_JSON = Path(os.environ.get(
+    "KR_LLM_ROUTES_JSON",
+    str(Path(__file__).resolve().parents[1] / "data" / "llm_routes.json")))
+
+
+def _routes_registry() -> list[tuple[str, str]]:
+    """Маршруты из реестра: [(провайдер, модель), …] в порядке объявления."""
+    try:
+        data = json.loads(_ROUTES_JSON.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return []
+    out: list[tuple[str, str]] = []
+    for row in (data.get("маршруты") or []):
+        if not isinstance(row, dict):
+            continue
+        pk = str(row.get("провайдер") or "").strip()
+        model = str(row.get("модель") or "").strip()
+        if pk and model:
+            out.append((pk, model))
+    return out
+
+
+def _profiles_registry() -> dict[str, list[str]]:
+    """Профили маршрутов: data/llm_routes.json, раздел «профили».
+
+    Профиль — это порядок моделей для круга задач: творческому этапу
+    нужна сильная модель, механическому (сбор моделей, паспорта,
+    упаковка) — быстрая. Задаётся данными, код не меняется.
+    """
+    try:
+        data = json.loads(_ROUTES_JSON.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    prof = data.get("профили")
+    if not isinstance(prof, dict):
+        return {}
+    out: dict[str, list[str]] = {}
+    for name, rows in prof.items():
+        if isinstance(rows, list):
+            out[str(name)] = [str(x) for x in rows if str(x).strip()]
+    return out
+
+
+def _profile_chain(profile: str,
+                   chain: list[tuple[str, str]]) -> list[tuple[str, str]]:
+    """Порядок маршрутов для профиля.
+
+    В профиле модель названа строкой «провайдер/модель». Если такого
+    маршрута нет (модель выключена, ключа нет) — берётся следующий по
+    списку; если не нашлось ни одного — остаётся исходная цепочка.
+    """
+    want = _profiles_registry().get(str(profile or ""))
+    if not want:
+        return chain
+    by_key = {f"{pk}/{m}": (pk, m) for pk, m in chain}
+    out: list[tuple[str, str]] = []
+    for item in want:
+        row = by_key.get(item)
+        if row and row not in out:
+            out.append(row)
+    return out or chain
+
+
+#: где хранится результат последнего скана моделей
+_SCAN_PATH = Path(os.environ.get(
+    "KR_LLM_SCAN_JSON",
+    str(Path(__file__).resolve().parents[1] / ".krystal" / "llm_scan.json")))
+
+
+#: публичные списки фри-провайдеров: из них берутся адреса, у которых
+#: есть каталог моделей (/models). Списки обновляются каждый день.
+FREE_LISTS: tuple[str, ...] = (
+    "https://raw.githubusercontent.com/open-free-llm-api/"
+    "awesome-freellm-apis/main/README.md",
+    "https://raw.githubusercontent.com/nejib1/Free-LLM/main/README.md",
+    "https://raw.githubusercontent.com/ClawLabsAI/free-ai-models/main/README.md",
+)
+
+_BASES_PATH = Path(os.environ.get(
+    "KR_LLM_BASES_JSON",
+    str(Path(__file__).resolve().parents[1] / ".krystal" / "llm_bases.json")))
+_CATALOG_PATH = Path(os.environ.get(
+    "KR_LLM_CATALOG_JSON",
+    str(Path(__file__).resolve().parents[1] / ".krystal" / "llm_catalog.json")))
+
+
+def _fetch_text(url: str, timeout: float = 15.0) -> str:
+    req = urllib.request.Request(url, headers={"User-Agent": "curl/8"})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return r.read().decode("utf-8", "ignore")
+
+
+def free_bases(max_age: float = 86400.0) -> list[str]:
+    """Адреса фри-провайдеров из публичных списков (с кэшем на сутки)."""
+    try:
+        data = json.loads(_BASES_PATH.read_text(encoding="utf-8"))
+        if time.time() - float(data.get("at") or 0) < max_age:
+            return list(data.get("адреса") or [])
+    except (OSError, json.JSONDecodeError, TypeError, ValueError):
+        pass
+    out: set[str] = set()
+    for url in FREE_LISTS:
+        try:
+            text = _fetch_text(url)
+        except Exception:                                     # noqa: BLE001
+            continue
+        for m in re.finditer(r"https?://[A-Za-z0-9._\-]+"
+                             r"(?::\d+)?(?:/[A-Za-z0-9._\-/]*)?", text):
+            base = m.group(0).rstrip("/.,;)")
+            if not base.startswith("http") or "github.com" in base:
+                continue
+            if any(x in base for x in ("/images", "/audio", "/embedding",
+                                       "/moderation", "/docs.", "/wiki",
+                                       "/pricing", "/blog")):
+                continue
+            out.add(base)
+    bases = sorted(out)
+    try:
+        _BASES_PATH.parent.mkdir(parents=True, exist_ok=True)
+        _BASES_PATH.write_text(json.dumps({"at": time.time(),
+                                            "адреса": bases},
+                                           ensure_ascii=False),
+                                encoding="utf-8")
+    except OSError:
+        pass
+    return bases
+
+
+def harvest_catalog(*, timeout: float = 6.0, max_bases: int = 400
+                     ) -> dict:
+    """Собрать каталог моделей: локальные провайдеры + публичные списки.
+
+    Каталог — это все известные адреса и модели, которые можно позвать
+    без ключа. Он большой (тысячи позиций), но вызывается редко; в
+    работе используется его живая часть — результат скана.
+    """
+    catalog: dict[str, dict] = {}
+
+    # 1) провайдеры, которые уже настроены
+    for pk in ("nous", "omniroute", "pollinations", "ovh", "llm7",
+               "opencode", "ollama", "lmstudio", "llamacpp", "vllm"):
+        prov = PROVIDERS.get(pk)
+        if prov is None:
+            continue
+        models = provider_models(pk, free_only=False)
+        if models:
+            catalog[prov.base] = {"провайдер": pk, "модели": models,
+                                  "источник": "провайдер"}
+    # 2) адреса из публичных списков: у каждого спрашиваем /models.
+    # Запросы параллельны: список большой, по одному — часы.
+    def _models_at(base: str) -> tuple[str, list[str]]:
+        try:
+            req = urllib.request.Request(base.rstrip("/") + "/models",
+                                         headers={"User-Agent": "curl/8"})
+            with urllib.request.urlopen(req, timeout=timeout) as r:
+                data = json.loads(r.read().decode("utf-8", "ignore"))
+        except Exception:                                     # noqa: BLE001
+            return base, []
+        rows = data.get("data") if isinstance(data, dict) else data
+        ids: list[str] = []
+        for row in rows or []:
+            if isinstance(row, str):
+                mid = row.strip()
+            else:
+                mid = str((row or {}).get("id")
+                          or (row or {}).get("name") or "").strip()
+            if mid:
+                ids.append(mid)
+        return base, ids
+
+    todo = [b for b in free_bases()[:max_bases] if b not in catalog]
+    if todo:
+        with ThreadPoolExecutor(max_workers=16) as pool:
+            for base, ids in pool.map(_models_at, todo):
+                if ids:
+                    catalog[base] = {"провайдер": "", "модели": ids,
+                                     "источник": "публичный список"}
+    payload = {"at": time.time(),
+               "адресов": len(catalog),
+               "моделей": sum(len(v["модели"]) for v in catalog.values()),
+               "каталог": catalog}
+    try:
+        _CATALOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+        _CATALOG_PATH.write_text(json.dumps(payload, ensure_ascii=False),
+                                 encoding="utf-8")
+    except OSError:
+        pass
+    return payload
+
+
+def catalog_entries() -> list[tuple[str, str, str]]:
+    """(база, провайдер, модель) по всему собранному каталогу."""
+    try:
+        data = json.loads(_CATALOG_PATH.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return []
+    out: list[tuple[str, str, str]] = []
+    for base, row in (data.get("каталог") or {}).items():
+        pk = str(row.get("провайдер") or "")
+        for mid in (row.get("модели") or []):
+            out.append((base, pk, str(mid)))
+    return out
+
+
+def provider_models(pk: str, free_only: bool = True) -> list[str]:
+    """Модели провайдера по его /models (OpenAI-совместимый список).
+
+    У облаков берутся только бесплатные (с суффиксом :free) — платные
+    без ключа всё равно не вызвать, а перебирать их — тратить время.
+    """
+    prov = PROVIDERS.get(pk)
+    if prov is None:
+        return []
+    key = provider_key(pk)
+    headers = {"Authorization": f"Bearer {key}"} if key else {}
+    try:
+        with urllib.request.urlopen(
+                urllib.request.Request(prov.base.rstrip("/") + "/models",
+                                       headers=headers), timeout=12) as r:
+            data = json.loads(r.read().decode("utf-8", "ignore"))
+    except Exception:                                         # noqa: BLE001
+        return []
+    rows = data.get("data") if isinstance(data, dict) else data
+    out: list[str] = []
+    for row in rows or []:
+        if isinstance(row, str):
+            mid = row.strip()
+        else:
+            mid = str((row or {}).get("id") or (row or {}).get("name") or "").strip()
+        if not mid:
+            continue
+        if (free_only and pk not in ("pollinations", "ovh")
+                and ":free" not in mid and "free" not in mid.lower()):
+            continue
+        out.append(mid)
+    return out
+
+
+def register_catalog_providers(max_bases: int = 60) -> dict[str, str]:
+    """Завести провайдеров по собранному каталогу.
+
+    Каждый адрес каталога становится провайдером без ключа: так
+    подхватываются и те сервисы, которых не было в реестре. Возвращает
+    соответствие «адрес → имя провайдера».
+    """
+    mapping: dict[str, str] = {}
+    try:
+        data = json.loads(_CATALOG_PATH.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return mapping
+    n = 0
+    for base, row in list((data.get("каталог") or {}).items())[:max_bases]:
+        if base in PROVIDERS:
+            mapping[base] = base
+            continue
+        models = [m for m in (row.get("модели") or [])
+                  if ":free" in str(m) or str(m).startswith(("gpt-oss", "Qwen"))]
+        if not models:
+            continue
+        name = "cat%d" % n
+        n += 1
+        PROVIDERS[name] = Provider(
+            name, f"каталог {base[:48]}", base, "", False, models[0],
+            " · ".join(models[:4]))
+        mapping[base] = name
+    return mapping
+
+
+def catalog_scan_slice(size: int = 40) -> list[tuple[str, str, str]]:
+    """Срез каталога для проверки: каждая модель попадает в проверку
+    по очереди (сдвиг), чтобы большой каталог был осмотрен целиком."""
+    entries = catalog_entries()
+    if not entries:
+        return []
+    start = int(time.time() // 60) % max(1, len(entries))
+    out: list[tuple[str, str, str]] = []
+    for i in range(min(size, len(entries))):
+        out.append(entries[(start + i) % len(entries)])
+    return out
+
+
+def scan_routes(*, timeout: float = 10.0, extra: int = 68, quick: bool = False) -> list[dict]:
+    """Просканировать модели всех провайдеров: кто отвечает сейчас.
+
+    Результат кэшируется на диске: гонка маршрутов берёт из него живые
+    модели, а мёртвые (лимит, отказ) не тратит на них бюджет хода.
+    """
+    fresh = live_routes(max_age=900.0)
+    cached = {k: v for k, v in fresh.items()
+              if v.get("источник") != "каталог"}
+    candidates: list[tuple[str, str]] = list(_routes_registry())
+    # каталог бесплатных моделей шлюза — тоже источник: один облачный
+    # провайдер не должен быть единственным, иначе его лимит или
+    # протухший токен останавливают весь заказ
+    if extra and not quick:
+        for pk in ("omniroute", "nous", "ovh", "llm7", "pollinations"):
+            for mid in provider_models(pk)[:extra]:
+                row = (pk, mid)
+                if row not in candidates:
+                    candidates.append(row)
+    # срез большого каталога: адреса и модели, которые ещё не проверялись
+    # Срез каталога: если живых моделей хватает, проверяем немного (каждая
+    # проверка — запрос к чужому бесплатному пулу, и это тратит его квоту).
+    # Если живых нет — проверяем широко: иначе заказ встанет.
+    alive_now = sum(1 for r in live_routes().values() if r.get("живая"))
+    slice_size = 4 if alive_now >= 3 else 30
+    if quick:
+        slice_size = 0
+    cat_map = register_catalog_providers() if not quick else {}
+    for base, pk, mid in catalog_scan_slice(slice_size):
+        name = cat_map.get(base) or pk
+        row = (name, mid)
+        if row not in candidates and name in PROVIDERS:
+            candidates.append(row)
+    probe = [{"role": "user",
+              "content": "Ответь ТОЛЬКО JSON: {\"ok\": true}"}]
+    results: list[dict] = []
+    # уже проверенные модели переиспользуем: повторная проверка съедает
+    # лимиты бесплатных пулов, а ответы не меняются
+    done = {f"{pk}/{m}" for pk, m in candidates}
+    for key, row in cached.items():
+        if key in done and row.get("живая"):
+            results.append(row)
+
+    if quick:
+        # проверяем только самые быстрые известные модели: три запроса
+        # не съедают квоту, а сигнал «жив/мёртв» дают
+        known = [(k, v) for k, v in live_routes().items()
+                 if v.get("живая")]
+        known.sort(key=lambda kv: float(kv[1].get("секунд") or 99))
+        have = {f"{r.get('провайдер')}/{r.get('модель')}" for r in results}
+        for key, _row in known:
+            pk, _, mid = key.partition("/")
+            if pk not in PROVIDERS or not mid:
+                continue
+            if (pk, mid) not in candidates and key not in have:
+                candidates.append((pk, mid))
+            if len(candidates) >= 3:
+                break
+    todo = [c for c in candidates
+            if f"{c[0]}/{c[1]}" not in {f"{r.get('провайдер')}/{r.get('модель')}"
+                                        for r in results}]
+
+    def _probe(item: tuple[str, str]) -> dict:
+        pk, model = item
+        t0 = time.monotonic()
+        why = ""
+        try:
+            turn = chat_one(probe, pk=pk, model=model, temperature=0.0,
+                            max_tokens=40, timeout=timeout, probe=True)
+        except Exception as exc:                              # noqa: BLE001
+            turn = None
+            why = f"{type(exc).__name__}: {exc}"[:120]
+        dt = round(time.monotonic() - t0, 2)
+        text = (turn.text or "") if turn else ""
+        if turn is None and not why:
+            why = "нет ответа (лимит, отказ или таймаут)"
+        ok = bool(text.strip())
+        json_ok = False
+        if ok:
+            try:
+                json.loads(text)
+                json_ok = True
+            except (ValueError, TypeError):
+                json_ok = bool(json_tail(text))
+        return {"провайдер": pk, "модель": model, "живая": ok,
+                "json": json_ok, "секунд": dt, "причина": why,
+                "текст": text[:120]}
+
+    if todo:
+        with ThreadPoolExecutor(max_workers=3) as pool:
+            results.extend(pool.map(_probe, todo))
+    # накопительный список живых: каталог большой, проверка идёт срезом
+    alive_path = _SCAN_PATH.with_name("llm_alive.json")
+    known: dict[str, dict] = {}
+    try:
+        known = json.loads(alive_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        known = {}
+    for row in results:
+        if row.get("живая"):
+            known[f"{row['провайдер']}/{row['модель']}"] = row
+    try:
+        alive_path.write_text(json.dumps(known, ensure_ascii=False),
+                              encoding="utf-8")
+    except OSError:
+        pass
+    payload = {"at": time.time(), "модели": results}
+    try:
+        _SCAN_PATH.parent.mkdir(parents=True, exist_ok=True)
+        _SCAN_PATH.write_text(json.dumps(payload, ensure_ascii=False),
+                              encoding="utf-8")
+    except OSError:
+        pass
+    return results
+
+
+def live_routes(max_age: float = 900.0) -> dict[str, dict]:
+    """Живые модели: свежий скан + накопленный список.
+
+    Накопленный список хранит модели, которые однажды ответили: каталог
+    большой, проверка идёт срезом, и знание о живой модели не должно
+    пропадать между прогонами.
+    """
+    out: dict[str, dict] = {}
+    alive_path = _SCAN_PATH.with_name("llm_alive.json")
+    try:
+        known = json.loads(alive_path.read_text(encoding="utf-8"))
+        if isinstance(known, dict):
+            out.update({k: v for k, v in known.items()
+                        if isinstance(v, dict) and v.get("живая")})
+    except (OSError, json.JSONDecodeError):
+        pass
+    try:
+        data = json.loads(_SCAN_PATH.read_text(encoding="utf-8"))
+        if time.time() - float(data.get("at") or 0) <= max_age:
+            for row in data.get("модели") or []:
+                if isinstance(row, dict):
+                    out[f"{row.get('провайдер')}/{row.get('модель')}"] = row
+    except (OSError, json.JSONDecodeError):
+        pass
+    return out
+
+
+def _apply_scan(chain: list[tuple[str, str]]) -> list[tuple[str, str]]:
+    """Живые маршруты — вперёд, мёртвые — следом.
+
+    Если в цепочке не осталось ни одного живого (у профиля все модели на
+    паузе или лимит исчерпан), добавляются любые живые модели из скана —
+    заказ не должен вставать из-за одного провайдера.
+    """
+    scan = live_routes()
+    if not scan:
+        return chain
+    alive = [r for r in chain if scan.get(f"{r[0]}/{r[1]}",
+                                           {}).get("живая")]
+    if not alive:
+        others = [(pk, model) for key, row in scan.items()
+                  if row.get("живая") for pk, model in
+                  (key.split("/", 1) if "/" in key else (key, ""))]
+        others = [r for r in others if r[1] and r not in chain]
+        others.sort(key=lambda r: float(
+            scan.get(f"{r[0]}/{r[1]}", {}).get("секунд") or 99))
+        alive = others[:8]
+    dead = [r for r in chain if r not in alive]
+    return alive + dead
+
+
+def routes(profile: str = "") -> list[tuple[str, str]]:
     """Список (провайдер, модель) для планирования и для сводок.
 
     Первая пара — основная, дальше — резерв по порядку. Если провайдер
     не задан, подставляется локальный: так проект остаётся рабочим
     без единого ключа, просто без облачного интеллекта.
+
+    `profile` — имя профиля из реестра: он меняет порядок моделей
+    (например, на быстрые) для этого вызова.
     """
     preset = _env("KR_LLM_PRESET")
     if preset:
         apply_preset(preset)
 
     out: list[tuple[str, str]] = []
+
+    # Реестр маршрутов в data/llm_routes.json: он задаёт порядок
+    # «основной → резерв» и дополняется без правки кода.
+    reg = _routes_registry()
+    if reg:
+        for pk, model in reg:
+            if pk not in PROVIDERS:
+                continue
+            if PROVIDERS[pk].key_required and not provider_key(pk) \
+                    and not (pk == "nous" and _nous_key()):
+                continue
+            if pk == "omniroute":
+                _ensure_omniroute()
+            out.append((pk, model))
+        if out:
+            return _apply_scan(_profile_chain(profile, out))
 
     # Дефолт — бесплатная модель в облаке. Раньше стоял ollama с
     # несуществующей 7B, из-за чего первый же заказ уходил в паузу.
@@ -484,7 +1147,7 @@ def enabled() -> bool:
         if provider_key(pk) or not PROVIDERS[pk].key_required:
             return True
         # Nous Portal: вход через Hermes тоже считается ключом
-        if pk == "nous" and _hermes_credential():
+        if pk == "nous" and _nous_key():
             return True
     return False
 
@@ -500,22 +1163,67 @@ _LAST_ERR: dict[str, str] = {}
 #: каждый вызов ждёт таймаут соединения. Это и шумно, и медленно, поэтому
 #: после отказа «соединения отказано» провайдер уходит в паузу и не
 #: опрашивается какое-то время.
-_COOLDOWN_S = int(os.environ.get("KR_LLM_COOLDOWN", "90"))
+_COOLDOWN_S = int(os.environ.get("KR_LLM_COOLDOWN", "25"))
 _DEAD_UNTIL: dict[str, float] = {}
 _DEAD_REASON: dict[str, str] = {}
 
 
 def _is_dead(pk: str, model: str = "") -> bool:
-    """Маршрут не отвечает и ещё не вышел из паузы."""
-    key = _model_dead_key(pk, model) if model else pk
-    return time.monotonic() < _DEAD_UNTIL.get(key, 0.0)
+    """Маршрут не отвечает и ещё не вышел из паузы.
+
+    Проверяется и модель, и провайдер целиком: шлюз, который сказал
+    «ждать 1400 с», закрывает все свои модели сразу — гонка не должна
+    тратить на них бюджет хода.
+    """
+    now = time.monotonic()
+    if model:
+        if now < _DEAD_UNTIL.get(_model_dead_key(pk, model), 0.0):
+            return True
+    return now < _DEAD_UNTIL.get(pk, 0.0)
 
 
 def _mark_dead(pk: str, reason: str, model: str = "") -> None:
+    """Пауза маршрута. Уже начатая пауза НЕ продлевается.
+
+    Иначе неудачные попытки подпитывают паузу сами себя: маршрут, который
+    не отвечает, помечается мёртвым, потом пробуется снова (и снова
+    не отвечает) — и не выходит из паузы никогда.
+    """
     key = _model_dead_key(pk, model) if model else pk
     with _LOCK:
-        _DEAD_UNTIL[key] = time.monotonic() + _COOLDOWN_S
+        now = time.monotonic()
+        if now < _DEAD_UNTIL.get(key, 0.0):
+            return
+        _DEAD_UNTIL[key] = now + _COOLDOWN_S
         _DEAD_REASON[key] = reason[:160]
+
+
+def _mark_dead_until(pk: str, reason: str, seconds: float) -> None:
+    """Поставить провайдера на паузу ровно на названный шлюзом срок.
+
+    Пауза действует на все модели провайдера: шлюз, который сказал
+    «ждать 1400 с», закрывает их все.
+    """
+    with _LOCK:
+        # Пауза провайдера ограничена: иначе один лимит уводит все модели
+        # провайдера из строя на четверть часа, и заказ встаёт.
+        until = time.monotonic() + min(max(5.0, float(seconds)), 30.0)
+        _DEAD_UNTIL[pk] = until
+        _DEAD_REASON[pk] = reason[:160]
+        for key in list(_DEAD_UNTIL):
+            if key.startswith(f"{pk}/"):
+                _DEAD_UNTIL[key] = min(_DEAD_UNTIL[key], until)
+                _DEAD_REASON.setdefault(key, reason[:160])
+
+
+def dead_in(pk: str, model: str = "") -> float:
+    """Сколько секунд ещё осталось до конца паузы маршрута."""
+    now = time.monotonic()
+    left = 0.0
+    if model:
+        left = max(left, _DEAD_UNTIL.get(_model_dead_key(pk, model), 0.0) - now)
+    left = max(left, _DEAD_UNTIL.get(pk, 0.0) - now)
+    return max(0.0, left)
 
 
 def _mark_alive(pk: str, model: str = "") -> None:
@@ -536,11 +1244,92 @@ def _post(base: str, path: str, payload: dict, headers: dict,
             return json.loads(r.read().decode("utf-8"))
     except urllib.error.HTTPError as e:
         detail = e.read().decode("utf-8", "replace")[:300]
+        if e.code in (402, 429):
+            # лимит шлюза: это не поломка, а «слишком часто». Сообщаем
+            # отдельно, чтобы гонка подождала, а не долбила шлюз
+            retry = ""
+            try:
+                retry = e.headers.get("Retry-After") or ""
+            except Exception:                          # noqa: BLE001
+                retry = ""
+            if not retry:
+                m = re.search(r"(\d+)\s*(?:с|sec|seconds?)", detail)
+                retry = m.group(1) if m else ""
+            raise RuntimeError(f"HTTP {e.code}: лимит запросов шлюза"
+                               + (f" (ждать {retry} с)" if retry else "")
+                               ) from e
         raise RuntimeError(f"HTTP {e.code}: {detail}") from e
     except urllib.error.URLError as e:
         raise RuntimeError(f"не отвечает: {e.reason}") from e
     except TimeoutError as e:
         raise RuntimeError(f"таймаут {timeout:.0f}s") from e
+
+
+def _post_stream(base: str, path: str, payload: dict, headers: dict,
+                  timeout: float, on_chunk: Callable[[str], None] | None = None
+                  ) -> str:
+    """Потоковый POST (SSE). Возвращает полный текст ответа.
+
+    Каждый чанк вызывает on_chunk(delta) — для живого лога.
+    Жёсткий лимит по времени: если модель ушла в бесконечное
+    рассуждение, прерываемся по timeout, а не ждём вечно.
+    """
+    import time as _t
+    payload = dict(payload, stream=True)
+    body = json.dumps(payload).encode("utf-8")
+    req = urllib.request.Request(base.rstrip("/") + path, data=body,
+                                 headers=headers, method="POST")
+    full = ""
+    t0 = _t.monotonic()
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            for raw in r:
+                if _t.monotonic() - t0 > timeout:
+                    raise TimeoutError(f"таймаут {timeout:.0f}s (прервано)")
+                line = raw.decode("utf-8", "replace").strip()
+                if not line or line.startswith(":"):
+                    continue
+                if not line.startswith("data:"):
+                    continue
+                data = line[5:].strip()
+                if data == "[DONE]":
+                    break
+                try:
+                    obj = json.loads(data)
+                except (json.JSONDecodeError, ValueError):
+                    continue
+                choice = (obj.get("choices") or [{}])[0]
+                delta = choice.get("delta") or {}
+                piece = delta.get("content") or delta.get("reasoning") or ""
+                if piece:
+                    full += piece
+                    if on_chunk:
+                        try:
+                            on_chunk(piece)
+                        except Exception:               # noqa: BLE001
+                            pass
+    except urllib.error.HTTPError as e:
+        detail = e.read().decode("utf-8", "replace")[:300]
+        if e.code in (402, 429):
+            # лимит шлюза: это не поломка, а «слишком часто». Сообщаем
+            # отдельно, чтобы гонка подождала, а не долбила шлюз
+            retry = ""
+            try:
+                retry = e.headers.get("Retry-After") or ""
+            except Exception:                          # noqa: BLE001
+                retry = ""
+            if not retry:
+                m = re.search(r"(\d+)\s*(?:с|sec|seconds?)", detail)
+                retry = m.group(1) if m else ""
+            raise RuntimeError(f"HTTP {e.code}: лимит запросов шлюза"
+                               + (f" (ждать {retry} с)" if retry else "")
+                               ) from e
+        raise RuntimeError(f"HTTP {e.code}: {detail}") from e
+    except urllib.error.URLError as e:
+        raise RuntimeError(f"не отвечает: {e.reason}") from e
+    except TimeoutError as e:
+        raise RuntimeError(f"таймаут {timeout:.0f}s") from e
+    return full
 
 
 def _headers(pk: str) -> dict:
@@ -550,7 +1339,7 @@ def _headers(pk: str) -> dict:
     всегда, и локальные серверы отвечали 401 — с Ollama не работало.
     """
     h = {"Content-Type": "application/json"}
-    key = provider_key(pk) or (_hermes_credential() if pk == "nous" else "")
+    key = _nous_key() if pk == "nous" else provider_key(pk)
     if key:
         h["Authorization"] = f"Bearer {key}"
     return h
@@ -562,7 +1351,7 @@ def probe(pk: str, timeout: float = 4.0) -> tuple[bool, str]:
     if not p:
         return False, f"неизвестный провайдер «{pk}»"
     if p.key_required and not (provider_key(pk)
-                               or (pk == "nous" and _hermes_credential())):
+                               or (pk == "nous" and _nous_key())):
         return False, f"нет ключа ({p.key_env})"
     try:
         req = urllib.request.Request(p.base.rstrip("/") + "/models",
@@ -598,11 +1387,17 @@ class Turn:
     provider: str = ""
     model: str = ""
     raw: dict = field(default_factory=dict)
+    #: текст взят из поля рассуждения, а не из поля ответа: у
+    #: reasoning-моделей content часто пуст
+    reasoning_only: bool = False
 
 
 def chat(messages: list[dict], *, tools: list[dict] | None = None,
          fast: bool = False, temperature: float = 0.0,
-         max_tokens: int = 900, timeout: float = 120.0) -> Turn | None:
+         max_tokens: int = 900, timeout: float = 120.0,
+         stream: bool = False, profile: str = "",
+         response_format: dict | None = None,
+         on_chunk: Callable[[str], None] | None = None) -> Turn | None:
     """Один ход диалога с необязательными инструментами.
 
     Аргументы приходят уже разобранными — провайдер проверяет их по
@@ -613,7 +1408,7 @@ def chat(messages: list[dict], *, tools: list[dict] | None = None,
     if not enabled():
         return None
 
-    chain = routes()
+    chain = routes(profile)
     if fast and len(chain) > 1:
         chain = chain[1:] + chain[:1]
 
@@ -622,7 +1417,7 @@ def chat(messages: list[dict], *, tools: list[dict] | None = None,
         if pk not in PROVIDERS:
             continue
         if PROVIDERS[pk].key_required and not (
-                provider_key(pk) or (pk == "nous" and _hermes_credential())):
+                provider_key(pk) or (pk == "nous" and _nous_key())):
             errors.append(f"{pk}: нет ключа")
             continue
         if _is_dead(pk, model):
@@ -638,10 +1433,51 @@ def chat(messages: list[dict], *, tools: list[dict] | None = None,
         if tools:
             payload["tools"] = tools
             payload["tool_choice"] = "auto"
+        if response_format:
+            # строгий JSON по схеме: модель не может ответить прозой,
+            # а разбор не падает. Провайдер, который этого не умеет,
+            # получит повтор без схемы (см. ниже)
+            payload["response_format"] = response_format
 
         try:
-            data = _post(PROVIDERS[pk].base, "/chat/completions",
-                         payload, _headers(pk), timeout)
+            if stream:
+                text = _post_stream(PROVIDERS[pk].base, "/chat/completions",
+                                    payload, _headers(pk), timeout, on_chunk)
+                _mark_alive(pk, model)
+                with _LOCK:
+                    _LAST_OK[_model_dead_key(pk, model)] = time.time()
+                    _LAST_ERR.pop(_model_dead_key(pk, model), None)
+                # вызов инструмента, написанный текстом, — тоже вызов
+                got, rest = _text_tool_calls(text)
+                return Turn(text=rest, provider=pk, model=model,
+                            calls=got,
+                            raw={"choices": [{"message": {"content": text}}]},
+                            reasoning_only=bool(rest and _is_reasoning(rest)))
+            try:
+                data = _post(PROVIDERS[pk].base, "/chat/completions",
+                             payload, _headers(pk), timeout)
+            except Exception as schema_exc:
+                # провайдер не умеет строгий JSON — повторяем без схемы
+                low = str(schema_exc).lower()
+                if response_format and ("response_format" in low
+                                        or "json_schema" in low
+                                        or "schema" in low):
+                    payload.pop("response_format", None)
+                    data = _post(PROVIDERS[pk].base, "/chat/completions",
+                                 payload, _headers(pk), timeout)
+                else:
+                    raise
+            except Exception as first_exc:                       # noqa: BLE001
+                # 401 от Nous — протухший токен: обновляем через гейтчей
+                # Hermes и повторяем. Иначе заказ молча умирает на середине.
+                if pk == "nous" and "401" in str(first_exc):
+                    fresh = _refresh_hermes_credential()
+                    if not fresh:
+                        raise first_exc
+                    data = _post(PROVIDERS[pk].base, "/chat/completions",
+                                 payload, _headers(pk), timeout)
+                else:
+                    raise first_exc
             _mark_alive(pk, model)
             with _LOCK:
                 _LAST_OK[_model_dead_key(pk, model)] = time.time()
@@ -663,10 +1499,21 @@ def chat(messages: list[dict], *, tools: list[dict] | None = None,
     return None
 
 
+#: сколько запросов к LLM может уйти одновременно из процесса. Бесплатные
+#: пулы имеют свою очередь: десяток одновременных запросов не ускоряет
+#: дело, а ставит их в очередь с таймаутами.
+_HTTP_SLOTS = threading.Semaphore(
+    max(1, int(os.environ.get("KR_LLM_HTTP_CONCURRENCY", "4"))))
+
+
 def chat_one(messages: list[dict], *, pk: str, model: str,
              tools: list[dict] | None = None,
              temperature: float = 0.0, max_tokens: int = 900,
-             timeout: float = 120.0) -> Turn | None:
+             timeout: float = 120.0,
+             stream: bool = False, profile: str = "",
+             response_format: dict | None = None, probe: bool = False,
+             on_chunk: Callable[[str], None] | None = None
+             ) -> Turn | None:
     """Один ход у конкретного маршрута (провайдер, модель).
 
     Выделено из chat(), чтобы гонка (backend/llm_race.py) использовала
@@ -674,11 +1521,19 @@ def chat_one(messages: list[dict], *, pk: str, model: str,
     «жив/мёртв» — всё то же, без обходных путей.
     """
     if pk not in PROVIDERS:
+        with _LOCK:
+            _LAST_ERR[pk] = "провайдер не заведён"
         return None
     if PROVIDERS[pk].key_required and not (
-            provider_key(pk) or (pk == "nous" and _hermes_credential())):
+            provider_key(pk) or (pk == "nous" and _nous_key())):
+        with _LOCK:
+            _LAST_ERR[pk] = "нет ключа провайдера"
         return None
     if _is_dead(pk, model):
+        with _LOCK:
+            _LAST_ERR[pk] = ("на паузе: "
+                             + _DEAD_REASON.get(_model_dead_key(pk, model), "")
+                             )[:160]
         return None
     payload: dict = {
         "model": model, "messages": messages,
@@ -687,9 +1542,41 @@ def chat_one(messages: list[dict], *, pk: str, model: str,
     if tools:
         payload["tools"] = tools
         payload["tool_choice"] = "auto"
+    if response_format:
+        payload["response_format"] = response_format
     try:
-        data = _post(PROVIDERS[pk].base, "/chat/completions",
-                     payload, _headers(pk), timeout)
+        if stream:
+            text = _post_stream(PROVIDERS[pk].base, "/chat/completions",
+                                payload, _headers(pk), timeout, on_chunk)
+            _mark_alive(pk, model)
+            with _LOCK:
+                _LAST_OK[_model_dead_key(pk, model)] = time.time()
+                _LAST_ERR.pop(_model_dead_key(pk, model), None)
+            return Turn(text=text, provider=pk, model=model,
+                        raw={"choices": [{"message": {"content": text}}]})
+        try:
+            with _HTTP_SLOTS:
+                data = _post(PROVIDERS[pk].base, "/chat/completions",
+                             payload, _headers(pk), timeout)
+        except Exception as exc:
+            # провайдер не умеет строгий JSON — повторяем без схемы
+            low = str(exc).lower()
+            if response_format and ("response_format" in low
+                                    or "json_schema" in low
+                                    or "schema" in low):
+                payload.pop("response_format", None)
+                data = _post(PROVIDERS[pk].base, "/chat/completions",
+                             payload, _headers(pk), timeout)
+            elif pk == "nous" and "401" in low:
+                # токен Hermes протух: обновляем через гейтвей и повторяем.
+                # Без этого гонка молча теряет все ходы подряд.
+                fresh = _refresh_hermes_credential()
+                if not fresh:
+                    raise
+                data = _post(PROVIDERS[pk].base, "/chat/completions",
+                             payload, _headers(pk), timeout)
+            else:
+                raise
         _mark_alive(pk, model)
         with _LOCK:
             _LAST_OK[_model_dead_key(pk, model)] = time.time()
@@ -704,7 +1591,149 @@ def chat_one(messages: list[dict], *, pk: str, model: str,
                                   "name or service not known",
                                   "failed to establish")):
             _mark_dead(pk, low, model)
+        elif "429" in low or "лимит запросов" in low:
+            # шлюз сам называет срок («ждать 1067 с»): уважаем его и
+            # переключаемся на другой маршрут немедленно, а не ждём.
+            # Лимит шлюза (весь провайдер) и лимит модели (fair-share) —
+            # разные вещи: модельная пауза не должна гасить провайдера.
+            if probe:
+                return None
+            m = re.search(r"ждать\s+(\d+)\s*с", str(exc))
+            if m and "шлюз" in str(exc):
+                # лимит пула: ждём названный срок (но не дольше минуты) и
+                # переходим к другой модели
+                _mark_dead(pk, low, model)
+                _mark_dead_until(pk, str(exc)[:160], float(m.group(1)))
+            else:
+                _mark_dead(pk, low, model)
         return None
+
+
+def json_tail(text: str) -> str:
+    """Достать JSON-объект из текста, даже если перед ним рассуждение.
+
+    Многие модели отвечают так: «The user asks… Hmm… Therefore the answer
+    is {…}». Такой ответ полезен: объект в конце — это и есть результат.
+    Без этой функции гонка выбрасывала бы такой ответ целиком, а агент
+    ждал бы следующий маршрут впустую.
+    """
+    s = str(text or "")
+    start = s.find("{")
+    while start >= 0:
+        depth = 0
+        in_str = False
+        esc = False
+        for i in range(start, len(s)):
+            ch = s[i]
+            if in_str:
+                if esc:
+                    esc = False
+                elif ch == "\\":
+                    esc = True
+                elif ch == '"':
+                    in_str = False
+                continue
+            if ch == '"':
+                in_str = True
+            elif ch == "{":
+                depth += 1
+            elif ch == "}":
+                depth -= 1
+                if depth == 0:
+                    chunk = s[start:i + 1]
+                    try:
+                        json.loads(chunk)
+                    except (ValueError, TypeError):
+                        break
+                    return chunk
+        start = s.find("{", start + 1)
+    return ""
+
+
+def _is_reasoning(text: str) -> bool:
+    """Похоже ли содержимое на рассуждение, а не на ответ.
+
+    Reasoning-модели отдают вместо ответа поток мыслей: такой текст
+    бесполезен там, где ждут JSON или короткий ответ.
+    """
+    s = str(text or "").strip()
+    if not s:
+        return False
+    marks = ("Let me", "Let me think", "Okay, the user", "I need to",
+             "First, I", "Let me start", "Hmm,", "Let's think",
+             "The user says", "The user wants", "The user is asking",
+             "The user asks", "The user", "We need to", "I will",
+             "I'll ", "To answer", "The task", "According to the")
+    head = s[:120]
+    return any(head.startswith(m) or m in head for m in marks)
+
+
+#: теги вызова инструмента, которые пишут текстом: с неразрывным
+#: пробелом внутри, поэтому ищем по «пустому» варианту
+_TOOL_OPEN = ("<\u200btool_call>", "<tool_call>")
+_TOOL_CLOSE = ("</\u200btool_call>", "</tool_call>")
+_ARG_KEY = ("<\u200barg_key>", "<arg_key>")
+_ARG_VAL = ("<\u200barg_value>", "<arg_value>")
+
+
+def _text_tool_calls(text: str) -> tuple[list["ToolCall"], str]:
+    """Вызовы инструментов, написанные текстом: [(вызовы), остаток текста].
+
+    Модели разных семейств пишут вызов по-разному: кто-то结构но,
+    кто-то тегом с парами «ключ/значение». Здесь оба варианта приводятся
+    к общему виду — иначе агент теряет инструмент посреди работы.
+    """
+    out: list[ToolCall] = []
+    rest = str(text or "")
+    for open_tag in _TOOL_OPEN:
+        if open_tag not in rest:
+            continue
+        close_tag = ("</\u200btool_call>" if "\u200b" in open_tag
+                     else "</tool_call>")
+        chunks = rest.split(open_tag)[1:]
+        for chunk in chunks:
+            body = chunk.split(close_tag)[0]
+            name, args = _parse_call_body(body)
+            if name:
+                out.append(ToolCall(id=f"call_{len(out)}", name=name,
+                                    args=args))
+        rest = rest.split(open_tag)[0]
+    return out, rest
+
+
+def _parse_call_body(body: str) -> tuple[str, dict]:
+    """Имя инструмента и аргументы из тела текстового вызова."""
+    text = str(body or "").strip()
+    if not text:
+        return "", {}
+    if text.startswith("{"):
+        try:
+            obj = json.loads(text)
+        except ValueError:
+            return "", {}
+        args = obj.get("arguments") or obj.get("parameters") or {}
+        if isinstance(args, str):
+            try:
+                args = json.loads(args)
+            except ValueError:
+                args = {}
+        return str(obj.get("name") or ""), (args if isinstance(args, dict)
+                                             else {})
+    # форма «имя<arg_key>ключ</arg_key><arg_value>значение</arg_value>…»
+    name = text.split("<", 1)[0].strip()
+    args: dict[str, str] = {}
+    for key_open, val_open in zip(_ARG_KEY, _ARG_VAL):
+        key_close = key_open.replace("arg_key", "arg_key").replace(
+            "<arg_key>", "</arg_key>")
+        val_close = val_open.replace("arg_value", "arg_value").replace(
+            "<arg_value>", "</arg_value>")
+        for part in text.split(key_open)[1:]:
+            key = part.split(key_close)[0].strip()
+            val = part.split(val_open)[1].split(val_close)[0].strip() \
+                if val_open in part else ""
+            if key:
+                args[key] = val
+    return name, args
 
 
 def _parse_turn(data: dict, pk: str, model: str) -> dict:
@@ -719,6 +1748,16 @@ def _parse_turn(data: dict, pk: str, model: str) -> dict:
     choice = (data.get("choices") or [{}])[0]
     msg = choice.get("message") or {}
     text = (msg.get("content") or "").strip()
+    # reasoning-модели (kc/openrouter/free и подобные) отдают текст в
+    # reasoning, а content оставляют пустым — иначе ход выглядит как
+    # «модель не ответила», хотя ответ есть, просто в другом поле
+    reasoning_only = False
+    if not text:
+        text = (msg.get("reasoning") or "").strip()
+        # reasoning-модель отдаёт рассуждение вместо ответа: брать его
+        # как ответ нельзя — в JSON-задаче это ломает разбор, а в
+        # обычной реплике выглядит как «модель не ответила»
+        reasoning_only = bool(text)
 
     calls: list[ToolCall] = []
     for raw in msg.get("tool_calls") or []:
@@ -735,27 +1774,17 @@ def _parse_turn(data: dict, pk: str, model: str) -> dict:
         calls.append(ToolCall(id=raw.get("id") or f"call_{len(calls)}",
                               name=name, args=args))
 
-    # некоторые локальные серверы вместо tool_calls возвращают <tool_call>
-    if not calls and text.startswith("<tool_call>"):
-        text = ""
-        for chunk in text.split("<tool_call>")[1:]:
-            body = chunk.split("</tool_call>")[0].strip()
-            try:
-                obj = json.loads(body)
-            except ValueError:
-                continue
-            args = obj.get("arguments") or obj.get("parameters") or {}
-            if isinstance(args, str):
-                try:
-                    args = json.loads(args)
-                except ValueError:
-                    args = {}
-            calls.append(ToolCall(id=obj.get("id", f"call_{len(calls)}"),
-                                  name=obj.get("name", ""),
-                                  args=args if isinstance(args, dict) else {}))
+    # некоторые серверы (и некоторые модели в длинной сессии) вместо
+    # tool_calls пишут вызов инструмента текстом — такой вызов надо
+    # понять, иначе агент «ходит» по библиотеке вслепую
+    if not calls:
+        got, rest = _text_tool_calls(text)
+        if got:
+            calls.extend(got)
+            text = rest
 
     return {"text": text, "calls": calls, "provider": pk, "model": model,
-            "raw": data}
+            "raw": data, "reasoning_only": reasoning_only}
 
 
 # ==========================================================================
@@ -782,7 +1811,7 @@ def complete(user: str, context: str = "", *, fast: bool = False,
         if pk not in PROVIDERS:
             continue
         if PROVIDERS[pk].key_required and not (
-                provider_key(pk) or (pk == "nous" and _hermes_credential())):
+                provider_key(pk) or (pk == "nous" and _nous_key())):
             errors.append(f"{pk}: нет ключа")
             continue
         if _is_dead(pk, model):
@@ -795,11 +1824,34 @@ def complete(user: str, context: str = "", *, fast: bool = False,
             msgs.append({"role": "user", "content": f"Контекст:\n{context}"})
         msgs.append({"role": "user", "content": user})
         try:
-            data = _post(PROVIDERS[pk].base, "/chat/completions",
-                         {"model": model, "messages": msgs,
-                          "temperature": temperature, "max_tokens": max_tokens},
-                         _headers(pk), timeout)
-            text = data["choices"][0]["message"]["content"].strip()
+            try:
+                data = _post(PROVIDERS[pk].base, "/chat/completions",
+                             {"model": model, "messages": msgs,
+                              "temperature": temperature,
+                              "max_tokens": max_tokens},
+                             _headers(pk), timeout)
+            except Exception as first_exc:                       # noqa: BLE001
+                # 401 от Nous — протухший токен. Обновляем через гейтчей
+                # Hermes и повторяем запрос: заказ не должен падать из-за
+                # того, что час пролетел с прошлого вызова.
+                if pk == "nous" and "401" in str(first_exc):
+                    fresh = _refresh_hermes_credential()
+                    if fresh:
+                        data = _post(PROVIDERS[pk].base, "/chat/completions",
+                                     {"model": model, "messages": msgs,
+                                      "temperature": temperature,
+                                      "max_tokens": max_tokens},
+                                     _headers(pk), timeout)
+                    else:
+                        raise first_exc
+                else:
+                    raise first_exc
+            # reasoning-модели (например kc/openrouter/free) могут отдать
+            # текст в reasoning, а content оставить null — иначе ответ
+            # выглядит как «модель не ответила»
+            m = data["choices"][0]["message"]
+            text = (m.get("content") or "").strip() \
+                or (m.get("reasoning") or "").strip()
             with _LOCK:
                 _LAST_OK[pk] = time.time()
                 _LAST_ERR.pop(pk, None)
@@ -923,7 +1975,7 @@ def status(probe_live: bool = False) -> dict:
               "title": PROVIDERS[pk].title if pk in PROVIDERS else pk,
               "base": PROVIDERS[pk].base if pk in PROVIDERS else "",
               "local": pk in LOCAL_KEYS,
-              "key_set": bool(provider_key(pk) or _hermes_credential()),
+              "key_set": bool(provider_key(pk) or _nous_key()),
               "key_source": credential_source(pk),
               "cooldown": _is_dead(pk),
               "cooldown_reason": _DEAD_REASON.get(pk),
@@ -1025,7 +2077,7 @@ def main() -> int:
         src = credential_source(routes()[0][0])
         print(f"\n  Ключ основного маршрута: {src}")
 
-    if not (provider_key("nous") or _hermes_credential()):
+    if not _nous_key():
         print("\n  Бесплатное облако без карты — Nous Portal:")
         print("    1. зарегистрироваться на portal.nousresearch.com")
         print("    2. создать ключ в разделе API keys")

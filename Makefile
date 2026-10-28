@@ -63,12 +63,13 @@ DOC        := technical_task
         reliability thermal enclosure \
         agents agent-api agent-web frontend \
         test test-all \
+        schematics schematics_check schematics_bom \
         clean distclean
 
 # ===========================================================================
 #  all
 # ===========================================================================
-all: netlist spice pcb publish erc drc board-svg drawings docs viewer gnuradio link-budget direction page test reliability thermal enclosure manifest
+all: netlist spice schematics schematics_check schematics_bom pcb publish erc drc board-svg drawings docs viewer gnuradio link-budget direction page test reliability thermal enclosure manifest
 	@echo
 	@echo "Krystal Radio build complete — see $(OUT)/ and $(CAD_FIG)/"
 
@@ -80,6 +81,18 @@ netlist: ## SKiDL source -> KiCad netlist (tscircuit input)
 
 spice: ## KiCad netlist -> ngspice deck
 	$(PY) sim/scripts/export_ngspice.py
+
+# ===========================================================================
+#  Схемотехника (агентная фаза): ESKD -> TЗ блоков -> SKiDL -> KiCad
+# ===========================================================================
+schematics: ## проектирование схемотехники: ESKD -> ТЗ блоков -> SKiDL
+	$(PY) hardware/kicad/schematics_design.py
+
+schematics_check: ## проверка схемотехники: ERC, соответствие блоков
+	$(PY) hardware/kicad/schematics_check.py
+
+schematics_bom: ## библиотекарь: подбор реальных компонентов по SKiDL
+	$(PY) hardware/kicad/schematics_bom.py
 
 # ===========================================================================
 #  PCB — the tscircuit part (autorouter), NOT a hand-drawn KiCad board

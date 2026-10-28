@@ -14,10 +14,10 @@
   4. проверяет результат и печатает, что делать дальше.
 
 Запуск:
-    python3 tools/init_project.py ../brig-receiver-2
-    python3 tools/init_project.py ../brig-receiver-2 --remote ~/git/brig-receiver-2.git
-    python3 tools/init_project.py ../brig-receiver-2 --from /path/to/source
-    python3 tools/init_project.py ../brig-receiver-2 --dry-run
+    python3 tools/init_project.py ../krystal-2
+    python3 tools/init_project.py ../krystal-2 --remote ~/git/krystal-2.git
+    python3 tools/init_project.py ../krystal-2 --from /path/to/source
+    python3 tools/init_project.py ../krystal-2 --dry-run
 """
 from __future__ import annotations
 
@@ -33,7 +33,7 @@ ROOT = Path(__file__).resolve().parents[1]
 # Что должно существовать в готовом проекте, иначе инициализация неполна
 REQUIRED = [
     "hardware/pipeline.py",
-    "hardware/kicad/generate_brig_receiver.py",
+    "hardware/kicad/generate_schematic.py",
     "hardware/kicad/kicad_lib.py",
     "hardware/tscircuit/build_pcb.mjs",
     "hardware/tscircuit/build_derived.py",

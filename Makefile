@@ -151,6 +151,10 @@ breadboard: ## макетная плата (breadboard/fretboard) 3D-раскл�
 	$(PYTHON) backend/breadboard.py
 	@echo "Layout: out/breadboard_layout.json"
 
+bolt-agent: ## Bolt-стиль генерация кода: TASK=... LANG=python
+	$(PYTHON) backend/bolt_agent.py --task "$(TASK)" --lang "$(or $(LANG),python)" --out out/bolt_result
+	@echo "Result: out/bolt_result/result.json"
+
 fix-mech: ## агентская петля по конструкторским ошибкам (advisory)
 	$(PYTHON) backend/fix_loop_mech.py
 	@echo "Report: out/fix_mech_report.json"

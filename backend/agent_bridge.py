@@ -99,6 +99,7 @@ ALLOWED_TARGETS: dict[str, str] = {
     "ml-train": "обучение ML-суррогата размещения PCB",
     "fix-mech": "агентская петля по конструкторским ошибкам (advisory)",
     "breadboard": "макетная плата (breadboard) 3D-раскладка",
+    "bolt-agent": "Bolt-стиль генерация кода (мультязык)",
 }
 
 # python-скрипты: имя -> (путь относительно ROOT, описание).

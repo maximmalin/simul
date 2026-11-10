@@ -203,6 +203,16 @@ python3 backend/agent_bridge.py --port 8787{'\n'}# затем:  make agent-api
             <span className={`w-1.5 h-1.5 rounded-full ${live ? 'bg-sky-500 animate-pulse' : 'bg-zone-400'}`} />
             {live ? 'LIVE' : 'POLL'}
           </span>
+          {chain && (
+            <span className="inline-flex items-center gap-2 text-[11px] font-mono px-2.5 py-1 rounded bg-zone-100 text-zone-700"
+              title="Прогресс сборки">
+              <span className="w-20 h-1.5 bg-zone-300 rounded overflow-hidden">
+                <span className="block h-full bg-emerald-500 transition-all duration-500"
+                  style={{ width: `${chain.progress}%` }} />
+              </span>
+              <span className="tabular-nums">{chain.done}/{chain.total}</span>
+            </span>
+          )}
           <button onClick={load} title="Обновить"
             className="p-2 rounded border border-zone-300 text-zone-600 hover:text-zone-900 hover:bg-zone-50">
             <RefreshCw className="w-4 h-4" />

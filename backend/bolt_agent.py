@@ -19,13 +19,34 @@ except Exception:
 
 ROOT = Path(__file__).resolve().parents[1]
 
+import urllib.request, urllib.parse, json as _json
+
+def search_repos(task: str, lang: str, top_k: int = 5) -> list[dict]:
+    """Поиск готовых решений на GitHub (не писать с нуля)."""
+    q = urllib.parse.quote(f"{task} language:{lang}")
+    url = f"https://api.github.com/search/repositories?q={q}&sort=stars&order=desc&per_page={top_k}"
+    try:
+        req = urllib.request.Request(url, headers={"Accept": "application/vnd.github+json",
+                                                  "User-Agent": "krystal-radio-agent"})
+        with urllib.request.urlopen(req, timeout=10) as r:
+            data = _json.loads(r.read())
+        out = []
+        for it in data.get("items", [])[:top_k]:
+            out.append({"name": it.get("full_name"), "url": it.get("html_url"),
+                        "stars": it.get("stargazers_count", 0),
+                        "description": (it.get("description") or "")[:200]})
+        return out
+    except Exception:
+        return []
+
+
 RUNNERS = {
     "python": ("py", ["python3", "{file}"]),
     "javascript": ("js", ["node", "{file}"]),
     "typescript": ("ts", ["npx", "ts-node", "{file}"]),
     "bash": ("sh", ["bash", "{file}"]),
-    "c": ("c", ["gcc", "{file}", "-o", "{bin}", "&&", "{bin}"]),
-    "cpp": ("cpp", ["g++", "{file}", "-o", "{bin}", "&&", "{bin}"]),
+    "c": ("c", ["gcc", "-fsyntax-only", "{file}"]),
+    "cpp": ("cpp", ["g++", "-fsyntax-only", "{file}"]),
     "go": ("go", ["go", "run", "{file}"]),
     "rust": ("rs", ["rustc", "{file}", "-o", "{bin}", "&&", "{bin}"]),
 }
@@ -35,23 +56,22 @@ def generate_code(task: str, lang: str, error: str | None = None) -> str:
     runner = RUNNERS.get(lang, RUNNERS["python"])
     ext = runner[0]
     if llm is not None and getattr(llm, "ENABLED", False):
-        msgs = [{"role": "user", "content":
-            f"Ты — senior-разработчик. Напиши {lang}-код, решающий задачу:\n{task}\n"
-            f"Верни ТОЛЬКО код, без markdown-обёртки, без пояснений.\n"
-            + (f"\nПредыдущая ошибка:\n{error}\nИсправь её." if error else "")}]
+        msgs = [{"role": "system", "content": "You are a code generator. Output ONLY a fenced code block. No explanations outside."},
+                {"role": "user", "content":
+            f"Write {lang} code solving: {task}\n"
+            f"Output ONLY a fenced ```{lang} code block. Nothing else.\n"
+            + (f"\nPrevious error:\n{error}\nFix it." if error else "")}]
         try:
-            turn = llm.chat(msgs, fast=True, max_tokens=2000)
+            turn = llm.chat(msgs, fast=True, max_tokens=4000)
             text = getattr(turn, "text", None) if turn is not None else None
             if text:
                 # strip markdown fences
                 text = text.strip()
-                if text.startswith("```"):
-                    lines = text.splitlines()
-                    if lines and lines[0].startswith("```"):
-                        lines = lines[1:]
-                    if lines and lines[-1].startswith("```"):
-                        lines = lines[:-1]
-                    text = "\n".join(lines)
+                import re as _re
+                if "```" in text:
+                    m = _re.search(r"```(?:\w+)?\n(.*?)```", text, _re.S)
+                    if m:
+                        text = m.group(1).strip()
                 return text
         except Exception:
             pass
@@ -82,7 +102,12 @@ def agent_loop(task: str, lang: str, iters: int = 5, out_dir: str = "out/bolt_re
     work = Path(out_dir)
     work.mkdir(parents=True, exist_ok=True)
     history = []
-    code = generate_code(task, lang)
+    # сначала ищем готовые решения в репозиториях
+    repos = search_repos(task, lang)
+    repo_hint = ""
+    if repos:
+        repo_hint = "\n\nНайдены готовые решения (используй как reference, не копируй слепо):\n" + "\n".join(f"- {r['name']} ({r['stars']}★): {r['description']} — {r['url']}" for r in repos)
+    code = generate_code(task + repo_hint, lang)
     for it in range(iters):
         rc, output = run_code(lang, code, work)
         history.append({"iter": it, "rc": rc, "output": output[-1000:]})

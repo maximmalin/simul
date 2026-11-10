@@ -159,6 +159,22 @@ fix-mech: ## агентская петля по конструкторским �
 	$(PYTHON) backend/fix_loop_mech.py
 	@echo "Report: out/fix_mech_report.json"
 
+data-science: ## отдел Data Science / ML: анализ + обучение моделей
+	$(PYTHON) backend/data_science_dept.py --data out/placement_opt/records.jsonl
+	@echo "Report: out/ds_result/ds_report.json"
+
+science: ## отдел учёных: физика, FMU, симуляция, формулы
+	$(PYTHON) backend/science_dept.py
+	@echo "Report: out/science_result/science_report.json"
+
+biz: ## отдел бизнеса: финансы, юридическая часть, пиар, реализация
+	$(PYTHON) backend/biz_dept.py
+	@echo "Report: out/biz_result/biz_report.json"
+
+software-flow: ## агентский флоу разработки ПО/прошивки (параллельный)
+	$(PYTHON) backend/software_flow.py --task "$(TASK)" --lang "$(or $(LANG),c)" --out out/software_result
+	@echo "Report: out/software_result/flow_report.json"
+
 drawings-legacy: cad ## STEP -> cleaned -> GOST drawing (DXF/SVG/PDF) [старый пайплайн]
 	$(PYTHON) gost_pipeline.py $(ANT_GEOM)/band_a.step
 	$(PYTHON) gost_pipeline.py $(ANT_GEOM)/band_b.step

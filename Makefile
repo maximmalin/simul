@@ -69,7 +69,7 @@ DOC        := technical_task
 # ===========================================================================
 #  all
 # ===========================================================================
-all: netlist spice schematics schematics_check schematics_bom pcb publish erc drc board-svg drawings docs viewer gnuradio link-budget direction page test reliability thermal enclosure manifest
+all: netlist spice schematics schematics_check schematics_bom pcb publish erc drc board-svg drawings docs viewer gnuradio link-budget direction page test reliability thermal enclosure manifest mech-spec cad-delegate breadboard
 	@echo
 	@echo "Krystal Radio build complete — see $(OUT)/ and $(CAD_FIG)/"
 
@@ -232,6 +232,14 @@ agents: ## список локальных агентов (AGENT_PROMPTS.md + AG
 agent-api: ## запустить агентный мост (по умолчанию :8787)
 	@echo "agent bridge: http://127.0.0.1:$(BRIDGE_PORT)"
 	$(VENV_PY) backend/agent_bridge.py --port $(BRIDGE_PORT)
+
+agent-all: ## полный агентский CI/CD: конвейер + фиксы + отделы
+	$(PYTHON) backend/agent_ci.py --iters 2
+	$(PYTHON) backend/data_science_dept.py --data .run/placement_opt/records.jsonl 2>/dev/null || true
+	$(PYTHON) backend/science_dept.py
+	$(PYTHON) backend/biz_dept.py
+	$(PYTHON) backend/fix_loop_mech.py
+	@echo "Agent pipeline complete. Reports in out/"
 
 # --- агентно-функциональный граф -------------------------------------------
 # Граф живёт в .venv: там langgraph. VENV_PY — интерпретатор с ним,

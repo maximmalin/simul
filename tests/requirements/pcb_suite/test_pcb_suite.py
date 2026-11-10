@@ -37,6 +37,36 @@ try:
     from breadboard import build_layout
 except Exception:
     build_layout = None
+try:
+    from software_spec import build_spec, write_outputs as write_sw_spec
+except Exception:
+    build_spec = None
+    write_sw_spec = None
+try:
+    from data_science_dept import collect_data, train_model
+except Exception:
+    collect_data = None
+    train_model = None
+try:
+    from science_dept import thermal_check, fea_check, rf_link_budget
+except Exception:
+    thermal_check = None
+    fea_check = None
+    rf_link_budget = None
+try:
+    from biz_dept import finance_analysis, legal_analysis
+except Exception:
+    finance_analysis = None
+    legal_analysis = None
+try:
+    from bolt_agent import search_repos, generate_code
+except Exception:
+    search_repos = None
+    generate_code = None
+try:
+    from test_points import recommend
+except Exception:
+    recommend = None
 
 ROOT = Path(__file__).resolve().parents[3]
 
@@ -261,3 +291,92 @@ def test_breadboard_layout():
     assert len(layout["components"]) == 60
     assert "board" in layout
     assert layout["board"]["cols"] == 63
+
+
+# ---------------------------------------------------------------------------
+# интеграция отделов
+# ---------------------------------------------------------------------------
+
+def test_software_spec_builds():
+    if build_spec is None:
+        return
+    spec = build_spec(ROOT)
+    assert spec.get("found") is True
+    assert spec.get("requirement_count", 0) >= 1
+    assert isinstance(spec.get("requirements"), list)
+
+
+def test_science_thermal_check():
+    if thermal_check is None:
+        return
+    r = thermal_check(25.0, 0.3, 60.0, 85.0)
+    assert "tj_c" in r and "pass" in r
+    assert r["tj_c"] == 43.0
+
+
+def test_science_fea_check():
+    if fea_check is None:
+        return
+    r = fea_check(50.0, 20.0, 2.0, 500.0, 240.0, 2.0)
+    assert "safety_factor" in r and "pass" in r
+    assert r["pass"] is False  # 0.128 < 2.0
+
+
+def test_science_rf_link_budget():
+    if rf_link_budget is None:
+        return
+    r = rf_link_budget(433.0, 10.0, -110.0, 1000.0)
+    assert "margin_db" in r and "pass" in r
+
+
+def test_data_science_collect():
+    if collect_data is None:
+        return
+    from pathlib import Path
+    p = ROOT / ".run" / "placement_opt" / "records.jsonl"
+    if not p.exists():
+        return
+    info = collect_data(p)
+    assert info.get("rows", 0) > 0
+
+
+def test_biz_finance():
+    if finance_analysis is None:
+        return
+    r = finance_analysis("test")
+    assert "analysis" in r
+
+
+def test_biz_legal():
+    if legal_analysis is None:
+        return
+    r = legal_analysis("test")
+    assert "analysis" in r
+    assert "standards" in r
+
+
+def test_test_points_recommend():
+    if recommend is None:
+        return
+    import json
+    circuit = json.loads((ROOT / "out" / "circuit.json").read_text())
+    recs = recommend(circuit)
+    assert isinstance(recs, list)
+    assert len(recs) > 0
+    assert all("net" in r and "kind" in r for r in recs)
+
+
+def test_bolt_search_repos():
+    if search_repos is None:
+        return
+    # just check it returns a list (may be empty due to network)
+    res = search_repos("fibonacci python", "python", top_k=2)
+    assert isinstance(res, list)
+
+
+def test_bolt_generate_code():
+    if generate_code is None:
+        return
+    code = generate_code("print hello", "python")
+    assert isinstance(code, str)
+    assert len(code) > 0

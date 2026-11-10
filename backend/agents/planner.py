@@ -36,6 +36,9 @@ import llm
 
 from .types import Project, Step
 
+# Кэш планов для повторяющихся запросов
+_plan_cache: dict[str, tuple[str, list[str]]] = {}
+
 #: слова, которые ничего не различают между целями
 STOP = {
     "make", "run", "запуск", "запусти", "запустить", "собери", "собрать",
@@ -162,6 +165,9 @@ def plan_by_rules(text: str, proj: Project) -> tuple[str, list[str]]:
 #  Планирование моделью
 # ==========================================================================
 def plan_by_llm(text: str, proj: Project) -> tuple[str, list[str]] | None:
+    key = f"{proj.name}:{text[:200]}"
+    if key in _plan_cache:
+        return _plan_cache[key]
     """None — если модель недоступна или ответила чем-то непригодным."""
     prompt = (
         f"Заказ оператора:\n{text}\n\n"
@@ -182,7 +188,9 @@ def plan_by_llm(text: str, proj: Project) -> tuple[str, list[str]] | None:
         return None
 
     picked = _minimise(picked, proj)
-    return str(data.get("intent") or "llm"), picked
+    res = (str(data.get("intent") or "llm"), picked)
+    _plan_cache[key] = res
+    return res
 
 
 def _covered_by(targets: list[str], proj) -> set[str]:

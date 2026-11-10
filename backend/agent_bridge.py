@@ -57,6 +57,9 @@ TOKEN = os.environ.get("KR_TOKEN")
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import localdb
 
+# Rate limiting
+_rate_limit = {}
+
 
 def out_dir() -> Path:
     """Каталог артефактов (вычисляется каждый раз — ROOT может смениться)."""

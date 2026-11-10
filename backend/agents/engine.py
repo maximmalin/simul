@@ -805,9 +805,15 @@ def _wrap(name: str):
             return fn(dict(state))
         except Exception as exc:                                # noqa: BLE001
             out = dict(state)
+            err = f"узел «{name}» упал: {exc}"
             out["log"] = out.get("log", []) + [
-                f"узел «{name}» упал: {exc}",
+                err,
                 traceback.format_exc()[-500:]]
+            # Автовосстановление для некритичных узлов
+            if name not in ("report",):
+                out["log"].append(f"автовосстановление: пропуск узла {name}")
+                out["status"] = out.get("status", "running")
+                return out
             out["status"] = "failed"
             return out
 

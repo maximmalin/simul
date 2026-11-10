@@ -435,3 +435,9 @@ distclean: clean ## clean + drop out/, dependencies and venv
 help: ## show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
 	    awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2}'
+
+improve: ## Автономное улучшение проекта (одна итерация)
+	$(PYTHON) backend/auto_improver.py --once
+
+improve-loop: ## Бесконечное автономное улучшение
+	$(PYTHON) backend/auto_improver.py

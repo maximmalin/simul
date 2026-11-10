@@ -1,17 +1,18 @@
 import {
-  Skull,
+  HardHat,
   Brain,
   DraftingCompass,
   ScanLine,
   FlaskRound,
   Gauge,
   Cpu,
+  Code,
   type LucideIcon,
 } from 'lucide-react';
 import type { AgentStatus, ProjectStatus, TaskStatus, Priority, MessageChannel } from './supabase';
 
 export const ROLE_ICONS: Record<string, LucideIcon> = {
-  chief: Skull,
+  chief: HardHat,
   theorist: Brain,
   designer: DraftingCompass,
   analyst: ScanLine,
@@ -96,7 +97,7 @@ export const STEP_STATUS_CONFIG: Record<StepStatus, { label: string; color: stri
 };
 
 export const DEV_ROLE_ICONS: Record<string, LucideIcon> = {
-  lead_dev: Skull,
+  lead_dev: Code,
   frontend_dev: DraftingCompass,
   backend_dev: Cpu,
   devops_eng: Gauge,

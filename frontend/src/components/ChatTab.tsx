@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Send, Radio, Skull, Brain, DraftingCompass, ScanLine, FlaskRound, Gauge, Loader2, CheckCircle2, FolderKanban, type LucideIcon } from 'lucide-react';
+import { Send, Radio, HardHat, Brain, DraftingCompass, ScanLine, FlaskRound, Gauge, Loader2, CheckCircle2, FolderKanban, type LucideIcon } from 'lucide-react';
 import { api } from '@/lib/supabase';
 import type { Agent, Project, ChatRequestWithAgent } from '@/lib/supabase';
 
@@ -20,7 +20,7 @@ interface ChatMessage {
 }
 
 const ROLE_ICON_FALLBACK: Record<string, LucideIcon> = {
-  chief: Skull,
+  chief: HardHat,
   theorist: Brain,
   designer: DraftingCompass,
   analyst: ScanLine,
@@ -147,10 +147,10 @@ export function ChatTab({ projects }: ChatTabProps) {
         </div>
         <div>
           <h2 className="font-display font-600 text-xl uppercase tracking-tight text-zone-900">
-            Bureau Command Chat
+            Чат КБ
           </h2>
           <p className="font-mono text-[10px] tracking-widest text-zone-600 uppercase">
-            Operator → Bureau Channel · Dispatch Tech Tasks
+            Оператор → канал КБ · постановка задач
           </p>
         </div>
         <div className="ml-auto flex items-center gap-2">
@@ -169,7 +169,7 @@ export function ChatTab({ projects }: ChatTabProps) {
                 Awaiting transmission from operator
               </p>
               <p className="font-mono text-[10px] text-zone-600/30 mt-1">
-                Send a directive to dispatch a tech task to the bureau
+                Отправить директиву — постановка задачи в КБ
               </p>
             </div>
           )}
@@ -234,7 +234,7 @@ export function ChatTab({ projects }: ChatTabProps) {
               </div>
               <div className="bg-zone-200/20 border-l-2 border-zone-400/20 rounded-sm px-3 py-2">
                 <span className="font-mono text-[10px] text-zone-600 uppercase tracking-wider animate-blink">
-                  Bureau processing directive...
+                  Обработка директивы...
                 </span>
               </div>
             </div>
@@ -264,7 +264,7 @@ export function ChatTab({ projects }: ChatTabProps) {
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Enter directive for the bureau..."
+            placeholder="Директива для КБ..."
             disabled={sending}
             className="flex-1 text-sm bg-zone-200 border border-zone-400/20 rounded-sm px-3 py-2.5 text-zone-900 placeholder-zone-600 focus:outline-none focus:border-blood-500 disabled:opacity-50"
           />

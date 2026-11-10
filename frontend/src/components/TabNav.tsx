@@ -1,6 +1,6 @@
-import { LayoutGrid, Users, FolderKanban, Radio, MessageSquare, Package, Warehouse, Workflow, Code2, CircuitBoard, ListTree } from 'lucide-react';
+import { LayoutGrid, Users, FolderKanban, Radio, MessageSquare, Package, Warehouse, Workflow, Code2, CircuitBoard, ListTree, Waves, FileText } from 'lucide-react';
 
-export type TabKey = 'overview' | 'krystal' | 'order' | 'personnel' | 'projects' | 'comms' | 'chat' | 'deliverables' | 'warehouse' | 'flow' | 'devdept';
+export type TabKey = 'overview' | 'krystal' | 'sim' | 'tz' | 'order' | 'personnel' | 'projects' | 'comms' | 'chat' | 'deliverables' | 'warehouse' | 'flow' | 'devdept';
 
 interface TabNavProps {
   activeTab: TabKey;
@@ -8,13 +8,15 @@ interface TabNavProps {
 }
 
 const TABS: { key: TabKey; label: string; sub: string; icon: typeof LayoutGrid }[] = [
-  { key: 'overview', label: 'Overview', sub: 'Сектор', icon: LayoutGrid },
+  { key: 'overview', label: 'Overview', sub: 'Обзор', icon: LayoutGrid },
   { key: 'krystal', label: 'Krystal', sub: 'Сборка', icon: CircuitBoard },
+  { key: 'sim', label: 'Simulator', sub: 'Симулятор', icon: Waves },
+  { key: 'tz', label: 'TZ', sub: 'Задание', icon: FileText },
   { key: 'order', label: 'Order', sub: 'Заказ', icon: ListTree },
   { key: 'personnel', label: 'Personnel', sub: 'Кадры', icon: Users },
   { key: 'projects', label: 'Projects', sub: 'Объекты', icon: FolderKanban },
   { key: 'comms', label: 'Comms', sub: 'Связь', icon: Radio },
-  { key: 'chat', label: 'Command', sub: 'Директива', icon: MessageSquare },
+  { key: 'chat', label: 'Chat', sub: 'Чат', icon: MessageSquare },
   { key: 'deliverables', label: 'Results', sub: 'Результаты', icon: Package },
   { key: 'warehouse', label: 'Warehouse', sub: 'Склад', icon: Warehouse },
   { key: 'flow', label: 'Flow', sub: 'Поток', icon: Workflow },

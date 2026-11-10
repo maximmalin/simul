@@ -1,4 +1,4 @@
-import { Skull, Brain, DraftingCompass, ScanLine, FlaskRound, Gauge, ChevronRight, Package, Settings2 } from 'lucide-react';
+import { HardHat, Brain, DraftingCompass, ScanLine, FlaskRound, Gauge, ChevronRight, Package, Settings2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { Agent, Project, Task } from '@/lib/supabase';
 import { PROJECT_STATUS_CONFIG, PRIORITY_CONFIG } from '@/lib/constants';
@@ -14,11 +14,11 @@ interface PipelineStage {
   roleKey: string;
   label: string;
   subLabel: string;
-  icon: typeof Skull;
+  icon: typeof HardHat;
 }
 
 const PIPELINE_STAGES: PipelineStage[] = [
-  { roleKey: 'chief', label: 'Command', subLabel: 'Оркестрация', icon: Skull },
+  { roleKey: 'chief', label: 'Manage', subLabel: 'Оркестрация', icon: HardHat },
   { roleKey: 'theorist', label: 'Theory', subLabel: 'Исследование', icon: Brain },
   { roleKey: 'designer', label: 'Design', subLabel: 'Конструирование', icon: DraftingCompass },
   { roleKey: 'analyst', label: 'Analysis', subLabel: 'Анализ', icon: ScanLine },

@@ -291,6 +291,21 @@ export const getJobs = () => req<{ jobs: Job[] }>('/api/jobs');
 export const artifactUrl = (relPath: string) =>
   `${BASE}/api/artifact/${relPath.split('/').map(encodeURIComponent).join('/')}`;
 
+export interface BreadboardLayout {
+  board: { cols: number; rows: number; rail_top: number; rail_bottom: number };
+  components: { ref: string; pins: number; is_ic: boolean; col: number; positions: { pin: number; row: number; col: number }[] }[];
+  wires: { from: number[]; to: number[] }[];
+  component_count: number;
+}
+
+export async function getBreadboard(): Promise<BreadboardLayout | null> {
+  try {
+    return await req<BreadboardLayout>('/api/breadboard');
+  } catch {
+    return null;
+  }
+}
+
 // --- запуск ----------------------------------------------------------------
 
 export const startBuild = (target: string) =>
@@ -342,4 +357,116 @@ export function watchJob(
     cancelled = true;
     clearInterval(timer);
   };
+}
+
+// --- ТЗ (technical_task.md) -------------------------------------------------
+
+export interface TzSection {
+  n: number;
+  level: number;
+  title: string;
+  body: string;
+  chars: number;
+}
+
+export interface MechRequirement {
+  category: string;
+  label: string;
+  section: string;
+  line: number;
+  excerpt: string;
+}
+
+export interface TzPayload {
+  file: string;
+  title: string;
+  chars: number;
+  section_count: number;
+  sections: TzSection[];
+  mech: {
+    tz_found?: boolean;
+    has_mechanical?: boolean;
+    categories?: string[];
+    requirement_count?: number;
+    requirements?: MechRequirement[];
+    note?: string;
+    error?: string;
+  };
+  variants: string[];
+}
+
+export const getTz = () => req<TzPayload>('/api/tz');
+
+// --- Симулятор (ко-симуляция GNU Radio / FEM / NEC) -------------------------
+
+export interface SimItem {
+  name: string;
+  title: string;
+  desc: string;
+  kind: 'png' | 'json' | 'glb' | 'html';
+  exists: boolean;
+  url: string | null;
+  size: number | null;
+  modified: string | null;
+  summary?: Record<string, unknown>;
+}
+
+export interface SimPayload {
+  built: number;
+  total: number;
+  progress: number;
+  items: SimItem[];
+  metrics: {
+    link_budget: Metrics['link_budget'] | null;
+    direction: Metrics['direction'] | null;
+    thermal: Metrics['thermal'] | null;
+    reliability: Metrics['reliability'] | null;
+  };
+  run_hint: string;
+  updated: string;
+}
+
+export const getSim = () => req<SimPayload>('/api/sim');
+
+// --- Рилтайм-флоу (SSE: цепочка + джобы) -----------------------------------
+
+export interface FlowJob {
+  id: string;
+  target: string;
+  status: string;
+  agent_id: string | null;
+  exit_code: number | null;
+  started_at: string;
+  finished_at: string | null;
+  tail: string;
+}
+
+export interface FlowSnapshot {
+  chain: Chain;
+  jobs: FlowJob[];
+  running: number;
+  updated: string;
+}
+
+/**
+ * Подписка на рилтайм-флоу сборки. onFlow получает полный снимок
+ * при каждом изменении; onPing — heartbeat (держит соединение живым).
+ * Возвращает функцию отмены (закрывает EventSource).
+ */
+export function watchFlow(
+  onFlow: (snap: FlowSnapshot) => void,
+  onPing?: () => void,
+  onError?: () => void,
+): () => void {
+  const es = new EventSource(`${BASE}/api/flow/stream`);
+  es.addEventListener('flow', (ev) => {
+    try {
+      onFlow(JSON.parse((ev as MessageEvent).data) as FlowSnapshot);
+    } catch {
+      /* битый кадр — пропускаем */
+    }
+  });
+  es.addEventListener('ping', () => onPing?.());
+  es.onerror = () => onError?.();
+  return () => es.close();
 }

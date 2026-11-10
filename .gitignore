@@ -114,6 +114,15 @@ design/.model_check/
 *.cir
 *.raw
 
+# Reference clones (analysis only, see docs/PCB_FEATURES_INTEGRATION.md)
+auto-pcb/
+ai-pcb-generator/
+text-to-cad/
+venv/
+.venv*/
+.run/*
+!.run/placement_playbook.md
+
 # Secrets — never commit
 .env
 .env.*

@@ -13,13 +13,17 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense } from 'react';
+const ThreeViewer = lazy(() => import('./ThreeViewer').then((m) => ({ default: m.ThreeViewer })));
+const BreadboardViewer = lazy(() => import('./BreadboardViewer').then((m) => ({ default: m.BreadboardViewer })));
 import {
   Radio, Plus, X, Play, RefreshCw, FolderKanban, Activity, Cpu,
   CheckCircle2, AlertTriangle, Loader2, Circle, Terminal, Link2, Zap,
 } from 'lucide-react';
 import {
   getChain, getProjects, createProject, runAsAgent, watchJob, getMetrics,
-  type Chain, type ChainStage, type KrProject, type Metrics,
+  watchFlow, getArtifacts, artifactUrl, type Chain, type ChainStage, type KrProject, type Metrics,
+  type FlowSnapshot, type Artifact, getBreadboard, type BreadboardLayout,
 } from '@/lib/bridge';
 
 const STATE_STYLE: Record<string, { icon: typeof CheckCircle2; cls: string; label: string }> = {
@@ -46,14 +50,20 @@ export function KrystalTab() {
   const [selected, setSelected] = useState<string | null>(null);
   const [logs, setLogs] = useState<Record<string, string[]>>({});
   const [running, setRunning] = useState<Record<string, string>>({});
+  const [live, setLive] = useState<boolean | null>(null);   // SSE-флоу активен?
+  const [flowJobs, setFlowJobs] = useState<FlowSnapshot['jobs']>([]);
+  const [artifacts, setArtifacts] = useState<Artifact[]>([]);
+  const [breadboard, setBreadboard] = useState<BreadboardLayout | null>(null);
   const unwatch = useRef<(() => void) | null>(null);
 
   const load = useCallback(async () => {
     try {
-      const [c, p, m] = await Promise.all([getChain(), getProjects(), getMetrics()]);
+      const [c, p, m, a, bb] = await Promise.all([getChain(), getProjects(), getMetrics(), getArtifacts(), getBreadboard()]);
       setChain(c);
       setProjects(p.projects);
       setMetrics(m);
+      setArtifacts(a);
+      setBreadboard(bb);
       setOnline(true);
       setErr(null);
     } catch (e) {
@@ -64,9 +74,39 @@ export function KrystalTab() {
 
   useEffect(() => {
     load();
-    const t = setInterval(load, 5000);
+    // Рилтайм-флоу: SSE присылает полный снимок (цепочка + джобы)
+    // при каждом изменении. Если поток недоступен — тихий опрос 5 с.
+    let fallback: ReturnType<typeof setInterval> | null = null;
+    const stop = watchFlow(
+      (snap) => {
+        setLive(true);
+        setChain(snap.chain);
+        setFlowJobs(snap.jobs);
+        // обновляем список артефактов при каждом снимке (новые файлы появляются)
+        getArtifacts().then(setArtifacts).catch(() => {});
+        // джобы, которые уже не бегут, снимаем с карты running
+        setRunning((prev) => {
+          const next = { ...prev };
+          let changed = false;
+          for (const [key, id] of Object.entries(prev)) {
+            const j = snap.jobs.find((x) => x.id === id);
+            if (j && j.status !== 'queued' && j.status !== 'running') {
+              delete next[key];
+              changed = true;
+            }
+          }
+          return changed ? next : prev;
+        });
+      },
+      undefined,
+      () => {
+        setLive(false);
+        if (!fallback) fallback = setInterval(load, 5000);
+      },
+    );
     return () => {
-      clearInterval(t);
+      stop();
+      if (fallback) clearInterval(fallback);
       unwatch.current?.();
     };
   }, [load]);
@@ -157,6 +197,12 @@ python3 backend/agent_bridge.py --port 8787{'\n'}# затем:  make agent-api
             <span className={`w-1.5 h-1.5 rounded-full ${online ? 'bg-emerald-500' : 'bg-zone-400'}`} />
             {online ? 'BRIDGE ONLINE' : 'CONNECTING'}
           </span>
+          <span className={`inline-flex items-center gap-1.5 text-[11px] font-mono px-2.5 py-1 rounded
+            ${live ? 'bg-sky-50 text-sky-700' : 'bg-zone-100 text-zone-600'}`}
+            title={live ? 'Флоу обновляется по SSE в реальном времени' : 'Опрос каждые 5 с'}>
+            <span className={`w-1.5 h-1.5 rounded-full ${live ? 'bg-sky-500 animate-pulse' : 'bg-zone-400'}`} />
+            {live ? 'LIVE' : 'POLL'}
+          </span>
           <button onClick={load} title="Обновить"
             className="p-2 rounded border border-zone-300 text-zone-600 hover:text-zone-900 hover:bg-zone-50">
             <RefreshCw className="w-4 h-4" />
@@ -167,6 +213,129 @@ python3 backend/agent_bridge.py --port 8787{'\n'}# затем:  make agent-api
           </button>
         </div>
       </header>
+
+      {/* ============ 0. РИЛТАЙМ-ФЛОУ (SSE) ============ */}
+      {flowJobs.length > 0 && (
+        <section>
+          <div className="flex items-baseline justify-between mb-3">
+            <h3 className="font-mono text-[11px] uppercase tracking-widest text-zone-600">
+              Живой флоу сборки
+            </h3>
+            <span className="font-mono text-[11px] text-zone-600">
+              {live ? 'SSE · реальное время' : 'опрос 5 с'}
+            </span>
+          </div>
+          <div className="space-y-2">
+            {flowJobs.slice(0, 8).map((j, idx) => {
+              const active = j.status === 'queued' || j.status === 'running';
+              const ok = j.status === 'done';
+              const fail = j.status === 'failed' || j.status === 'error';
+              const dot = active ? 'bg-sky-500 animate-pulse shadow-[0_0_8px_rgba(56,189,248,0.8)]'
+                : ok ? 'bg-emerald-500' : fail ? 'bg-blood-500' : 'bg-zone-400';
+              const txt = active ? 'text-sky-600' : ok ? 'text-emerald-600' : fail ? 'text-blood-600' : 'text-zone-500';
+              const border = active ? 'border-sky-300 bg-sky-50/40' : ok ? 'border-emerald-200 bg-emerald-50/30' : fail ? 'border-blood-200 bg-blood-50/30' : 'border-zone-200 bg-zone-50';
+              return (
+                <div key={j.id}
+                  className={`relative flex items-start gap-3 px-3 py-2.5 border rounded transition-all ${border}`}>
+                  {/* timeline rail */}
+                  <div className="flex flex-col items-center shrink-0 pt-1">
+                    <span className={`w-2.5 h-2.5 rounded-full ${dot}`} />
+                    {idx < Math.min(flowJobs.length, 8) - 1 && (
+                      <span className="w-px flex-1 min-h-[12px] bg-zone-300/60 mt-1" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <code className="font-mono text-[11px] text-zone-800 font-bold">{j.target}</code>
+                      <span className={`font-mono text-[10px] uppercase font-bold ${txt}`}>{j.status}</span>
+                      {j.agent_id && (
+                        <span className="font-mono text-[10px] text-zone-500 bg-zone-200/60 px-1.5 py-0.5 rounded">
+                          {j.agent_id}
+                        </span>
+                      )}
+                      <span className="ml-auto font-mono text-[10px] text-zone-400">
+                        {j.started_at.slice(11, 19)}
+                        {j.finished_at ? ` → ${j.finished_at.slice(11, 19)}` : ''}
+                      </span>
+                    </div>
+                    {/* мысль агента: последняя строка лога */}
+                    {j.tail && (
+                      <div className="mt-1.5 flex items-start gap-1.5">
+                        <span className="font-mono text-[9px] text-zone-400 shrink-0 mt-0.5">💭</span>
+                        <span className="font-mono text-[10px] text-zone-600 truncate leading-tight">
+                          {j.tail}
+                        </span>
+                      </div>
+                    )}
+                    {active && (
+                      <div className="mt-1.5 h-1 w-full bg-zone-200 rounded overflow-hidden">
+                        <div className="h-full bg-sky-400 animate-pulse" style={{ width: '60%' }} />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Артефакты: реальные 2D (чертежи) и 3D (модель) */}
+          {artifacts.length > 0 && (
+            <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-2">
+              {artifacts
+                .filter((a) => a.name.match(/\.(svg|glb|stl|step)$/i))
+                .slice(0, 8)
+                .map((a) => {
+                  const is3d = /\.(glb|stl|step)$/i.test(a.name);
+                  const isSvg = /\.svg$/i.test(a.name);
+                  return (
+                    <div key={a.name}
+                      className="border border-zone-200 rounded bg-zone-50 overflow-hidden">
+                      <div className="px-2 py-1 border-b border-zone-200 flex items-center justify-between">
+                        <span className="font-mono text-[9px] text-zone-600 truncate">{a.name}</span>
+                        <span className="font-mono text-[8px] text-zone-400">
+                          {(a.size / 1024).toFixed(1)}K
+                        </span>
+                      </div>
+                      <div className="aspect-[4/3] flex items-center justify-center bg-white">
+                        {isSvg ? (
+                          <img src={artifactUrl(a.name)} alt={a.name}
+                            className="max-w-full max-h-full object-contain" />
+                        ) : is3d ? (
+                          <Suspense fallback={<span className="font-mono text-[10px] text-zone-500">3D…</span>}>
+                            <ThreeViewer url={artifactUrl(a.name)} height={160} />
+                          </Suspense>
+                        ) : (
+                          <span className="font-mono text-[10px] text-zone-500 uppercase">
+                            FILE
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* ============ МАКЕТНАЯ ПЛАТА (BREADBOARD) 3D ============ */}
+      {breadboard && (
+        <section>
+          <div className="flex items-baseline justify-between mb-3">
+            <h3 className="font-mono text-[11px] uppercase tracking-widest text-zone-600">
+              Макетная плата (breadboard) · 3D-прототип
+            </h3>
+            <span className="font-mono text-[11px] text-zone-600">
+              {breadboard.component_count} компонентов · {breadboard.wires.length} проводов
+            </span>
+          </div>
+          <div className="border border-zone-200 rounded bg-zone-50 p-2">
+            <Suspense fallback={<div className="font-mono text-[10px] text-zone-500 p-4">Загрузка 3D…</div>}>
+              <BreadboardViewer layout={breadboard} height={320} />
+            </Suspense>
+          </div>
+        </section>
+      )}
 
       {/* ============ 1. НОВЫЙ ПРОЕКТ ============ */}
       {showNew && (

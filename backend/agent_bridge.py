@@ -89,6 +89,16 @@ ALLOWED_TARGETS: dict[str, str] = {
     "schematics": "проектирование схемотехники: ESKD → ТЗ блоков → SKiDL → KiCad",
     "schematics_check": "проверка схемотехники: ERC, соответствие блоков",
     "schematics_bom": "библиотекарь: подбор реальных компонентов по SKiDL схеме",
+    "fix-loop": "петля исправления: агент чинит находки чекеров до чистого результата",
+    "production": "производственный пакет: BOM + CPL + стоимость + gerber zip",
+    "placement-opt": "оптимизация размещения (hill-climbing, auto-pcb)",
+    "dfm": "DFM-анализ 12 проверок (IPC-2221)",
+    "dfm-check": "то же, что dfm",
+    "mech-spec": "извлечение механических требований из ТЗ",
+    "cad-delegate": "делегирование конструкторской части (brief + task)",
+    "ml-train": "обучение ML-суррогата размещения PCB",
+    "fix-mech": "агентская петля по конструкторским ошибкам (advisory)",
+    "breadboard": "макетная плата (breadboard) 3D-раскладка",
 }
 
 # python-скрипты: имя -> (путь относительно ROOT, описание).
@@ -767,9 +777,14 @@ def collect_metrics() -> dict:
             "case_volume_cm3": encl.get("volume_cm3") if encl else None,
         },
         "reliability": {
-            "mtbf_h": rel.get("system", {}).get("mtbf_h") or rel.get("MTBF_h"),
-            "req_min_h": rel.get("requirement", {}).get("min_mtbf_h", 10_000),
-            "pass": rel.get("requirement", {}).get("pass"),
+            "mtbf_h": (rel.get("system", {}).get("mtbf_h")
+                       or rel.get("MTBF_h") or rel.get("mtbf_h")),
+            "mtbf_target_h": rel.get("mtbf_target_h"),
+            "req_min_h": (rel.get("requirement", {}).get("min_mtbf_h")
+                          or rel.get("mtbf_target_h") or 10_000),
+            "pass": (rel.get("requirement", {}).get("pass")
+                     if isinstance(rel.get("requirement"), dict) else None)
+            if "requirement" in rel else rel.get("pass"),
             "raw": rel,
         },
         "receiver": spec,
@@ -906,6 +921,157 @@ def run_tests() -> dict:
 
 
 # --------------------------------------------------------------------------
+# ТЗ: разбор technical_task.md на секции (для вкладки «ТЗ» фронтенда)
+# --------------------------------------------------------------------------
+def _tz_files() -> list[Path]:
+    return [p for p in (ROOT / "technical_task.md",
+                        ROOT / "out" / "tz.md",
+                        ROOT / "technical_task_ru.md")
+            if p.exists()]
+
+
+def _parse_tz_sections(text: str) -> list[dict]:
+    """Markdown -> [{n, title, body}] по заголовкам `#`/`##`/`###`."""
+    sections: list[dict] = []
+    cur: dict | None = None
+    for raw in text.splitlines():
+        line = raw.rstrip()
+        m = re.match(r"^(#{1,4})\s+(.+)$", line)
+        if m:
+            if cur:
+                sections.append(cur)
+            lvl = len(m.group(1))
+            title = m.group(2).strip()
+            cur = {"level": lvl, "title": title, "lines": []}
+        elif cur is not None:
+            cur["lines"].append(line)
+    if cur:
+        sections.append(cur)
+    for i, s in enumerate(sections):
+        body = "\n".join(s.pop("lines")).strip()
+        s["body"] = body
+        s["chars"] = len(body)
+        s["n"] = i
+    return sections
+
+
+def _tz_payload() -> dict:
+    files = _tz_files()
+    if not files:
+        return {"error": "ТЗ не найдено (technical_task.md)", "sections": []}
+    main = files[0]
+    text = main.read_text(encoding="utf-8", errors="ignore")
+    sections = _parse_tz_sections(text)
+    # первая строка-заголовок как название документа
+    title = next((ln.lstrip("#").strip() for ln in text.splitlines()
+                  if ln.startswith("#")), main.name)
+    # механические требования (mech_spec.py) — сразу к ТЗ, чтобы
+    # конструктор видел делегирование без второго запроса
+    mech = {}
+    try:
+        from mech_spec import build_mech_spec
+        mech = build_mech_spec(ROOT)
+    except Exception:                                           # noqa: BLE001
+        mech = {"error": "mech_spec unavailable"}
+    return {
+        "file": str(main.relative_to(ROOT)),
+        "title": title,
+        "chars": len(text),
+        "section_count": len(sections),
+        "sections": sections,
+        "mech": mech,
+        "variants": [str(p.relative_to(ROOT)) for p in files[1:]],
+    }
+
+
+# --------------------------------------------------------------------------
+# Симулятор: результаты ко-симуляции одним ответом (вкладка «Симулятор»)
+# --------------------------------------------------------------------------
+#: имя артефакта -> (заголовок, описание, метрический ключ в collect_metrics)
+SIM_ARTIFACTS = [
+    ("waterfall.png", "Водопад спектра",
+     "GNU Radio ко-симуляция приёма", "png"),
+    ("virtual_rx_spectrum.json", "Спектр виртуального приёмника",
+     "JSON-спектр (bins)", "json"),
+    ("board.glb", "3D-модель платы",
+     "glTF-binary для three.js", "glb"),
+    ("krystal-radio.html", "Отчёт 3D + чертежи",
+     "одна страница: 3D, чертежи, водопад, link budget", "html"),
+    ("link_budget.json", "Энергетика тракта",
+     "дальность приёма по каналам", "json"),
+    ("direction_finding.json", "Пеленгация",
+     "NEC-2 / AntennaSim, оценка угла", "json"),
+    ("thermal_fast.json", "Тепловой (быстрый)",
+     "Tj транзисторов, запас до предела", "json"),
+    ("thermal_fem.json", "Тепловой (FEM)",
+     " CalculiX / аналитический fallback", "json"),
+    ("reliability.json", "Надёжность",
+     "Octave MTBF против REQ-26", "json"),
+]
+
+
+def _sim_payload() -> dict:
+    o = out_dir()
+    metrics = collect_metrics()
+    items = []
+    for name, title, desc, kind in SIM_ARTIFACTS:
+        p = o / name
+        exists = p.is_file()
+        item = {
+            "name": name, "title": title, "desc": desc, "kind": kind,
+            "exists": exists,
+            "url": f"/api/artifact/{name}" if exists else None,
+            "size": p.stat().st_size if exists else None,
+            "modified": (datetime.fromtimestamp(p.stat().st_mtime, timezone.utc)
+                         .isoformat(timespec="seconds")) if exists else None,
+        }
+        if exists and kind == "json":
+            data = load_json(p)
+            # компактная сверка для карточки (без переноса больших массивов)
+            if name == "link_budget.json":
+                item["summary"] = {
+                    "channels": len(data.get("channels", [])),
+                    "noise_floor_dbm": data.get("noise", {}).get(
+                        "noise_floor_calc_dbm"),
+                }
+            elif name == "direction_finding.json":
+                item["summary"] = {k: data.get(k) for k in
+                                   ("theta_est_deg", "sigma_theta_deg",
+                                    "fov_deg", "backend")}
+            elif name == "reliability.json":
+                item["summary"] = {
+                    "mtbf_h": data.get("mtbf_h"),
+                    "target_h": data.get("mtbf_target_h"),
+                    "pass": data.get("pass"),
+                }
+            elif name == "virtual_rx_spectrum.json":
+                item["summary"] = {
+                    "snr_db": data.get("snr_measured_db"),
+                    "noise_floor_dbm": data.get("noise_floor_dbm"),
+                    "peak_hz": data.get("peak_freq_hz"),
+                }
+            else:
+                item["summary"] = {"keys": list(data)[:12]}
+        items.append(item)
+
+    built = [i for i in items if i["exists"]]
+    return {
+        "built": len(built),
+        "total": len(items),
+        "progress": round(100 * len(built) / len(items)) if items else 0,
+        "items": items,
+        "metrics": {
+            "link_budget": metrics.get("link_budget"),
+            "direction": metrics.get("direction"),
+            "thermal": metrics.get("thermal"),
+            "reliability": metrics.get("reliability"),
+        },
+        "run_hint": "make gnuradio link-budget direction thermal reliability",
+        "updated": _now(),
+    }
+
+
+# --------------------------------------------------------------------------
 # HTTP-обработчик
 # --------------------------------------------------------------------------
 class Handler(BaseHTTPRequestHandler):
@@ -939,6 +1105,75 @@ class Handler(BaseHTTPRequestHandler):
             return True
         hdr = self.headers.get("Authorization", "")
         return hdr == f"Bearer {TOKEN}"
+
+    def _sse_flow(self, q: dict) -> None:
+        """Рилтайм-флоу: цепочка + джобы + тесты потоком (SSE).
+
+        Один поток вместо опроса каждые 2 с: клиент открывает
+        `EventSource('/api/flow/stream')` и получает полный снимок
+        при каждом изменении (или heartbeat каждые 15 с, чтобы
+        прокси не закрывали соединение).
+        """
+        try:
+            interval = min(max(float(q.get("interval", ["1.5"])[0]), 0.5), 10.0)
+            max_events = min(max(int(q.get("max", ["0"])[0]), 0), 2000)
+        except (TypeError, ValueError):
+            interval, max_events = 1.5, 0
+
+        self.send_response(200)
+        self.send_header("Content-Type", "text/event-stream")
+        self.send_header("Cache-Control", "no-cache")
+        self.send_header("Connection", "keep-alive")
+        self.send_header("X-Accel-Buffering", "no")
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.end_headers()
+
+        def emit(event: str, data: dict) -> bool:
+            payload = json.dumps(data, ensure_ascii=False, default=str)
+            chunk = f"event: {event}\ndata: {payload}\n\n"
+            try:
+                self.wfile.write(chunk.encode("utf-8"))
+                self.wfile.flush()
+                return True
+            except (BrokenPipeError, ConnectionResetError, OSError):
+                return False
+
+        # состояние для diff: отправляем полный снимок только при изменении
+        prev: str | None = None
+        sent = 0
+        beats = 0
+        try:
+            while True:
+                snap = {
+                    "chain": chain_status(),
+                    "jobs": [{"id": j.id, "target": j.target, "status": j.status,
+                              "agent_id": j.agent_id, "exit_code": j.exit_code,
+                              "started_at": j.started_at,
+                              "finished_at": j.finished_at,
+                              "tail": (j.log[-1:] or [""])[0][:400]}
+                             for j in sorted(JOBS.values(),
+                                             key=lambda x: x.started_at,
+                                             reverse=True)[:15]],
+                    "running": sum(1 for j in JOBS.values()
+                                   if j.status in ("queued", "running")),
+                    "updated": _now(),
+                }
+                raw = json.dumps(snap, sort_keys=True, default=str)
+                if raw != prev:
+                    prev = raw
+                    if not emit("flow", snap):
+                        return          # клиент закрыл вкладку
+                    sent += 1
+                    if max_events and sent >= max_events:
+                        return
+                else:
+                    beats += 1
+                    if beats % 10 == 0:     # heartbeat ~15 с
+                        if not emit("ping", {"t": _now()}):
+                            return
+                time.sleep(interval)
+        except (BrokenPipeError, ConnectionResetError, OSError):
+            pass                                          # вкладка закрыта
 
     def log_message(self, fmt: str, *args) -> None:            # noqa: A003
         print(f"[bridge] {self.address_string()} {fmt % args}")
@@ -975,6 +1210,19 @@ class Handler(BaseHTTPRequestHandler):
                 arts = [a for a in arts if a["ext"] in wanted]
             return self._json({"count": len(arts), "artifacts": arts})
 
+        if path == "/api/breadboard":
+            import pathlib as _pl, json as _j, subprocess as _sp, sys as _sy
+            p = _pl.Path(ROOT) / "out" / "breadboard_layout.json"
+            if not p.exists():
+                try:
+                    _sp.run([_sy.executable, str(_pl.Path(ROOT) / "backend" / "breadboard.py")],
+                            cwd=str(ROOT), capture_output=True, timeout=60)
+                except Exception:
+                    pass
+            if p.exists():
+                return self._json(_j.loads(p.read_text()))
+            return self._json({"error": "not built (run: make breadboard)"}, 404)
+
         if path.startswith("/api/artifact/"):
             return self._serve_artifact(path[len("/api/artifact/"):])
 
@@ -1006,6 +1254,57 @@ class Handler(BaseHTTPRequestHandler):
 
         if path == "/api/metrics":
             return self._json(collect_metrics())
+
+        # -- ТЗ: разбор по секциям + механические требования (для вкладки «ТЗ»)
+        if path == "/api/tz":
+            return self._json(_tz_payload())
+
+        # -- Симулятор: все результаты ко-симуляции одним ответом
+        if path == "/api/sim":
+            return self._json(_sim_payload())
+
+        # -- Рилтайм-флоу: цепочка + джобы + тесты потоком (SSE)
+        if path == "/api/flow/stream":
+            return self._sse_flow(q)
+
+        # -- PCB enhancement suite (absorbed from auto-pcb / AI-PCB-Generator / text-to-cad)
+        # Backend-only, no frontend needed. Each reads out/<name>.json if built.
+        def _read_out(name):
+            p = out_dir() / name
+            return json.loads(p.read_text()) if p.exists() else None
+        _enrich = {
+            "/api/dfm": ("dfm.json", "run: make dfm"),
+            "/api/cost": ("cost.json", "run: make cost"),
+            "/api/erc-zones": ("erc_zones.json", "run: make erc-zones"),
+            "/api/preorder": ("preorder.json", "run: make preorder"),
+            "/api/pcb-score": ("pcb_score.json", "run: make pcb-score"),
+            "/api/fea": ("fea/fea_result.json", "run: make fea"),
+            "/api/cad-build": ("cad/cad_build.json", "run: make cad-build"),
+            "/api/drc-rules": ("drc_rules.json", "run: make drc-rules"),
+            "/api/fix-loop": ("fix_loop_report.json", "run: make fix-loop"),
+        }
+        if path in _enrich:
+            fname, hint = _enrich[path]
+            data = _read_out(fname)
+            if data is None:
+                return self._json({"error": f"not built ({hint})", "file": fname}, 404)
+            return self._json(data)
+        if path == "/api/placement/latest":
+            # latest placement-opt summary from .run/placement_opt/summary.json
+            import pathlib as _pl
+            p = _pl.Path(ROOT) / ".run/placement_opt/summary.json"
+            if not p.exists():
+                return self._json({"error": "not built (run: make placement-opt)"}, 404)
+            return self._json(json.loads(p.read_text()))
+        if path == "/api/circspec/templates":
+            import pathlib as _pl
+            tpl = sorted(str(x) for x in (_pl.Path(ROOT)/"design/templates").glob("*.json")) if (_pl.Path(ROOT)/"design/templates").exists() else []
+            return self._json({"templates": tpl})
+        if path == "/api/mna-fallback":
+            data = _read_out("mna_fallback.json")
+            if data is None:
+                return self._json({"error": "not built (run: make mna-check)"}, 404)
+            return self._json(data)
 
         if path == "/api/runtime/agents":
             return self._json(_runtime_roster())

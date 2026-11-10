@@ -1,4 +1,4 @@
-import { Radiation, AlertTriangle, Activity, Skull, Waves, TrendingUp, Gauge, CheckCircle2, Cpu, Layers, Clock } from 'lucide-react';
+import { Radiation, AlertTriangle, Activity, Users, Waves, TrendingUp, Gauge, CheckCircle2, Cpu, Layers, Clock } from 'lucide-react';
 import type { Agent, Project, Task } from '@/lib/supabase';
 import { ROLE_ICONS, STATUS_CONFIG } from '@/lib/constants';
 import { PipelineChain } from '@/components/PipelineChain';
@@ -36,33 +36,33 @@ export function OverviewTab({ agents, projects, tasks }: OverviewTabProps) {
       <div className="relative bg-zone-panel border border-zone-400/30 clip-corner overflow-hidden noise-overlay">
         <div className="absolute inset-0 bg-zone-noise pointer-events-none" />
         <div className="relative flex flex-col md:flex-row items-stretch">
-          {/* Left: radiation monitor */}
+          {/* Left: radiation monitor (метрология) */}
           <div className="flex items-center gap-4 px-5 py-4 border-b md:border-b-0 md:border-r border-zone-400/20 flex-1">
             <div className="flex-shrink-0">
-              <Radiation className="w-10 h-10 text-toxic-400 animate-geiger" />
+              <Radiation className="w-10 h-10 text-toxic-400" />
             </div>
             <div>
-              <div className="font-mono text-[9px] tracking-widest text-zone-600 uppercase">Environmental</div>
-              <div className="font-display text-lg font-600 text-zone-900 uppercase">Zone Status</div>
+              <div className="font-mono text-[9px] tracking-widest text-zone-600 uppercase">Фон</div>
+              <div className="font-display text-lg font-600 text-zone-900 uppercase">Радиация</div>
               <div className="flex items-center gap-2 mt-1">
                 <span className="status-dot-active" />
-                <span className="font-mono text-xs text-toxic-400 uppercase tracking-wider">Nominal</span>
+                <span className="font-mono text-xs text-toxic-400 uppercase tracking-wider">Норма</span>
                 <span className="font-mono text-[10px] text-zone-600">· 3.4 R/h</span>
               </div>
             </div>
           </div>
 
-          {/* Middle: anomaly count */}
+          {/* Middle: metrology / поверка */}
           <div className="flex items-center gap-4 px-5 py-4 border-b md:border-b-0 md:border-r border-zone-400/20 flex-1">
             <div className="flex-shrink-0">
               <Waves className="w-10 h-10 text-amber-400" />
             </div>
             <div>
-              <div className="font-mono text-[9px] tracking-widest text-zone-600 uppercase">Detected</div>
-              <div className="font-display text-lg font-600 text-zone-900 uppercase">Anomalies</div>
+              <div className="font-mono text-[9px] tracking-widest text-zone-600 uppercase">Контроль</div>
+              <div className="font-display text-lg font-600 text-zone-900 uppercase">Метрология</div>
               <div className="flex items-center gap-2 mt-1">
-                <span className="font-mono text-xs text-amber-400">2 Active</span>
-                <span className="font-mono text-[10px] text-zone-600">· Sector 7-G</span>
+                <span className="font-mono text-xs text-amber-400">2 поверки</span>
+                <span className="font-mono text-[10px] text-zone-600">· цех 7</span>
               </div>
             </div>
           </div>
@@ -171,7 +171,7 @@ export function OverviewTab({ agents, projects, tasks }: OverviewTabProps) {
       {/* Personnel quick status */}
       <div className="bg-zone-panel border border-zone-400/20 clip-corner overflow-hidden">
         <div className="px-5 py-3 border-b border-zone-400/20 flex items-center gap-2">
-          <Skull className="w-4 h-4 text-blood-500" />
+          <Users className="w-4 h-4 text-blood-500" />
           <h3 className="font-display font-600 text-sm uppercase tracking-wide text-zone-900">
             Personnel Status
           </h3>

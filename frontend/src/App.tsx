@@ -5,6 +5,8 @@ import { ZoneHeader } from '@/components/ZoneHeader';
 import { TabNav, type TabKey } from '@/components/TabNav';
 import { OverviewTab } from '@/components/OverviewTab';
 import { KrystalTab } from '@/components/KrystalTab';
+import { SimTab } from '@/components/SimTab';
+import { TzTab } from '@/components/TzTab';
 import { OrderTab } from '@/components/OrderTab';
 import { PersonnelTab } from '@/components/PersonnelTab';
 import { ProjectsTab } from '@/components/ProjectsTab';
@@ -115,7 +117,7 @@ function App() {
         <div className="text-center relative z-10">
           <div className="inline-block w-12 h-12 border-4 border-blood-600 border-t-transparent rounded-full animate-spin mb-4" />
           <p className="font-mono text-xs tracking-widest text-zone-600 uppercase">
-            Initializing Bureau Systems...
+            Инициализация КБ Кибер НИИ...
           </p>
         </div>
       </div>
@@ -160,6 +162,12 @@ function App() {
 
         {activeTab === 'krystal' && (
           <KrystalTab />
+        )}
+        {activeTab === 'sim' && (
+          <SimTab />
+        )}
+        {activeTab === 'tz' && (
+          <TzTab />
         )}
         {activeTab === 'personnel' && (
           <PersonnelTab
@@ -209,13 +217,13 @@ function App() {
       <footer className="bg-zone-50 border-t border-zone-300/30 py-5 px-6 md:px-10 noise-overlay">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3 relative z-10">
           <div className="font-mono text-[10px] tracking-widest uppercase text-zone-600">
-            Bureau No. 7 · Seren + Hermes
+            КБ Кибер НИИ
           </div>
           <div className="font-mono text-[10px] tracking-widest uppercase text-zone-600">
-            Zone-Class Engineering · Restricted
+            Радиоэлектроника · Метрология
           </div>
-          <div className="font-mono text-[10px] tracking-widest uppercase text-blood-500">
-            ▲ Пролетарии всех стран, соединяйтесь!
+          <div className="font-mono text-[10px] tracking-widest uppercase text-zone-600">
+            Точность · Надёжность · Минимализм
           </div>
         </div>
       </footer>

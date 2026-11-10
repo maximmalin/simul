@@ -136,11 +136,41 @@ erc-kicad: pcb ## informational KiCad ERC on the tscircuit-exported schematic
 cad: ## rebuild the antenna panels (STEP/STL) headless in FreeCAD
 	$(FREECAD) $(ANT_GEOM)/build_brig_antennas_fc.py
 
-drawings: cad ## STEP -> cleaned -> GOST drawing (DXF/SVG/PDF)
+mech-spec: ## извлечь механические требования из ТЗ (out/mech_requirements.json)
+	$(PYTHON) backend/mech_spec.py
+
+cad-delegate: mech-spec ## делегировать конструкторскую часть: brief + task (out/mech_constructor_*)
+	$(PYTHON) backend/cad_delegate.py
+	@echo "Constructor brief: out/mech_constructor_brief.md"
+
+ml-train: ## обучить ML-суррогат размещения на истории placement_opt
+	venv/bin/python backend/placement_surrogate.py
+	@echo "Model: out/models/placement_surrogate.joblib"
+
+breadboard: ## макетная плата (breadboard/fretboard) 3D-раскладка из circuit.json
+	$(PYTHON) backend/breadboard.py
+	@echo "Layout: out/breadboard_layout.json"
+
+fix-mech: ## агентская петля по конструкторским ошибкам (advisory)
+	$(PYTHON) backend/fix_loop_mech.py
+	@echo "Report: out/fix_mech_report.json"
+
+drawings-legacy: cad ## STEP -> cleaned -> GOST drawing (DXF/SVG/PDF) [старый пайплайн]
 	$(PYTHON) gost_pipeline.py $(ANT_GEOM)/band_a.step
 	$(PYTHON) gost_pipeline.py $(ANT_GEOM)/band_b.step
 	$(PYTHON) gost_pipeline.py $(ANT_GEOM)/band_c.step
-	@echo "GOST drawings: $(CAD_FIG)/"
+	@echo "GOST drawings (legacy): $(CAD_FIG)/"
+
+drawings: cad ## STEP -> конструкторский чертёж (PDF+SVG) measured dimensions, ГОСТ 2.104
+	$(PYTHON) -c "from backend.drawing_sheet import make_sheet_from_step, render; \
+	  render(make_sheet_from_step('$(ANT_GEOM)/band_a.step', title='Антенна A', part_number='ANT-A', material='FR4', general_tolerance='ISO 2768-m', notes=['Размеры в мм.'], revisions=[('A','2026-11-10','ПЕРВЫЙ ВЫПУСК')], size='A2', iso=True), '$(CAD_FIG)/band_a_GOST.pdf', '$(CAD_FIG)/band_a_GOST.svg')"
+	$(PYTHON) -c "from backend.drawing_sheet import make_sheet_from_step, render; \
+	  render(make_sheet_from_step('$(ANT_GEOM)/band_b.step', title='Антенна B', part_number='ANT-B', material='FR4', general_tolerance='ISO 2768-m', notes=['Размеры в мм.'], revisions=[('A','2026-11-10','ПЕРВЫЙ ВЫПУСК')], size='A2', iso=True), '$(CAD_FIG)/band_b_GOST.pdf', '$(CAD_FIG)/band_b_GOST.svg')"
+	$(PYTHON) -c "from backend.drawing_sheet import make_sheet_from_step, render; \
+	  render(make_sheet_from_step('$(ANT_GEOM)/band_c.step', title='Антенна C', part_number='ANT-C', material='FR4', general_tolerance='ISO 2768-m', notes=['Размеры в мм.'], revisions=[('A','2026-11-10','ПЕРВЫЙ ВЫПУСК')], size='A2', iso=True), '$(CAD_FIG)/band_c_GOST.pdf', '$(CAD_FIG)/band_c_GOST.svg')"
+	$(PYTHON) -c "from backend.drawing_sheet import make_sheet_from_step, render; \
+	  render(make_sheet_from_step('hardware/enclosure/krystal-case.step', title='Корпус', part_number='CASE-01', material='Al', general_tolerance='ISO 2768-m', notes=['Размеры в мм.'], revisions=[('A','2026-11-10','ПЕРВЫЙ ВЫПУСК')], iso=True), '$(CAD_FIG)/krystal-case_GOST.pdf', '$(CAD_FIG)/krystal-case_GOST.svg')"
+	@echo "Constructor drawings: $(CAD_FIG)/"
 
 board-svg: publish ## PCB technical drawing (SVG) from the routed board
 	$(KICAD_CLI) pcb export svg --output $(OUT)/board.svg \
@@ -283,6 +313,65 @@ test-all: ## full pytest tree (includes known WIP / co-sim tests)
 # ===========================================================================
 #  reliability / thermal compliance
 # ===========================================================================
+# ===========================================================================
+#  PCB enhancement suite (absorbed: auto-pcb / AI-PCB-Generator / text-to-cad)
+#  Backend-only; no frontend required. See docs/PCB_FEATURES_INTEGRATION.md
+# ===========================================================================
+pcb-score: ## PCB placement score (auto-pcb) -> $(OUT)/pcb_score.json
+	@mkdir -p $(OUT)
+	$(PYTHON) backend/pcb_score.py --circuit $(OUT)/circuit.json --drc $(OUT)/drc.rpt --out $(OUT)/pcb_score.json
+
+dfm: ## DFM 12 checks IPC-2221 -> $(OUT)/dfm.json
+	@mkdir -p $(OUT)
+	$(PYTHON) backend/dfm_engine.py --circuit $(OUT)/circuit.json --out $(OUT)/dfm.json
+
+drc-rules: ## Python DRC rules engine (AI-PCB-Generator style) -> $(OUT)/drc_rules.json
+	@mkdir -p $(OUT)
+	$(PYTHON) backend/drc_rules.py --circuit $(OUT)/circuit.json --out $(OUT)/drc_rules.json
+
+cost: ## manufacturer cost estimation (JLCPCB/PCBWay/OSH) -> $(OUT)/cost.json
+	@mkdir -p $(OUT)
+	$(PYTHON) backend/manufact.py --circuit $(OUT)/circuit.json --qty 5 --out $(OUT)/cost.json
+
+production: ## production package: BOM + CPL + cost + gerber zip -> $(OUT)/production/
+	@mkdir -p $(OUT)
+	$(PYTHON) backend/manufact.py --circuit $(OUT)/circuit.json --qty 5 --package --package-dir $(OUT)/production --out $(OUT)/cost.json
+
+erc-zones: ## ERC 8 rules + pin alias -> $(OUT)/erc_zones.json
+	@mkdir -p $(OUT)
+	$(PYTHON) backend/erc_zones.py --circuit $(OUT)/circuit.json --out $(OUT)/erc_zones.json
+
+placement-opt: ## placement hill-climbing loop (auto-pcb, Phase-0 sweep + iters) -> .run/placement_opt/
+	@mkdir -p .run
+	$(PYTHON) backend/placement_loop.py --circuit $(OUT)/circuit.json --out .run/placement_opt --iters 20
+
+fix-loop: ## agent feedback loop: fix checker findings until clean -> $(OUT)/fix_loop_report.json
+	@mkdir -p .run
+	$(PYTHON) backend/fix_loop.py --circuit $(OUT)/circuit.json --iters 40 --out .run/fix_loop --report $(OUT)/fix_loop_report.json
+
+placement-sweep: ## perturbation sweep Phase-0 (validate score correlates with sigma)
+	@mkdir -p .run
+	$(PYTHON) backend/placement_loop.py --circuit $(OUT)/circuit.json --out .run/placement_opt --sweep
+
+fea: ## structural FEA (CalculiX wrapper, analytical fallback) -> $(OUT)/fea/fea_result.json
+	$(PYTHON) backend/fea_study.py --out $(OUT)/fea
+
+cad-build: ## parametric CAD build (build123d wrapper) -> $(OUT)/cad/cad_build.json
+	$(PYTHON) backend/cad_build.py --out $(OUT)/cad
+
+mna-check: ## MNA fallback DC check -> $(OUT)/mna_fallback.json
+	$(PYTHON) backend/mna_fallback.py --out $(OUT)/mna_fallback.json
+
+fallback-route: ## A* fallback router demo -> $(OUT)/fallback_route.json
+	$(PYTHON) backend/fallback_router.py --out $(OUT)/fallback_route.json
+
+circspec: ## CircuitSpec validation (NL->structure contract) + templates list
+	$(PYTHON) backend/circuitspec.py --list-templates design/templates
+
+preorder: ## pre-order review (fab/electrical/assembly) -> $(OUT)/preorder.json
+	@mkdir -p $(OUT)
+	$(PYTHON) backend/preorder.py --out $(OUT)/preorder.json
+
 reliability: ## Octave parts-count MTBF (REQ-26) -> $(OUT)/reliability.json
 	@mkdir -p $(OUT)
 	$(OCTAVE) --quiet --eval "addpath('sim/octave'); reliability_model('sim/octave/reliability_parts.tsv','$(OUT)/reliability.json')"

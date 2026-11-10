@@ -67,7 +67,7 @@ export function DeliverablesTab() {
             Deliverables Archive
           </h2>
           <p className="font-mono text-[10px] tracking-widest text-zone-600 uppercase">
-            Final Results · Download Bureau Output
+            Итоги · выгрузка результатов
           </p>
         </div>
         <div className="ml-auto font-mono text-[10px] text-zone-600 tracking-widest uppercase">

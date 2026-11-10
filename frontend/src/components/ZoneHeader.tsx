@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Radio, Activity, Radiation, AlertTriangle } from 'lucide-react';
+import { Radio, Activity } from 'lucide-react';
 import { WeatherBar } from '@/components/WeatherBar';
 import { getZone, type ZoneTelemetry } from '@/lib/bridge';
 
@@ -47,22 +47,21 @@ export function ZoneHeader({ agentCount, activeProjects, totalCycles }: ZoneHead
         <div className="flex items-center gap-2 px-4 py-1.5">
           <span className="status-dot-active flex-shrink-0" />
           <span className="font-mono text-[9px] tracking-[0.3em] text-blood-500 uppercase flex-shrink-0">
-            Live Feed
+            Телеметрия
           </span>
           <div className="flex-1 overflow-hidden">
             <div className="flex gap-10 animate-ticker whitespace-nowrap font-mono text-[9px] tracking-widest text-zone-700 uppercase">
               {Array.from({ length: 2 }).map((_, i) => (
                 <span key={i} className="flex gap-10">
                   <span>Build: {zone?.status_label ?? '—'}</span>
-                  <span>Tj: {zone?.radiation_display ?? '—'}</span>
-                  <span>Stages: {zone?.anomalies_count ?? 0} pending</span>
-                  <span>Tests: {zone?.network_display ?? '—'}</span>
-                  <span>Chain: {zone?.chain_done ?? 0}/{zone?.chain_total ?? 0}</span>
-                  <span>Cycles: {totalCycles.toLocaleString()}</span>
-                  <span>Agents Deployed: {agentCount}</span>
-                  <span>Active Projects: {activeProjects}</span>
-                  <span>Classification: RESTRICTED</span>
-                  <span>Next Sweep: 0600</span>
+                  <span>Фон: {zone?.radiation_display ?? '—'}</span>
+                  <span>Стадии: {zone?.anomalies_count ?? 0} pending</span>
+                  <span>Тесты: {zone?.network_display ?? '—'}</span>
+                  <span>Цепь: {zone?.chain_done ?? 0}/{zone?.chain_total ?? 0}</span>
+                  <span>Циклы: {totalCycles.toLocaleString()}</span>
+                  <span>Сотрудники: {agentCount}</span>
+                  <span>Проекты: {activeProjects}</span>
+                  <span>Смена: 06:00–18:00</span>
                 </span>
               ))}
             </div>
@@ -81,28 +80,28 @@ export function ZoneHeader({ agentCount, activeProjects, totalCycles }: ZoneHead
                   <Radio className="w-7 h-7 text-zone-900" strokeWidth={2} />
                 </div>
                 <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-zone-900 flex items-center justify-center border border-blood-500/30">
-                  <span className="text-[8px] font-bold text-blood-500 font-mono">SH</span>
+                  <span className="text-[8px] font-bold text-blood-500 font-mono">КН</span>
                 </div>
               </div>
               <div>
                 <div className="font-mono text-[10px] tracking-[0.25em] text-blood-500 uppercase">
-                  Bureau No. 7
+                  КБ Кибер НИИ
                 </div>
                 <div className="font-mono text-[9px] tracking-[0.2em] text-zone-600 uppercase">
-                  Division of Theoretical & Applied Engineering
+                  Радиоэлектроника · Метрология
                 </div>
               </div>
             </div>
 
             {/* Title */}
             <h1 className="font-display font-700 text-4xl md:text-6xl lg:text-7xl uppercase tracking-tight leading-[0.9] text-zone-900">
-              Seren <span className="text-blood-500 text-glow-blood">+</span> Hermes
+              Кибер <span className="text-blood-500 text-glow-blood">НИИ</span>
             </h1>
             <p className="font-display font-300 text-lg md:text-2xl uppercase tracking-[0.15em] text-zone-700 mt-2">
-              Engineering Bureau
+              Конструкторское бюро
             </p>
             <p className="font-mono text-[11px] tracking-wider text-zone-600 mt-3 max-w-lg">
-              Виртуальное конструкторское бюро · Многогентная инженерия
+              Многагентная инженерия · чертежи, схемы, корпуса
             </p>
           </div>
 
@@ -132,14 +131,8 @@ export function ZoneHeader({ agentCount, activeProjects, totalCycles }: ZoneHead
           </div>
         </div>
 
-        {/* Warning stripe divider */}
-        <div className="mt-8 flex items-center gap-3">
-          <Radiation className="w-5 h-5 text-toxic-400 animate-geiger" />
-          <div className="h-1 warning-stripe flex-1 opacity-40" />
-          <AlertTriangle className="w-4 h-4 text-amber-400" />
-          <div className="h-1 warning-stripe w-20 opacity-40" />
-          <div className="h-px bg-zone-400/30 flex-1" />
-        </div>
+        {/* Minimal divider */}
+        <div className="mt-8 h-px bg-zone-400/30" />
       </div>
     </header>
   );

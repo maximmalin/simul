@@ -21,10 +21,11 @@ except Exception:
 
 ROOT = Path(__file__).resolve().parents[1]
 
-# Размеры макетной платы (универсально: 830 точек, 63 колонки × 10 рядов + rails)
-COLS = 63
-ROWS = 10  # a..j (5+5 с разрывом по центру)
-RAIL_TOP = -2
+import os
+# Размеры макетной платы — конфигурируются через env или circuit.json
+COLS = int(os.environ.get("BREADBOARD_COLS", "63"))
+ROWS = int(os.environ.get("BREADBOARD_ROWS", "10"))
+RAIL_TOP = int(os.environ.get("BREADBOARD_RAIL_TOP", "-2"))
 RAIL_BOTTOM = ROWS + 1
 
 

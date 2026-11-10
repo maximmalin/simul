@@ -441,3 +441,9 @@ improve: ## Автономное улучшение проекта (одна и�
 
 improve-loop: ## Бесконечное автономное улучшение
 	$(PYTHON) backend/auto_improver.py
+
+pipeline-improve: ## Отдел улучшения пайплайна (после заказа)
+	$(PYTHON) backend/pipeline_improvement_dept.py
+
+pipeline-improve-loop: ## Непрерывное улучшение пайплайна
+	while true; do $(PYTHON) backend/pipeline_improvement_dept.py; sleep 120; done

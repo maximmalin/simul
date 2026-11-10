@@ -36,6 +36,21 @@ import llm
 
 from .types import Project, Step
 
+# Обучение на успешных заказах
+_order_history = []
+
+def _learn_from_order(text: str, targets: list[str], success: bool):
+    """Учим планировщик на истории заказов"""
+    _order_history.append({"text": text[:100], "targets": targets, "success": success})
+    # Сохраняем в файл
+    try:
+        hist_file = Path(__file__).parent.parent / "out" / "pipeline_improvements" / "order_history.jsonl"
+        hist_file.parent.mkdir(parents=True, exist_ok=True)
+        with hist_file.open("a") as f:
+            f.write(json.dumps({"text": text[:100], "targets": targets, "success": success}, ensure_ascii=False) + "\n")
+    except:
+        pass
+
 # Кэш планов для повторяющихся запросов
 _plan_cache: dict[str, tuple[str, list[str]]] = {}
 
@@ -411,8 +426,13 @@ def plan(text: str, proj: Project) -> dict:
              agent=proj.agent_owner.get(n, "agent.build")).as_dict()
         for i, n in enumerate(picked)
     ]
-    return {"intent": intent, "targets": picked, "planner": note,
+    res = {"intent": intent, "targets": picked, "planner": note,
             "note": note, "steps": steps}
+    try:
+        _learn_from_order(text, picked, len(picked) > 0)
+    except:
+        pass
+    return res
 
 
 def suggest(proj: Project, limit: int = 8) -> list[str]:

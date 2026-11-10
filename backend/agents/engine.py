@@ -33,6 +33,7 @@ from __future__ import annotations
 
 import datetime
 import os
+import sys
 import sqlite3
 import threading
 import time
@@ -624,6 +625,14 @@ def fn_report(state: GraphState) -> GraphState:
     reporter.node(state, proj)
     state["status"] = final_status(state.get("steps", []))
     state["finished_at"] = now_iso()
+    # Отдел улучшения пайплайна работает после каждого заказа
+    try:
+        import subprocess
+        subprocess.Popen([sys.executable, str(Path(__file__).parent.parent / "pipeline_improvement_dept.py"),
+                         state.get("text", "")[:50]],
+                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except Exception:
+        pass
     return state
 
 

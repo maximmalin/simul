@@ -347,6 +347,39 @@ python3 backend/agent_bridge.py --port 8787{'\n'}# затем:  make agent-api
         </section>
       )}
 
+      {/* ============ ОТДЕЛЫ (DATA SCIENCE / SCIENCE / BIZ / SOFTWARE) ============ */}
+      <section>
+        <div className="flex items-baseline justify-between mb-3">
+          <h3 className="font-mono text-[11px] uppercase tracking-widest text-zone-600">
+            Отделы агентов
+          </h3>
+          <span className="font-mono text-[11px] text-zone-600">
+            parallel agent graph
+          </span>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          {[
+            { name: 'Data Science / ML', path: 'out/ds_result/ds_report.json', icon: '📊' },
+            { name: 'Science (физика/FMU)', path: 'out/science_result/science_report.json', icon: '🔬' },
+            { name: 'Business (финансы/право/PR)', path: 'out/biz_result/biz_report.json', icon: '💼' },
+            { name: 'Software (прошивка)', path: 'out/software_result/flow_report.json', icon: '💻' },
+          ].map((d) => {
+            const art = artifacts.find((a) => a.rel === d.path || a.path === d.path);
+            return (
+              <a key={d.name} href={art ? artifactUrl(art.name) : '#'}
+                target="_blank" rel="noreferrer"
+                className="border border-zone-200 rounded bg-zone-50 p-3 hover:border-blood-400 transition">
+                <div className="text-lg mb-1">{d.icon}</div>
+                <div className="font-mono text-[10px] text-zone-700 uppercase tracking-wider">{d.name}</div>
+                <div className="font-mono text-[9px] text-zone-500 mt-1">
+                  {art ? `${(art.size / 1024).toFixed(1)} KB · готово` : 'не собрано'}
+                </div>
+              </a>
+            );
+          })}
+        </div>
+      </section>
+
       {/* ============ 1. НОВЫЙ ПРОЕКТ ============ */}
       {showNew && (
         <div className="fixed inset-0 bg-zone-900/50 flex items-center justify-center z-50 p-4">

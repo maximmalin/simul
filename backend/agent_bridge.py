@@ -1287,6 +1287,11 @@ class Handler(BaseHTTPRequestHandler):
             "/api/cad-build": ("cad/cad_build.json", "run: make cad-build"),
             "/api/drc-rules": ("drc_rules.json", "run: make drc-rules"),
             "/api/fix-loop": ("fix_loop_report.json", "run: make fix-loop"),
+            "/api/ds": ("ds_result/ds_report.json", "run: make data-science"),
+            "/api/science": ("science_result/science_report.json", "run: make science"),
+            "/api/biz": ("biz_result/biz_report.json", "run: make biz"),
+            "/api/software-tz": ("software_task.json", "run: make software-spec"),
+            "/api/software-report": ("software_result/flow_report.json", "run: make software-flow"),
         }
         if path in _enrich:
             fname, hint = _enrich[path]
